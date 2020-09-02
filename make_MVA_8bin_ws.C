@@ -16,7 +16,8 @@
 #include "RooWorkspace.h"
 #include "RooRealVar.h"
 #include "RooDataHist.h"
-#include "interface/RooParametricHist.h"
+//#include "interface/RooParametricHist.h"
+#include "HiggsAnalysis/CombinedLimit/interface/RooParametricHist.h"
 
 #include "TH1.h"
 #include "TFile.h"

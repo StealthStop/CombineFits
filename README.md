@@ -33,7 +33,9 @@ scram b -j4
 
 Now copy input root files from eos (only needed for local, condor jobs copy the inputs from eos)
 ```
-cd $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit
+cd $CMSSW_BASE/src
+git clone git@github.com:StealthStop/CombineFits.git
+cd CombineFits
 cmsenv
 cp -r /eos/uscms/store/user/lpcsusyhad/StealthStop/FitInputs_FullRun2/Keras_2016_v1.2 .
 cp -r /eos/uscms/store/user/lpcsusyhad/StealthStop/FitInputs_FullRun2/Keras_2017_v1.2 .
@@ -45,11 +47,11 @@ cp -r /eos/uscms/store/user/lpcsusyhad/StealthStop/FitInputs_FullRun2/Keras_2018
 
 To combine the datacards for 2016 and 2017:
 ```
-combineCards.py Y16=Card2016.txt Y17=Card2017.txt                                                 > Card2016_2017.txt
-combineCards.py                                   Y18pre=Card2018pre.txt Y18post=Card2018post.txt > Card2018pre_2018post.txt
-combineCards.py Y16=Card2016.txt Y17=Card2017.txt Y18pre=Card2018pre.txt                          > Card2016_2017_2018pre.txt
-combineCards.py Y16=Card2016.txt Y17=Card2017.txt Y18pre=Card2018pre.txt Y18post=Card2018post.txt > Card2016_2017_2018pre_2018post.txt
-combineCards.py Y16=Card2016.txt Y17=Card2017.txt Y18pre=Card2018pre.txt Y18post=Card2018post.txt > CardCombo.txt
+combineCards.py Y16=dataCards/Card2016.txt Y17=dataCards/Card2017.txt                                                 > dataCards/Card2016_2017.txt
+combineCards.py                                   Y18pre=dataCards/Card2018pre.txt Y18post=dataCards/Card2018post.txt > dataCards/Card2018pre_2018post.txt
+combineCards.py Y16=dataCards/Card2016.txt Y17=dataCards/Card2017.txt Y18pre=dataCards/Card2018pre.txt                          > dataCards/Card2016_2017_2018pre.txt
+combineCards.py Y16=dataCards/Card2016.txt Y17=dataCards/Card2017.txt Y18pre=dataCards/Card2018pre.txt Y18post=dataCards/Card2018post.txt > dataCards/Card2016_2017_2018pre_2018post.txt
+combineCards.py Y16=dataCards/Card2016.txt Y17=dataCards/Card2017.txt Y18pre=dataCards/Card2018pre.txt Y18post=dataCards/Card2018post.txt > dataCards/CardCombo.txt
 
 ```
 
@@ -73,12 +75,12 @@ Convert the card file (and the PDFs and input histograms references therein) int
 
 For 2016 RPV 350:
 ```
-text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
 ```
 
 For 2016 + 2017 + 2018pre + 2018post RPV 350:
 ```
-text2workspace.py CardCombo.txt -o ws_Combo_RPV_350.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/CardCombo.txt -o ws_Combo_RPV_350.root -m 350 --keyword-value MODEL=RPV
 ```
 
 Can substitute other models.
@@ -165,7 +167,7 @@ Impacts using Azimov, on data, with expected signal 0
 
 ```
 root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.6_v1_DataQCDShape","RPV","350","data")'
-text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doInitialFit --robustFit 1 --rMin -10 -t -1 --expectSignal 0
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doFits --parallel 4 --rMin -10 -t -1 --expectSignal 0
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 -o impacts.json
@@ -175,7 +177,7 @@ text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MO
 Impacts using Azimov, on data, with expected signal 1
 ```
 root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.6_v1_DataQCDShape","RPV","350","data")'
-text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doInitialFit --robustFit 1 -t -1 --expectSignal 1
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doFits --parallel 4 -t -1 --expectSignal 1
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 -o impacts.json
@@ -185,7 +187,7 @@ text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MO
 Impacts on data  (add the --rMin -10 option if best fit is close to zero)
 ```
 root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.6_v1_DataQCDShape","RPV","350","data")'
-text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MODEL=RPV
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doInitialFit --robustFit 1
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 --doFits --parallel 4
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350.root -m 350 -o impacts.json
@@ -195,7 +197,7 @@ text2workspace.py Card2016.txt -o ws_2016_RPV_350.root -m 350 --keyword-value MO
 Impacts on pseudodata without signal:
 ```
 root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.6_v1_DataQCDShape","RPV","350","pseudodata")'
-text2workspace.py Card2016.txt -o ws_2016_RPV_350_pseudo.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350_pseudo.root -m 350 --keyword-value MODEL=RPV
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudo.root -m 350 --doInitialFit --robustFit 1 --rMin -10
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudo.root -m 350 --doFits --parallel 4 --rMin -10
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudo.root -m 350 -o impacts.json
@@ -205,7 +207,7 @@ text2workspace.py Card2016.txt -o ws_2016_RPV_350_pseudo.root -m 350 --keyword-v
 Impacts on pseudodata with signal:
 ```
 root -l -q 'make_MVA_8bin_ws.C("2016","Keras_V1.2.6_v1_DataQCDShape","RPV","350","pseudodataS")'
-text2workspace.py Card2016.txt -o ws_2016_RPV_350_pseudoS.root -m 350 --keyword-value MODEL=RPV
+text2workspace.py dataCards/Card2016.txt -o ws_2016_RPV_350_pseudoS.root -m 350 --keyword-value MODEL=RPV
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudoS.root -m 350 --doInitialFit --robustFit 1
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudoS.root -m 350 --doFits --parallel 4
 ../../CombineHarvester/CombineTools/scripts/combineTool.py -M Impacts -d ws_2016_RPV_350_pseudoS.root -m 350 -o impacts.json
