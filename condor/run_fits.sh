@@ -23,9 +23,9 @@ then
 fi
 
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-export SCRAM_ARCH=slc6_amd64_gcc530
-tar -xf CMSSW_8_1_0.tar.gz
-cd CMSSW_8_1_0/src/HiggsAnalysis/CombinedLimit
+export SCRAM_ARCH=slc7_amd64_gcc700
+tar -xf CMSSW_10_2_13.tar.gz
+cd CMSSW_10_2_13/src/HiggsAnalysis/CombinedLimit
 scram b ProjectRename
 eval `scramv1 runtime -sh`
 cp ${base_dir}/exestuff.tar.gz .

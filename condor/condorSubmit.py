@@ -85,7 +85,7 @@ def main():
     fileParts.append("request_disk = 1000000\n")
     fileParts.append("request_memory = 5000\n")
     fileParts.append("x509userproxy = $ENV(X509_USER_PROXY)\n\n")
-    fileParts.append("Transfer_Input_Files = {0}/CMSSW_8_1_0.tar.gz, {0}/exestuff.tar.gz\n".format(options.outPath))
+    fileParts.append("Transfer_Input_Files = {0}/CMSSW_10_2_13.tar.gz, {0}/exestuff.tar.gz\n".format(options.outPath))
     
     for st in signalType:
         st = st.strip()
@@ -187,11 +187,11 @@ def main():
     fout.close()
 
     #Tar up area
-    filestoTransfer = [environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/make_MVA_8bin_ws.C",
-                       environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2016.txt",
-                       environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2017.txt",
-                       environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2018pre.txt",
-                       environ["CMSSW_BASE"] + "/src/HiggsAnalysis/CombinedLimit/Card2018post.txt",
+    filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/make_MVA_8bin_ws.C",
+                       environ["CMSSW_BASE"] + "/src/CombineFits/dataCards/Card2016.txt",
+                       environ["CMSSW_BASE"] + "/src/CombineFits/dataCards/Card2017.txt",
+                       environ["CMSSW_BASE"] + "/src/CombineFits/dataCards/Card2018pre.txt",
+                       environ["CMSSW_BASE"] + "/src/CombineFits/dataCards/Card2018post.txt",
                        ]
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
 
