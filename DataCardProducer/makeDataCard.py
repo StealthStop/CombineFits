@@ -70,11 +70,13 @@ histoNames = {
     "h_stop2_MassVsScalarPt_ScalarPtRank_0l_HT500_ge2b_ge6j_ge2t_ge1dRbjets"    : "m2vsSPt_SPt",
 }
 
+seed = "OldSeed"
 
 def writeDataCard(binVals, dataset, histo):
+    
     processNames = [options.signalName, "QCD", "TT"]
 
-    with open("Cards/Card%s_%s.txt" % (dataset,histoNames[histo]), 'w') as f:
+    with open("%s_Cards/Card%s_%s.txt" % (seed, dataset,histoNames[histo]), 'w') as f:
         f.write("Datacard for 2016 %s" % dataset)
         f.write( "\n" )
         f.write( "imax %d number of bins\n" % len(binVals[0]) )
@@ -139,7 +141,7 @@ def getCard(dataset, histo):
     flist = []
     hlist = []
 
-    for f in glob.glob("/uscms/home/bcrossma/nobackup/SL7/CMSSW_10_2_9/src/RootWorkingArea/Hemisphere_Significance/TopSeed/*.root"):
+    for f in glob.glob("/uscms/home/bcrossma/nobackup/SL7/CMSSW_10_2_9/src/Analyzer/Analyzer/test/condor/2016_StopMass_Significance_{}/output-files/{}/*.root".format(seed, seed)):
         if(f.find(dataset) != -1):
             flist = [ROOT.TFile.Open(f)] + flist
         elif (f.find("TT") != -1 or f.find("QCD") != -1):
@@ -153,16 +155,20 @@ def getCard(dataset, histo):
     binInt = 0
     i = 0
 
-    binXSize = 1500 / hlist[0].GetNbinsX()
-    binYSize = 1500 / hlist[0].GetNbinsY()
+    total = hlist[0].Integral() + hlist[1].Integral() + hlist[2].Integral()
 
-#    print "Bin Edges (prints bottom left corner of bins that are kept): "
-    for x in range(0, hlist[0].GetNbinsX()-1, (hlist[0].GetNbinsX()/options.numBin)):
-        for y in range(0, hlist[0].GetNbinsY()-1, (hlist[0].GetNbinsY()/options.numBin)):
+    binsum = 0
+
+    xstep = hlist[0].GetNbinsX()/options.numBin
+    ystep = hlist[0].GetNbinsY()/options.numBin
+
+    for x in range(0, hlist[0].GetNbinsX()-1, xstep):
+        for y in range(0, hlist[0].GetNbinsY()-1, ystep):
             i = 0
             temp_binVals = []
             for h in hlist:
-                binInt = h.Integral(x, x+10, y, y+10)
+                binInt = h.Integral(x, x+xstep-1, y, y+ystep-1)
+                binsum += binInt
                 if (round(binInt,1) < 0.1):
                     temp_binVals.append(0.1) #Used to correct any zero bins
                 else:
@@ -174,6 +180,8 @@ def getCard(dataset, histo):
                     binVals[j].append(b)
                 j += 1
     
+#    print(total, binsum)
+
     writeDataCard(binVals, dataset, histo)
 
 def main():
