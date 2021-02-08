@@ -1,12 +1,12 @@
 import sys
 
-path = "./%s/"%(str(sys.argv[8]))
+#path = "./%s/"%(str(sys.argv[8]))
 
 lumi = 1.05
 
-mass = int(sys.argv[6])
+#mass = int(sys.argv[6])
 
-model = str(sys.argv[7])
+#model = str(sys.argv[7])
 
 #all backgrounds are entries in the dictionary. the path to the root file (starting from base path) and the systematic uncertainty are specified
 #observed = {
@@ -42,17 +42,17 @@ observed = {
 #}
 
 #all signals are entries in the dictionary. the path to the root file (starting from the base path) and the systematic uncertainty are specified 
-signal = {
-    "%s%d"%(model.split("_")[0],mass) : {
-        "path" : "2016_%s_mStop-%d.root"%(model,mass),
-        "sys"  : "--"
-
-    },
+#signal = {
+#    "%s%d"%(model.split("_")[0],mass) : {
+#        "path" : "2016_%s_mStop-%d.root"%(model,mass),
+#        "sys"  : "--"
+#
+#    },
 #    "RPV550" : {
 #        "path" : "None",
 #        "sys"  : 1.504
 #    }
-}
+#}
 #the names of the histograms to use along with number of bins to divide it into, which bin to start from, and which to end. use "last" to use the last bin
 histos = {
     "ha" : {
