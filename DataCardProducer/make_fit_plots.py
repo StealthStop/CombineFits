@@ -55,7 +55,6 @@ def makeHist(reg, bin_info):
 
     for b in bins:
         h.Fill(b[0], b[1].getVal())
-        print(b[1].defaultErrorLevel())
 
     return h
 
@@ -169,7 +168,7 @@ def main():
 
         p2_list[i].cd()
         hlist_ratio[i].SetTitle("")
-        hlist_ratio[i].GetYaxis().SetRangeUser(0.8, 1.2)
+        hlist_ratio[i].GetYaxis().SetRangeUser(0.6, 1.4)
         hlist_ratio[i].GetYaxis().SetTitle("S+B/B")
         hlist_ratio[i].GetYaxis().SetTitleSize(0.1)
         hlist_ratio[i].GetYaxis().SetLabelSize(0.05)
