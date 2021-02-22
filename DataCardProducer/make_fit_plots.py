@@ -6,7 +6,7 @@ from ROOT import kRed, kBlue, kBlack
 from ROOT import gStyle
 
 parser = OptionParser()
-parser.add_option("-p", "--path",   action="store",  type="string",  dest="path", default="fitDiagnostics.root", help = "Path to fitDiagnostics root file containing post-fit event counts")
+parser.add_option("-p", "--path",   action="store",  type="string",  dest="path", default="/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/fitDiagnostics.root", help = "Path to fitDiagnostics root file containing post-fit event counts")
 
 (options, args) = parser.parse_args()
 
@@ -17,18 +17,25 @@ pad1and4Size = 1.0 + borderSize
 pad2and3Size = 1.0
 totalPadSize = 2 * pad1and4Size + 2 * pad2and3Size
 
-def getFitInfo(pre_path, post_path, w_name):
+def getFitInfo(pre_path, post_path, fitDiag_path, w_name):
     f_pre = ROOT.TFile.Open(pre_path, "READ")
     f_post = ROOT.TFile.Open(post_path, "READ")
+    f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
 
     w_pre = f_pre.Get(w_name)
     w_post = f_post.Get(w_name)
+
+    fit_b = f_fit.Get("fit_b")
+    fit_s = f_fit.Get("fit_s")
 
     prefit_sb = {} 
     prefit_b = {}
 
     postfit_sb = {}
     postfit_b = {}
+
+    postfit_sb_unc = {}
+    postfit_b_unc = {}
 
     for reg in ["A", "B", "C", "D"]:
         prefit_sb[reg] = []
@@ -37,16 +44,23 @@ def getFitInfo(pre_path, post_path, w_name):
         postfit_sb[reg] = []
         postfit_b[reg] = []
         
+        postfit_sb_unc[reg] = []
+        postfit_b_unc[reg] = []
+
         for i in range(7,12):
             postfit_sb[reg].append((i, w_post.function("n_exp_bin{}{}".format(reg,i))))
             postfit_b[reg].append((i, w_post.function("n_exp_bin{}{}_bonly".format(reg,i))))
             prefit_sb[reg].append((i, w_pre.function("n_exp_bin{}{}".format(reg,i))))
             prefit_b[reg].append((i, w_pre.function("n_exp_bin{}{}_bonly".format(reg,i))))
 
+            postfit_sb_unc[reg].append((i,w_post.function("n_exp_bin{}{}".format(reg,i)).getPropagatedError(fit_s)))
+            postfit_b_unc[reg].append((i, w_post.function("n_exp_bin{}{}_bonly".format(reg,i)).getPropagatedError(fit_b)))
+
     f_pre.Close()
     f_post.Close()
+    f_fit.Close()
 
-    return prefit_b, prefit_sb, postfit_b, postfit_sb 
+    return prefit_b, prefit_sb, postfit_b, postfit_sb, postfit_b_unc, postfit_sb_unc 
 
 def makeHist(reg, bin_info):
     h = ROOT.TH1D("Region {}".format(reg), "Region {}".format(reg), 5, 7, 12)
@@ -55,6 +69,18 @@ def makeHist(reg, bin_info):
 
     for b in bins:
         h.Fill(b[0], b[1].getVal())
+
+    return h
+
+def makeHistUnc(reg, bin_info, unc_info):
+    h = ROOT.TH1D("Region {}".format(reg), "Region {}".format(reg), 5, 7, 12)
+
+    bins = bin_info["{}".format(reg)]
+    unc = unc_info["{}".format(reg)]
+
+    for i in range(len(bins)):
+        h.Fill(bins[i][0], bins[i][1].getVal())
+        h.SetBinError(i+1, unc[i][1])
 
     return h
 
@@ -110,10 +136,11 @@ def formatCanvasAndPads( c1, topPadArray, ratioPadArray ) :
 def main():
     pre_path = "/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/myDataCard.root"
     post_path = "/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/higgsCombineTest.FitDiagnostics.mH550.root"
+    fitDiag_path = options.path
 
     ROOT.TH1.AddDirectory(False)
 
-    pre_b, pre_sb, post_b, post_sb = getFitInfo(pre_path, post_path, 'w')
+    pre_b, pre_sb, post_b, post_sb, post_b_unc, post_sb_unc = getFitInfo(pre_path, post_path, fitDiag_path, 'w')
 
     hlist_pre_b = []
     hlist_post_b = []
@@ -122,14 +149,13 @@ def main():
 
     for reg in ["A", "B", "C", "D"]:
         hlist_pre_b.append(makeHist(reg, pre_b))
-        hlist_post_b.append(makeHist(reg, post_b))
+        hlist_post_b.append(makeHistUnc(reg, post_b, post_b_unc))
         hlist_pre_sb.append(makeHist(reg, pre_sb))
-        hlist_post_sb.append(makeHist(reg, post_sb))
-
+        hlist_post_sb.append(makeHistUnc(reg, post_sb, post_sb_unc))
 
     for i in range(len(hlist_pre_b)):
         hlist_post_sb[i].SetLineColor(kRed)
-        hlist_pre_b[i].SetLineColor(kBlack)
+        hlist_pre_sb[i].SetLineColor(kBlack)
 
     hlist_ratio = []
     for i in range(0,4):
@@ -161,8 +187,8 @@ def main():
         hlist_post_sb[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_sb[i].GetXaxis().SetTitle("N Jets")
 
-        hlist_post_sb[i].Draw("HIST SAME")
-        hlist_post_b[i].Draw("HIST SAME")
+        hlist_post_sb[i].Draw("HIST E SAME")
+        hlist_post_b[i].Draw("HIST E SAME")
         hlist_pre_b[i].Draw("HIST SAME")
         leg_list[i].Draw()
 
