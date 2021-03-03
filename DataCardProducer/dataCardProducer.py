@@ -124,9 +124,9 @@ class dataCardMaker:
             obs_str = "{} ".format("\nobservation")
             for obs in range(self.nbins):
                 if obs % 4 == 0: 
-                    obs_str += "{} ".format(self.observedPerBin[obs])
+                    obs_str += "{} ".format(round(self.observedPerBin[obs]))
                 else:
-                    obs_str += "{} ".format(self.observedPerBin[obs])
+                    obs_str += "{} ".format(round(self.observedPerBin[obs]))
             file.write(obs_str)
             file.write("\n--------------------------")
             pbin_str = "{} ".format("\nbin")
@@ -223,7 +223,7 @@ class dataCardMaker:
                         for proc in self.observed.keys():
                             if proc != bkgd:
                                 rate -= self.observed[proc]["binValues"][abin+ibin]
-                        if self.dataType != "pseudoDataS":
+                        if self.dataType == "pseudoDataS":
                             for proc in self.signal.keys():
                                 rate -= self.signal[proc]["binValues"][abin+ibin]
 
