@@ -6,7 +6,7 @@ import optparse
 import ROOT
 from array import array
 
-def makePValuePlot(dataSet, approved):
+def makePValuePlot(dataSet, approved, suffix, close):
     # CL observed pvalues
     pvalue_2016 = dataSet["data"]["2016"]["pList"]
     pvalue_2017 = dataSet["data"]["2017"]["pList"]
@@ -206,9 +206,9 @@ def makePValuePlot(dataSet, approved):
     line2.Draw("same")
 
     if approved:
-        c1.Print(dataSet["runtype"]+"_"+dataSet["model"]+dataSet["pdfName"]+".pdf")
+        c1.Print(dataSet["runtype"]+"_"+dataSet["model"]+"_"+suffix+dataSet["pdfName"]+".pdf")
     else:
-        c1.Print(dataSet["runtype"]+"_"+dataSet["model"]+dataSet["pdfName"]+"_prelim.pdf")
+        c1.Print(dataSet["runtype"]+"_"+dataSet["model"]+"_"+suffix+close+dataSet["pdfName"]+"_prelim.pdf")
     del c1
 
 def makePValuePlotAlt(dataSet):
@@ -534,9 +534,10 @@ def makeSigTex(name, l):
 
 def main():
     parser = optparse.OptionParser("usage: %prog [options]\n")
-    parser.add_option ('--basedir', dest='basedir',  type='string', default = '.', help="Path to output files")
-    parser.add_option ('--pdfName', dest='pdfName',  type='string', default = '',  help="name to add at the end of pdf")
-    parser.add_option ('--approved', dest='approved', default = False, action='store_true', help = 'Is plot approved')
+    parser.add_option ('--basedir',         dest='basedir',  type='string', default = '.', help="Path to output files")
+    parser.add_option ('--pdfName',         dest='pdfName',  type='string', default = '',  help="name to add at the end of pdf")
+    parser.add_option ('--perfectClosure',  dest='perfectClosure',  default = False, action='store_true', help = 'Use perfect closure fits' )
+    parser.add_option ('--approved',        dest='approved',        default = False, action='store_true', help = 'Is plot approved')
     options, args = parser.parse_args()
     pdfName = "_"+options.pdfName if options.pdfName != '' else options.pdfName
 
@@ -564,9 +565,12 @@ def main():
     #            "pseudodata_qcdCR", "pseudodata_2xqcdCR", "pseudodata_JECUp_JERDown_FSR", "pseudodataS_0.3xRPV_350",
     #            "pseudodata_0.2xLine", "pseudodata_0.05-0.2xLine", "pseudodata_0.05-0.2xLineNorm", "pseudodata_0.2-0.05xLine", 
     #            "pseudodataTTJets", "pseudodata_qcdCR_0.05-0.2xLine", "pseudodata_qcdCR_0.2xLine"]
-    models = ["RPV","StealthSYY","StealthSHH"]
+    models = ["RPV","StealthSYY"]#,"StealthSHH"]
+    #masses = ["300"]
     masses = ["300","350","400","450","500","550","600","650","700","750","800","850","900","950","1000","1050","1100","1150","1200","1250","1300","1350","1400"]
     #masses = ["300","350","400","450","500","550","600","650","700","750","800","850","900"]
+    suffixes = ['0l','1l','combo']
+    close = "perfectClose" if options.perfectClosure else ""
 
     # Loop over all jobs in get the info needed
     l=[]
@@ -576,77 +580,78 @@ def main():
         runtype = t[0]
         years = t[1]
         for model in models:
-            outFileName = "table_signal_strength_%s_%s_%s_%i.tex" % (model, runtype, "SUX", fNumber)
-            fNumber+=1
-            file_table = open(outFileName,'w')
-            file_table.write(pre_tabular)
-            dataSet={"runtype":runtype,"model":model,"data":{},"pdfName":pdfName}
-            for year in years:
-                data={"mList":[],"rList":[],"rmList":[],"rpList":[],"sList":[],"pList":[],"zero":[]}
-                file_table.write("\\multicolumn{4}{c}{$%s$} \\\\ \\hline \n"%year)
-                for mass in masses:
-                    print "Year %s, Model %s, Mass %s"%(year, model, mass)
-                    filename_r = "%s/Fit_%s_%s/output-files/%s_%s_%s/log_%s%s%s_FitDiag.txt" % (path,runtype, year, model, mass, year, year, model, mass)
-    
-                    # Get r from fit jobs
-                    info_r = ["-1","0","0"]
-                    line_r = ""
-                    if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="StealthSYY" and year=="Combo" and mass=="0") ):
-                        file_r=-1
-                        try:
-                            file_r = open(filename_r)
-                            for line in file_r:
-                                if "Best fit r" in line:        
-                                    if "Fit failed" in line:
-                                        info_r = ["Fit failed"]
-                                    else:
-                                        line_r = line.replace("Best fit r: ","").replace("(68% CL)","").strip().replace("/", " ")
-                                        info_r = line_r.split() # best fit r, -error, +error
-                        except:
-                            print "File not found:",filename_r 
+            for suf in suffixes:
+                outFileName = "table_signal_strength_%s_%s_%s_%i.tex" % (model, runtype, "SUX", fNumber)
+                fNumber+=1
+                file_table = open(outFileName,'w')
+                file_table.write(pre_tabular)
+                dataSet={"runtype":runtype,"model":model,"data":{},"pdfName":pdfName,"suffix":suf}
+                for year in years:
+                    data={"mList":[],"rList":[],"rmList":[],"rpList":[],"sList":[],"pList":[],"zero":[]}
+                    file_table.write("\\multicolumn{4}{c}{$%s$} \\\\ \\hline \n"%year)
+                    for mass in masses:
+                        print "Year %s, Model %s, Mass %s, Suffix %s"%(year, model, mass, suf)
+                        filename_r = "%s/Fit_%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_FitDiag.txt" % (path, year,  model, mass, year, year, model, mass, runtype, suf, close)
+        
+                        # Get r from fit jobs
+                        info_r = ["-1","0","0"]
+                        line_r = ""
+                        if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="StealthSYY" and year=="Combo" and mass=="0") ):
+                            file_r=-1
+                            try:
+                                file_r = open(filename_r)
+                                for line in file_r:
+                                    if "Best fit r" in line:        
+                                        if "Fit failed" in line:
+                                            info_r = ["Fit failed"]
+                                        else:
+                                            line_r = line.replace("Best fit r: ","").replace("(68% CL)","").strip().replace("/", " ")
+                                            info_r = line_r.split() # best fit r, -error, +error
+                            except:
+                                print "File not found:",filename_r 
 
-                    # Get sigma and p-value from fit jobs
-                    line_sig = "-1"
-                    line_pvalue = "10"
-                    if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="StealthSYY" and year=="2017" and mass in ["0"])):
-                        filename_sig = "%s/Fit_%s_%s/output-files/%s_%s_%s/log_%s%s%s_Sign_sig.txt" % (path,runtype, year, model, mass, year, year, model, mass)
-                        file_sig=-1
-                        try:
-                            file_sig = open(filename_sig)
-                            for line in file_sig:
-                                if "Significance:" in line:
-                                    line_sig = line.replace("Significance:", "").strip()
-                                elif "p-value" in line:
-                                    line_pvalue = line.replace("       (p-value =", "").strip()
-                                    line_pvalue = line_pvalue.replace(")","").strip()
-                        except:
-                            print "File not found:",filename_sig
-    
-                    # Fill lists of data
-                    data["mList"].append(abs(float(mass)))
-                    data["rList"].append(float(info_r[0]))
-                    data["rmList"].append(abs(float(info_r[1])))
-                    data["rpList"].append(abs(float(info_r[2])))
-                    data["sList"].append(abs(float(line_sig)))
-                    data["pList"].append(abs(float(line_pvalue)))
-                    data["zero"].append(0.0)
-    
-                    # Write out r, sigma, and p-value to file
-                    if len(info_r) < 3:
-                        file_table.write("%s & %s & %s & %s\\\\ \n" % (mass, info_r[0], line_sig, line_pvalue))
-                    elif "#" in info_r[0]:
-                        file_table.write("%s & Fit failed &  \\\\ \n" % (mass))
-                    elif line_sig == "":
-                        file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %s & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), line_sig, line_pvalue))
-                    else:
-                        file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %.2f & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), float(line_sig), line_pvalue))
+                        # Get sigma and p-value from fit jobs
+                        line_sig = "-1"
+                        line_pvalue = "10"
+                        if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="StealthSYY" and year=="2017" and mass in ["0"])):
+                            filename_sig = "%s/Fit_%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_Sign_sig.txt" % (path, year, model, mass, year, year, model, mass, runtype, suf, close)
+                            file_sig=-1
+                            try:
+                                file_sig = open(filename_sig)
+                                for line in file_sig:
+                                    if "Significance:" in line:
+                                        line_sig = line.replace("Significance:", "").strip()
+                                    elif "p-value" in line:
+                                        line_pvalue = line.replace("       (p-value =", "").strip()
+                                        line_pvalue = line_pvalue.replace(")","").strip()
+                            except:
+                                print "File not found:",filename_sig
+        
+                        # Fill lists of data
+                        data["mList"].append(abs(float(mass)))
+                        data["rList"].append(float(info_r[0]))
+                        data["rmList"].append(abs(float(info_r[1])))
+                        data["rpList"].append(abs(float(info_r[2])))
+                        data["sList"].append(abs(float(line_sig)))
+                        data["pList"].append(abs(float(line_pvalue)))
+                        data["zero"].append(0.0)
+        
+                        # Write out r, sigma, and p-value to file
+                        if len(info_r) < 3:
+                            file_table.write("%s & %s & %s & %s\\\\ \n" % (mass, info_r[0], line_sig, line_pvalue))
+                        elif "#" in info_r[0]:
+                            file_table.write("%s & Fit failed &  \\\\ \n" % (mass))
+                        elif line_sig == "":
+                            file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %s & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), line_sig, line_pvalue))
+                        else:
+                            file_table.write("%s & $%.2f_{%.2f}^{%.2f}$ & %.2f & %s\\\\ \n" % (mass, float(info_r[0]), float(info_r[1]), float(info_r[2].replace("+-","+")), float(line_sig), line_pvalue))
 
-                file_table.write("\\hline \n")
-                dataSet["data"][year]=data
-            file_table.write("\\end{tabular}\n")
-            file_table.close()
-            l.append({"model":model, "runtype":runtype, "outFileName":outFileName})
-            d.append(dataSet)
+                    file_table.write("\\hline \n")
+                    dataSet["data"][year]=data
+                file_table.write("\\end{tabular}\n")
+                file_table.close()
+                l.append({"model":model, "runtype":runtype, "outFileName":outFileName})
+                d.append({"dataset":dataSet, "suffix":suf})
     
     # Make tex file with all signal strengths
     makeSigTex("table_signal_strength.tex", l)
@@ -655,19 +660,21 @@ def main():
     print d
     for dataSet1 in d:
         for dataSet2 in d:
-            if dataSet1["runtype"] == dataSet2["runtype"] and dataSet1["model"] == dataSet2["model"] and dataSet1["data"] != dataSet2["data"]:
-                dataSet1["data"].update(dataSet2["data"])
+            if dataSet1["dataset"]["runtype"] == dataSet2["dataset"]["runtype"] and dataSet1["dataset"]["model"] == dataSet2["dataset"]["model"] and dataSet1["dataset"]["data"] != dataSet2["dataset"]["data"] and dataSet1["suffix"] == dataSet2["suffix"]:
+                dataSet1["dataset"]["data"].update(dataSet2["dataset"]["data"])
             else:
                 continue
         if dataSet1 not in allData:
             allData.append(dataSet1)
-
+    
     for dataSet in allData:        
         #if not (dataSet["runtype"] == "pseudoData" or dataSet["runtype"] == "pseudoDataS"):
             print "------------------------------------------"
-            print dataSet["runtype"], dataSet["model"]        
+            print dataSet["dataset"]["runtype"], dataSet["dataset"]["model"]        
             #makePValuePlotAlt(dataSet)
-            makePValuePlot(dataSet, options.approved)
+            for s in suffixes:
+                if s == dataSet["suffix"]:
+                    makePValuePlot(dataSet["dataset"], options.approved, s, close)
 
 if __name__ == '__main__':
     main()

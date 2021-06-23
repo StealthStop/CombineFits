@@ -1,41 +1,46 @@
-import ROOT
-import copy
-import time
-#from optparse import OptionParser
-from math import sqrt
+from optparse import OptionParser
 
-from ROOT import kRed, kBlue, kBlack, kCyan, kGreen
-from ROOT import gStyle
-'''
 parser = OptionParser()
-parser.add_option("-s", "--signal", action="store", type="string", dest="signal", default="StealthSYY_550", help="Signal name with mass separated by \'_\'(e.g. StealthSYY_550)")
-parser.add_option("-p", "--pre", action="store", type="string", dest="prefit", default="myDataCard.root", help="Name of prefit data card")
+parser.add_option("-s", "--signal", action="store", type="string", dest="signal", default="StealthSYY", help="Signal process name")
+parser.add_option("-y", "--year", action="store", type="string", dest="year", default="2016", help="Year for data used")
+parser.add_option("-m", "--mass", action="store", type="string", dest="mass", default="350", help="Mass of stop in GeV")
+parser.add_option("-d", "--dataType", action="store", type="string", dest="dataType", default="pseudoData", help="Mass of stop in GeV")
+parser.add_option("--suffix", action="store", type="string", dest="suffix", default="0l", help="Suffix to specify number of final state leptons (0l, 1l, or combo)")
+parser.add_option("-p", "--path", action="store", type="string", dest="path", default="../condor/Fit_2016", help="Path to Fit Diagnostics input condor directory")
 parser.add_option("--plotb", action="store_true", dest="plotb", default=False, help="Plot background only fit")
 parser.add_option("--plotsb", action="store_true", dest="plotsb", default=False, help="Plot signal plus background fit")
 parser.add_option("--plotsig", action="store_true", dest="plotsig", default=False, help="Plot signal component of fit")
 parser.add_option("--plotdata", action="store_true", dest="plotdata", default=False, help="Plot distributions observed in data")
+parser.add_option("--all", action="store_true", dest="all", default=False, help="Make all pre and post fit distributions (for 0l and 1l, pseudoData/S, RPV and SYY)")
 
 (options, args) = parser.parse_args()
-'''
+
+import ROOT
+import copy
+import time
+import os
+from math import sqrt
+
+from ROOT import kRed, kBlue, kBlack, kCyan, kGreen
+from ROOT import gStyle
+
 gStyle.SetOptStat(0)
 ROOT.TH1.AddDirectory(False)
 ROOT.TH1.SetDefaultSumw2(1)
+
+if options.all:
+    ROOT.gROOT.SetBatch(True)
 
 borderSize = 0.20
 pad1and4Size = 1.0 + borderSize
 pad2and3Size = 1.0
 totalPadSize = 2 * pad1and4Size + 2 * pad2and3Size
 
-def getFitInfo(pre_path, post_path, fitDiag_path, w_name, signal):
-    f_pre = ROOT.TFile.Open(pre_path, "READ")
-    f_post = ROOT.TFile.Open(post_path, "READ")
+def getFitInfo(fitDiag_path, pre_path, signal, year, suf):
     f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
+    f_pre = ROOT.TFile.Open(pre_path)
 
-    w_pre = f_pre.Get(w_name)
-    w_post = f_post.Get(w_name)
-
-    fit_b = f_fit.Get("fit_b")
-    fit_s = f_fit.Get("fit_s")
+    w = f_pre.Get("w")
 
     data = {}
     data_unc = {}
@@ -46,10 +51,6 @@ def getFitInfo(pre_path, post_path, fitDiag_path, w_name, signal):
     postfit_b = {}
     postfit_sig = {}
 
-    postfit_sig_unc = {}
-    postfit_sb_unc = {}
-    postfit_b_unc = {}
-
     for reg in ["A", "B", "C", "D"]:
         prefit_sb[reg] = []
         prefit_b[reg] = []
@@ -57,58 +58,48 @@ def getFitInfo(pre_path, post_path, fitDiag_path, w_name, signal):
         postfit_b[reg] = []
         postfit_sig[reg] = []       
  
-        postfit_sig_unc[reg] = []
-        postfit_sb_unc[reg] = []
-        postfit_b_unc[reg] = []
-
         data[reg] = []
-        data_unc[reg] = []
 
-        for i in range(7,12):
-            postfit_sb[reg].append((i, w_post.function("n_exp_bin{}{}".format(reg,i))))
-            postfit_b[reg].append((i, w_post.function("n_exp_bin{}{}_bonly".format(reg,i))))
-            prefit_sb[reg].append((i, w_pre.function("n_exp_bin{}{}".format(reg,i))))
-            prefit_b[reg].append((i, w_pre.function("n_exp_bin{}{}_bonly".format(reg,i))))
-            postfit_sig[reg].append((i, w_post.function("n_exp_bin{}{}_proc_{}".format(reg,i,signal))))
+        for i in range(7,13):
+            postfit_sb[reg].append((i, 
+                f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
+                f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                ))
+            postfit_b[reg].append((i, 
+                f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
+                f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                ))
+            #prefit_sb[reg].append((i, w_pre.function("shapes_prefit/{}{}/".format(reg,i))))
+            prefit_b[reg].append((i, 
+                f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
+                f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                ))
+            postfit_sig[reg].append((i, 
+                f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,suf)).GetBinContent(1),
+                f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,suf)).GetBinError(1)
+                ))
             
-            postfit_sig_unc[reg].append((i,w_post.function("n_exp_bin{}{}_proc_{}".format(reg,i,signal)).getPropagatedError(fit_s)))
-            postfit_sb_unc[reg].append((i,w_post.function("n_exp_bin{}{}".format(reg,i)).getPropagatedError(fit_s)))
-            postfit_b_unc[reg].append((i, w_post.function("n_exp_bin{}{}_bonly".format(reg,i)).getPropagatedError(fit_b)))
+            data[reg].append((i, 
+                w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,suf)),
+                sqrt(w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,suf))),
+                ))
 
-            data[reg].append((i, w_pre.data("data_obs").get(0).getRealValue("n_obs_bin{}{}".format(reg,i))))
-            data_unc[reg].append((i, sqrt(w_pre.data("data_obs").get(0).getRealValue("n_obs_bin{}{}".format(reg,i)))))
-
-    f_pre.Close()
-    f_post.Close()
     f_fit.Close()
+    f_pre.Close()
 
-    return prefit_b, prefit_sb, postfit_b, postfit_sb, postfit_sig, postfit_b_unc, postfit_sb_unc, postfit_sig_unc, data, data_unc
+    return prefit_b, postfit_b, postfit_sb, postfit_sig, data
 
 def makeHist(reg, bin_info, tag):
-    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), 5, 7, 12)
-
-    bins = bin_info["{}".format(reg)]
-
-    for b in bins:
-        if type(b[1]) != float:
-            h.Fill(b[0], b[1].getVal())
-        else:
-            h.Fill(b[0], b[1])
-
-    return h
-
-def makeHistUnc(reg, bin_info, unc_info, tag):
-    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), 5, 7, 12)
+    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), 6, 7, 13)
 
     bins = bin_info[reg]
-    unc = unc_info[reg]
 
     for i in range(len(bins)):
         if type(bins[i][1]) != float:
-            h.Fill(bins[i][0], bins[i][1].getVal())
+            h.Fill(bins[i][0], bins[i][1])
         else:
             h.Fill(bins[i][0], bins[i][1])
-        h.SetBinError(i+1, unc[i][1])
+        h.SetBinError(i+1, bins[i][2])
 
     return h
 
@@ -169,28 +160,29 @@ def save_to_root(hlist, outfile):
 
     out.Close()
 
-def make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, plotb, plotsb, plotdata, plotsig, fitName, outfile):
-    pre_b, pre_sb, post_b, post_sb, post_sig, post_b_unc, post_sb_unc, post_sig_unc, data, data_sqrt = getFitInfo(pre_path, post_path, fitDiag_path, 'w', signal)
+def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plotdata, plotsig, fitName, outfile, obs):
+    close = ""
+    if pre_path.find("perfectClose") != -1:
+        close += "_perfectClose"
+    im = ROOT.TImageDump("figures/" + year + "_" + signal + "_" + fitName + "_" + suf + close + ".png")
+    pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, suf)
 
     hlist_data = []
     hlist_pre_b = []
     hlist_post_b = []
-    hlist_pre_sb = []
     hlist_post_sb = []
     hlist_post_sig = []
 
     for reg in ["A", "B", "C", "D"]:
-        hlist_data.append(makeHistUnc(reg, data, data_sqrt, "_data"))
+        hlist_data.append(makeHist(reg, obs, "_data"))
         hlist_pre_b.append(makeHist(reg, pre_b, "_pre_bonly"))
-        hlist_post_b.append(makeHistUnc(reg, post_b, post_b_unc, "_post_bonly"))
-        hlist_pre_sb.append(makeHist(reg, pre_sb, "_pre_sb"))
-        hlist_post_sb.append(makeHistUnc(reg, post_sb, post_sb_unc, "_post_sb"))
-        hlist_post_sig.append(makeHistUnc(reg, post_sig, post_sig_unc, "_post_signal"))
+        hlist_post_b.append(makeHist(reg, post_b, "_post_bonly"))
+        hlist_post_sb.append(makeHist(reg, post_sb, "_post_sb"))
+        hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal"))
 
     save_to_root(hlist_data, outfile)
     save_to_root(hlist_pre_b, outfile)
     save_to_root(hlist_post_b, outfile)
-    save_to_root(hlist_pre_sb, outfile)
     save_to_root(hlist_post_sb, outfile)
     save_to_root(hlist_post_sig, outfile)
  
@@ -199,7 +191,8 @@ def make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, plotb, plo
         hlist_post_sb[i].SetLineColor(kRed)
         hlist_post_sig[i].SetLineColor(kGreen)
         hlist_data[i].SetLineColor(kBlack)
-
+        hlist_data[i].SetFillColor(kBlack)
+        hlist_data[i].SetFillStyle(3001)
     hlist_ratio = []
     for i in range(0,4):
         if plotsb:
@@ -211,8 +204,11 @@ def make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, plotb, plo
             b = h_temp.GetBinContent(j+1)
             e = h_temp.GetBinError(j+1)
             data_e = hlist_data[i].GetBinError(j+1)
-            pull = b/data_e
-            pull_unc = e/data_e
+            if data_e == 0.0:
+                pull = 0
+            else:
+                pull = b/data_e
+            pull_unc = 1
             h_temp.SetBinContent(j+1, pull)
             h_temp.SetBinError(j+1, pull_unc)
         h_temp.SetLineColor(kBlack)
@@ -236,36 +232,39 @@ def make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, plotb, plo
             l.AddEntry(hlist_data[i], "Data", "lp")
         if plotsig:
             l.AddEntry(hlist_post_sig[i], "{}".format(signal), "l")
-        l.Draw()
     
         leg_list.append(l)
 
     for i in range(len(p1_list)):
         p1_list[i].cd()
         
+        hlist_post_sig[i].GetYaxis().SetTitle("Num. Events (A.U.)")
+        hlist_post_sig[i].GetXaxis().SetTitle("N Jets")
+        hlist_post_sig[i].GetYaxis().SetRangeUser(0.1, 2E5)
+        
         hlist_post_sb[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_sb[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_sb[i].GetYaxis().SetRangeUser(10, 2E5)
+        hlist_post_sb[i].GetYaxis().SetRangeUser(0.1, 2E5)
         
         hlist_post_b[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_b[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_b[i].GetYaxis().SetRangeUser(10, 2E5)
+        hlist_post_b[i].GetYaxis().SetRangeUser(0.1, 2E5)
         
-        if plotsb:
-            hlist_post_sb[i].Draw("HIST E SAME") 
-        if plotb:
-            hlist_post_b[i].Draw("HIST E SAME")
         if plotsig:
             hlist_post_sig[i].Draw("HIST E SAME")
+        if plotb:
+            hlist_post_b[i].Draw("HIST E SAME")
+        if plotsb:
+            hlist_post_sb[i].Draw("HIST E SAME") 
         hlist_data[i].SetMarkerStyle(8)
         hlist_data[i].SetMarkerSize(0.8)
         if plotdata:
-            hlist_data[i].Draw("SAME")
+            hlist_data[i].Draw("SAME E2")
         leg_list[i].Draw()
 
         p2_list[i].cd()
         hlist_ratio[i].SetTitle("")
-        hlist_ratio[i].GetYaxis().SetRangeUser(-8,8)
+        hlist_ratio[i].GetYaxis().SetRangeUser(-3,3)
         hlist_ratio[i].GetYaxis().SetTitle("(Fit-Data)/Sqrt(Data)")
         hlist_ratio[i].GetYaxis().SetTitleSize(0.1)
         hlist_ratio[i].GetYaxis().SetLabelSize(0.05)
@@ -276,16 +275,100 @@ def make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, plotb, plo
         hlist_ratio[i].Draw("p")
         
         c1.Update()
+        c1.Paint()
 
-    c1.SaveAs(fitName + ".png")
+    im.Close()
+    #c1.SaveAs("figures/" + year + "_" + signal + "_" + fitName + "_" + suf + ".png")
+
+def getObs(card):
+    with open(card, "r") as f:
+        lines = f.readlines()
+
+        data_temp = []
+
+        for l in lines:
+            if l.find("observation") != -1:
+                data_temp = l.split(" ")[1:-1]
+        
+        data = {'A': [], 'B': [], 'C': [], 'D': []}
+        ABCD = ['A','B','C','D']
+        
+        for j in range(0,6):
+            i = 0
+            for reg in ABCD:
+                data[reg].append((7+j,float(data_temp[j*4+i]), sqrt(float(data_temp[j*4+i]))))
+
+                i += 1
+
+        return data
 
 if __name__ == '__main__':
-    prefit = "pseudoDataS.root"
-    pre_path = "/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/{}".format(prefit)
-    post_path = "/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/higgsCombineTest.FitDiagnostics.mH550.root"
-    fitDiag_path = "/uscms/home/bcrossma/nobackup/analysis/CMSSW_10_2_13/src/CombineFits/DataCardProducer/fitDiagnostics.root"
-    signal = "SYY_550"
+    if not os.path.exists("figures"):
+        os.makedirs("figures")
 
-    make_fit_plots(prefit, signal, pre_path, post_path, fitDiag_path, True, True, True, True, "pseudoDataS", "test.root")
+    if not os.path.exists("results"):
+        os.makedirs("results")
 
+    ROOT.gROOT.SetBatch(True)
+
+    print("Making pre and post fit distributions for:")
+    if options.all:
+        signals = ["RPV", "StealthSYY"]
+        masses = [m for m in range(300, 1450, 50)]
+        dataTypes = ["pseudoData", "pseudoDataS"]
+        suffixes = ["0l", "1l"]
+        close = ""
+        if options.setClosure:
+            close = "_perfectClose"
+        for suf in suffixes:
+            for d in dataTypes:
+                for s in signals:
+                    for m in masses:
+                        print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, suf, d))
+                        card = "cards/{}_{}_{}_{}_{}{}.txt".format(options.year, s, m, d, suf, close)
+                        obs = getObs(card)
+                        path = "{}/output-files/{}_{}_{}".format(options.path, s, m, options.year)
+                        prefit = "ws_{}_{}_{}_{}_{}{}.root".format(options.year, s, m, d, suf, close)
+                        postfit = "higgsCombine{}{}{}{}{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, suf, m, s, close[1:])
+                        fitDiag = "fitDiagnostics{}{}{}{}{}{}.root".format(options.year, s, m, d, suf, close[1:])
+                        
+                        pre_path = "{}/{}".format(path, prefit)
+                        post_path = "{}/{}".format(path, postfit) 
+                        fitDiag_path = "{}/{}".format(path, fitDiag)
+                        signal = "{}_{}".format(s, m)
+                        
+                        name = "{}_{}_{}_{}_{}{}".format(options.year, s, m, d, suf, close)
+
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs)
+    else:
+        signals = ["RPV"]
+        masses = [350, 550, 850]
+        dataTypes = ["pseudoData", "pseudoDataS"]
+        suffixes = ["0l"]
+        
+        for suf in suffixes:
+            for d in dataTypes:
+                for s in signals:
+                    for m in masses:
+                        print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, suf, d))
+                        card = "{}_{}_{}_{}_{}_perfectClose.txt".format(options.year, s, m, d, suf)
+                        obs = getObs(card)
+                        path = ".".format(options.path, s, m, options.year)
+                        prefit = "ws_{}_{}_{}_{}_{}_perfectClose.root".format(options.year, s, m, d, suf)
+                        postfit = "higgsCombine{}{}{}{}{}perfectClose.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, suf, m, s)
+                        fitDiag = "fitDiagnostics{}{}{}{}{}perfectClose.root".format(options.year, s, m, d, suf)
+                        
+                        pre_path = "{}/{}".format(path, prefit)
+                        post_path = "{}/{}".format(path, postfit) 
+                        fitDiag_path = "{}/{}".format(path, fitDiag)
+                        signal = "{}_{}".format(s, m)
+                        
+                        name = "{}_{}_{}_{}_{}_perfectClose".format(options.year, s, m, d, suf)
+
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs)
+        
+    
+                
 

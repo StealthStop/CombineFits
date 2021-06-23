@@ -1,10 +1,11 @@
 import ROOT
 
-RUN2SF = 3.82
+RUN2SF = 1 #3.82
 
 class dataCardMaker:
 
-    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType):
+    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType, suffix, year, setClosure):
+        
         self.path = path
         self.signal = signal
         self.observed = observed
@@ -14,13 +15,16 @@ class dataCardMaker:
         self.lumi = lumi
         self.dataType = dataType
         self.doABCD = doABCD
+        self.suffix = suffix
+        self.year = str(year)
+        self.setClosure = setClosure
         self.fillBinValues()
         self.writeCards()
 
     def calcBinValues(self, tfile):
         binValues = []; binNames = []
         for hist in sorted(self.histos.keys()):
-            h = tfile.Get(self.histos[hist]["name"])
+            h = tfile.Get(self.histos[hist]["name"][:25] + self.suffix + self.histos[hist]["name"][25:])
             if isinstance(h, ROOT.TH2D) or isinstance(h, ROOT.TH2F):
                 if self.histos[hist]["disco"]:
                     val = RUN2SF*round(h.Integral())
@@ -88,13 +92,15 @@ class dataCardMaker:
                 self.nbins += self.histos[h]["nbins"][0]*self.histos[h]["nbins"][1]
             else:
                 self.nbins += self.histos[h]["nbins"]
-        self.observedPerBin = []        
-
+        self.observedPerBin = []
         if self.dataType == "pseudoData":
             for n in range(self.nbins):
                 obs = 0
                 for ob in self.observed.keys():
-                    obs += self.observed[ob]["binValues"][n]
+                    if ob == "TT" and self.setClosure and n % 4 == 0:
+                        obs += (self.observed[ob]["binValues"][n + 1] * self.observed[ob]["binValues"][n + 2] / self.observed[ob]["binValues"][n + 3])
+                    else:
+                        obs += self.observed[ob]["binValues"][n]
                 self.observedPerBin.append(obs)
         elif self.dataType == "pseudoDataS":
             for n in range(self.nbins):
@@ -102,14 +108,17 @@ class dataCardMaker:
                 for sg in self.signal.keys():
                     obs += self.signal[sg]["binValues"][n]
                 for ob in self.observed.keys():
-                    obs += self.observed[ob]["binValues"][n]
+                    if ob == "TT" and self.setClosure and n % 4 == 0:
+                        obs += (self.observed[ob]["binValues"][n + 1] * self.observed[ob]["binValues"][n + 2] / self.observed[ob]["binValues"][n + 3])
+                    else:
+                        obs += self.observed[ob]["binValues"][n]
                 self.observedPerBin.append(obs)
         elif self.dataType == "Data":
             for n in range(self.nbins):
                 self.observedPerBin.append(self.observed["Data"]["binValues"][n])
 
     def writeCards(self):
-
+        
         with open(self.outpath, "w") as file:
             file.write("imax {}  \n".format(self.nbins))
             file.write("jmax {}  \n".format(len(self.observed.keys())))
@@ -117,16 +126,20 @@ class dataCardMaker:
             file.write("\n------------------------")
             bin_str = "{} ".format("\nbin")
             tempproc = self.observed.keys()[0]
+            shape_str = ""
+            for reg in ["A", "B", "C", "D"]:
+                for nj in [7, 8, 9, 10, 11, 12]:
+                    ch = "Y{}_{}{}{}".format(self.year[-2:],reg,nj,self.suffix)
+                    shape_str += "\nshapes * {} FAKE".format(ch)
+            file.write(shape_str)
+            file.write("\n------------------------")
             for bin in range(self.nbins):
-                temp_str = "{} ".format(self.observed[tempproc]["binNames"][bin])
+                temp_str = "Y{}_{}{} ".format(self.year[-2:],self.observed[tempproc]["binNames"][bin],self.suffix)
                 bin_str += "{} ".format(temp_str)
             file.write(bin_str)
             obs_str = "{} ".format("\nobservation")
             for obs in range(self.nbins):
-                if obs % 4 == 0: 
-                    obs_str += "{} ".format(round(self.observedPerBin[obs]))
-                else:
-                    obs_str += "{} ".format(round(self.observedPerBin[obs]))
+                obs_str += "{} ".format(round(self.observedPerBin[obs]))
             file.write(obs_str)
             file.write("\n--------------------------")
             pbin_str = "{} ".format("\nbin")
@@ -135,15 +148,18 @@ class dataCardMaker:
             rate_str = "{} ".format("\nrate")
             for bin in range(self.nbins):
                 for proc in self.signal.keys():
-                    temp_str = "{} ".format(self.observed[tempproc]["binNames"][bin])
+                    temp_str = "Y{}_{}{} ".format(self.year[-2:],self.observed[tempproc]["binNames"][bin],self.suffix)
                     pbin_str += "{} ".format(temp_str)
                     process1_str += "{} ".format(proc)
                     process2_str += "{} ".format(0)
-                    rate_str += "{} ".format(self.signal[proc]["binValues"][bin])
+                    if float(self.signal[proc]["binValues"][bin]) > 0.1:
+                        rate_str += "{} ".format(self.signal[proc]["binValues"][bin])
+                    else:
+                        rate_str += "{} ".format(0.1)
                 cnt = 0
                 for proc in self.observed.keys():
                     cnt += 1
-                    temp_str = "{} ".format(self.observed[tempproc]["binNames"][bin])
+                    temp_str = "Y{}_{}{} ".format(self.year[-2:],self.observed[tempproc]["binNames"][bin],self.suffix)
                     pbin_str += "{} ".format(temp_str)
                     process1_str += "{} ".format(proc)
                     process2_str += "{} ".format(cnt)
@@ -164,7 +180,7 @@ class dataCardMaker:
             lumi_str += "{0:<7}".format("lnN")
             for bin in range(self.nbins):
                 for proc in range(len(self.signal.keys()) + len(self.observed.keys())):
-                    lumi_str += "{} ".format(1.02)
+                    lumi_str += "{} ".format(1.05)
             file.write(lumi_str)
             for signal1 in self.signal.keys():
                 sig_str = "{} ".format("\n"+signal1)
@@ -178,12 +194,12 @@ class dataCardMaker:
                     sig_str += "{} ".format("--")*len(self.observed.keys())
                 file.write(sig_str)
             for observed1 in self.observed.keys():
-                bg_str = "{0:<8}".format("\n"+observed1)
+                bg_str = "{0:<14}".format("\nnp_"+observed1)
                 bg_str += "{0:<7}".format("lnN")
                 for bin in range(self.nbins):
                     bg_str += "{} ".format("--")*len(self.signal.keys())                
                     for observed2 in self.observed.keys():
-                        if observed1 == observed2 and bin % 4 == 0:
+                        if observed1 == observed2:
                             bg_str += "{} ".format(self.observed[observed1]["sys"])
                         else:
                             bg_str += "{} ".format("--")
@@ -228,6 +244,6 @@ class dataCardMaker:
                                 rate -= self.signal[proc]["binValues"][abin+ibin]
 
                         if ibin == 0:
-                            file.write("{0}{1} rateParam {2:<12} {3} (@0*@1/@2) beta{1},gamma{1},delta{1}\n".format(params[ibin],jbin,self.observed[bkgd]["binNames"][ibin+abin],bkgd))
+                            file.write("{0}{1}{4:<12} rateParam Y{5}_{2}{4} {3} (@0*@1/@2) beta{1}{4},gamma{1}{4},delta{1}{4}\n".format(params[ibin],jbin+6,self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.suffix,self.year[-2:]))
                         else: 
-                            file.write("{0}{1} rateParam {2:<12} {3} {4:<12}\n".format(params[ibin],jbin,self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate))
+                            file.write("{0}{1}{6:<12} rateParam Y{7}_{2}{6} {3} {4:<12} {5}\n".format(params[ibin],jbin+6,self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(3*rate),self.suffix,self.year[-2:]))

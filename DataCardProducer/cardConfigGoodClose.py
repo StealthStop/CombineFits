@@ -4,6 +4,8 @@ import sys
 
 lumi = 1.05
 
+year = 2016
+
 #mass = int(sys.argv[6])
 
 #model = str(sys.argv[7])
@@ -16,22 +18,42 @@ lumi = 1.05
 #}
 
 observed = {
+    "Other" : {
+        "path" : "2016_BG_OTHER.root",
+        "sys"  : 1.0
+    },
+#   "DYJets" : {
+#       "path" : "2016_DYJetsToLL_M-50.root",
+#       "sys"  : 1.0
+#   },
+#   "Diboson" : {
+#       "path" : "2016_Diboson.root",
+#       "sys"  : 1.0
+#   },
+    "QCD" : {
+        "path" : "2016_QCD.root",
+        "sys"  : 1.0
+    },
+#   "ST" : {
+#       "path" : "2016_ST.root",
+#       "sys"  : 1.0
+#   },
     "TT" : {
         "path" : "2016_TT.root",
         "sys"  : 1.2
     },
-#    "QCD" : {
-#        "path" : "2016_QCD.root",
-#        "sys"  : 1.2
-#    },
-#    "Other" : {
-#        "path" : "2016_Other.root",
-#        "sys"  : 1.2
-#    },
-#    "TTX" : {
-#        "path" : "2016_TTX.root",
-#        "sys"  : 1.2
-#    },
+    "TTX" : {
+        "path" : "2016_TTX.root",
+        "sys"  : 1.0
+    },
+#   "Triboson" : {
+#       "path" : "2016_Triboson.root",
+#       "sys"  : 1.0
+#   },
+#   "WJets" : {
+#       "path" : "2016_WJets.root",
+#       "sys"  : 1.0
+#   },
 }
 
 #background = {
@@ -58,7 +80,7 @@ histos = {
     "ha" : {
         "region" : "A",
         "Njets"  : 7,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets7_A",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets7_A",
         "nbins"  : 7, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -67,7 +89,7 @@ histos = {
     "hb" : {
         "region" : "B",
         "Njets"  : 7,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets7_B",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets7_B",
         "nbins"  : 7, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -76,7 +98,7 @@ histos = {
     "hc" : {
         "region" : "C",
         "Njets"  : 7,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets7_C",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets7_C",
         "nbins"  : 7, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -85,7 +107,7 @@ histos = {
     "hd" : {
         "region" : "D",
         "Njets"  : 7,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets7_D",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets7_D",
         "nbins"  : 7, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -94,7 +116,7 @@ histos = {
     "he" : {
         "region" : "A",
         "Njets"  : 8,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets8_A",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets8_A",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -103,7 +125,7 @@ histos = {
     "hf" : {
         "region" : "B",
         "Njets"  : 8,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets8_B",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets8_B",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -112,7 +134,7 @@ histos = {
     "hg" : {
         "region" : "C",
         "Njets"  : 8,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets8_C",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets8_C",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -121,7 +143,7 @@ histos = {
     "hh" : {
         "region" : "D",
         "Njets"  : 8,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets8_D",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets8_D",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -130,7 +152,7 @@ histos = {
     "hi" : {
         "region" : "A",
         "Njets"  : 9,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets9_A",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets9_A",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -139,7 +161,7 @@ histos = {
     "hj" : {
         "region" : "B",
         "Njets"  : 9,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets9_B",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets9_B",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -148,7 +170,7 @@ histos = {
     "hk" : {
         "region" : "C",
         "Njets"  : 9,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets9_C",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets9_C",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -157,7 +179,7 @@ histos = {
     "hl" : {
         "region" : "D",
         "Njets"  : 9,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets9_D",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets9_D",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -166,7 +188,7 @@ histos = {
     "hm" : {
         "region" : "A",
         "Njets"  : 10,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets10_A",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets10_A",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -175,7 +197,7 @@ histos = {
     "hn" : {
         "region" : "B",
         "Njets"  : 10,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets10_B",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets10_B",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -184,7 +206,7 @@ histos = {
     "ho" : {
         "region" : "C",
         "Njets"  : 10,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets10_C",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets10_C",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -193,7 +215,7 @@ histos = {
     "hp" : {
         "region" : "D",
         "Njets"  : 10,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets10_D",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets10_D",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -202,7 +224,7 @@ histos = {
     "hq" : {
         "region" : "A",
         "Njets"  : 11,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets11_A",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets11_A",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -211,7 +233,7 @@ histos = {
     "hr" : {
         "region" : "B",
         "Njets"  : 11,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets11_B",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets11_B",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -220,7 +242,7 @@ histos = {
     "hs" : {
         "region" : "C",
         "Njets"  : 11,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets11_C",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets11_C",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
@@ -229,7 +251,43 @@ histos = {
     "ht" : {
         "region" : "D",
         "Njets"  : 11,
-        "name"   : "h_DoubleDisCo_disc1_disc2_1l_HT300_ge7j_ge1b_Mbl_Njets11_D",
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets11_D",
+        "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
+        "start"  : 50, #if histogram is 2d, input as list [start x, start y]
+        "end"    : 150, #if histogram is 2d, input as list [end x, end y]
+        "disco"  : True #option to bypass info above for double disco cards, bypass if True
+    },
+    "hu" : {
+        "region" : "A",
+        "Njets"  : 12,
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets12incl_A",
+        "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
+        "start"  : 50, #if histogram is 2d, input as list [start x, start y]
+        "end"    : 150, #if histogram is 2d, input as list [end x, end y]
+        "disco"  : True #option to bypass info above for double disco cards, bypass if True
+    },
+    "hv" : {
+        "region" : "B",
+        "Njets"  : 12,
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets12incl_B",
+        "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
+        "start"  : 50, #if histogram is 2d, input as list [start x, start y]
+        "end"    : 150, #if histogram is 2d, input as list [end x, end y]
+        "disco"  : True #option to bypass info above for double disco cards, bypass if True
+    },
+    "hw" : {
+        "region" : "C",
+        "Njets"  : 12,
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets12incl_C",
+        "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
+        "start"  : 50, #if histogram is 2d, input as list [start x, start y]
+        "end"    : 150, #if histogram is 2d, input as list [end x, end y]
+        "disco"  : True #option to bypass info above for double disco cards, bypass if True
+    },
+    "hx" : {
+        "region" : "D",
+        "Njets"  : 12,
+        "name"   : "h_DoubleDisCo_disc1_disc2_Njets12incl_D",
         "nbins"  : 8, #if histogram is 2d, input as list [nbins x, nbins y]
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
