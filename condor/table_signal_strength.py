@@ -591,7 +591,7 @@ def main():
                     file_table.write("\\multicolumn{4}{c}{$%s$} \\\\ \\hline \n"%year)
                     for mass in masses:
                         print "Year %s, Model %s, Mass %s, Suffix %s"%(year, model, mass, suf)
-                        filename_r = "%s/Fit_%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_FitDiag.txt" % (path, year,  model, mass, year, year, model, mass, runtype, suf, close)
+                        filename_r = "%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_FitDiag.txt" % (path, model, mass, year, year, model, mass, runtype, suf, close)
         
                         # Get r from fit jobs
                         info_r = ["-1","0","0"]
@@ -614,7 +614,7 @@ def main():
                         line_sig = "-1"
                         line_pvalue = "10"
                         if not ((model=="RPV" and year=="Combo" and mass=="0") or (model=="StealthSYY" and year=="2017" and mass in ["0"])):
-                            filename_sig = "%s/Fit_%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_Sign_sig.txt" % (path, year, model, mass, year, year, model, mass, runtype, suf, close)
+                            filename_sig = "%s/output-files/%s_%s_%s/log_%s%s%s%s%s%s_Sign_sig.txt" % (path, model, mass, year, year, model, mass, runtype, suf, close)
                             file_sig=-1
                             try:
                                 file_sig = open(filename_sig)

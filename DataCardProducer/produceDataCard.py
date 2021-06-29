@@ -15,13 +15,20 @@ def main():
     parser.add_option("-l", "--leptons", action="store", type="string", dest="leptons", default="None", help = "Number of leptons in final state (0 or 1)")
     parser.add_option("-p", "--path",     action="store", type='string', dest="path", default=".", help = "Path to root files")
     (options, args) = parser.parse_args()
+    
+    if "8Jet" in options.config:
+        min_nj = 8
+    else:
+        min_nj = 7
+    max_nj = 12
+    
     if options.config == "None":
         parser.error('Config file not given, specify with -c')
     elif options.all:
         if options.path == ".":
             parser.error('Input path not given, specify with -p')
         configfile = importlib.import_module(options.config)
-        
+ 
         signals = ["RPV", "StealthSYY"]
         masses = [x for x in range(300, 1450, 50)]
         dataTypes = ["pseudoData", "pseudoDataS"]       
@@ -50,7 +57,7 @@ def main():
                             outpath = "cards/{}_{}_{}_{}_{}{}.txt".format(year, s, m, d, l, close)
 
                             print("Writing data card to {}".format(outpath))
-                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure)
+                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure, min_nj, max_nj)
                         
     elif options.leptons == "None":
         parser.error('Please specify number of final state leptons with -l')
@@ -74,7 +81,7 @@ def main():
         }
 
         print("Writing data card to "+options.outpath)
-        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure)
+        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure, min_nj, max_nj)
 
 if __name__ == "__main__":
     main()

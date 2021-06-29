@@ -7,6 +7,8 @@ parser.add_option("-m", "--mass", action="store", type="string", dest="mass", de
 parser.add_option("-d", "--dataType", action="store", type="string", dest="dataType", default="pseudoData", help="Mass of stop in GeV")
 parser.add_option("--suffix", action="store", type="string", dest="suffix", default="0l", help="Suffix to specify number of final state leptons (0l, 1l, or combo)")
 parser.add_option("-p", "--path", action="store", type="string", dest="path", default="../condor/Fit_2016", help="Path to Fit Diagnostics input condor directory")
+parser.add_option("--setClosure", action="store_true", dest="setClosure", default=False, help="Use fit files with perfect closure asserted")
+parser.add_option("-n", "--njets", action="store", type="string", dest="njets", default="7-12", help="Range of Njets bins to plot (separated by a dash)")
 parser.add_option("--plotb", action="store_true", dest="plotb", default=False, help="Plot background only fit")
 parser.add_option("--plotsb", action="store_true", dest="plotsb", default=False, help="Plot signal plus background fit")
 parser.add_option("--plotsig", action="store_true", dest="plotsig", default=False, help="Plot signal component of fit")
@@ -36,7 +38,7 @@ pad1and4Size = 1.0 + borderSize
 pad2and3Size = 1.0
 totalPadSize = 2 * pad1and4Size + 2 * pad2and3Size
 
-def getFitInfo(fitDiag_path, pre_path, signal, year, suf):
+def getFitInfo(fitDiag_path, pre_path, signal, year, suf, njets):
     f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
     f_pre = ROOT.TFile.Open(pre_path)
 
@@ -60,7 +62,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, suf):
  
         data[reg] = []
 
-        for i in range(7,13):
+        for i in range(njets[0],njets[1]):
             postfit_sb[reg].append((i, 
                 f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
                 f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
@@ -89,8 +91,8 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, suf):
 
     return prefit_b, postfit_b, postfit_sb, postfit_sig, data
 
-def makeHist(reg, bin_info, tag):
-    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), 6, 7, 13)
+def makeHist(reg, bin_info, tag, njets):
+    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), njets[1]-njets[0], njets[0], njets[1])
 
     bins = bin_info[reg]
 
@@ -160,12 +162,12 @@ def save_to_root(hlist, outfile):
 
     out.Close()
 
-def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plotdata, plotsig, fitName, outfile, obs):
+def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plotdata, plotsig, fitName, outfile, obs, njets):
     close = ""
     if pre_path.find("perfectClose") != -1:
         close += "_perfectClose"
     im = ROOT.TImageDump("figures/" + year + "_" + signal + "_" + fitName + "_" + suf + close + ".png")
-    pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, suf)
+    pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, suf, njets)
 
     hlist_data = []
     hlist_pre_b = []
@@ -174,11 +176,11 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plo
     hlist_post_sig = []
 
     for reg in ["A", "B", "C", "D"]:
-        hlist_data.append(makeHist(reg, obs, "_data"))
-        hlist_pre_b.append(makeHist(reg, pre_b, "_pre_bonly"))
-        hlist_post_b.append(makeHist(reg, post_b, "_post_bonly"))
-        hlist_post_sb.append(makeHist(reg, post_sb, "_post_sb"))
-        hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal"))
+        hlist_data.append(makeHist(reg, obs, "_data", njets))
+        hlist_pre_b.append(makeHist(reg, pre_b, "_pre_bonly", njets))
+        hlist_post_b.append(makeHist(reg, post_b, "_post_bonly", njets))
+        hlist_post_sb.append(makeHist(reg, post_sb, "_post_sb", njets))
+        hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal", njets))
 
     save_to_root(hlist_data, outfile)
     save_to_root(hlist_pre_b, outfile)
@@ -280,7 +282,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plo
     im.Close()
     #c1.SaveAs("figures/" + year + "_" + signal + "_" + fitName + "_" + suf + ".png")
 
-def getObs(card):
+def getObs(card, njets):
     with open(card, "r") as f:
         lines = f.readlines()
 
@@ -293,16 +295,16 @@ def getObs(card):
         data = {'A': [], 'B': [], 'C': [], 'D': []}
         ABCD = ['A','B','C','D']
         
-        for j in range(0,6):
+        for j in range(0,njets[1]-njets[0]):
             i = 0
             for reg in ABCD:
-                data[reg].append((7+j,float(data_temp[j*4+i]), sqrt(float(data_temp[j*4+i]))))
+                data[reg].append((njets[0]+j,float(data_temp[j*4+i]), sqrt(float(data_temp[j*4+i]))))
 
                 i += 1
 
         return data
 
-if __name__ == '__main__':
+def main():    
     if not os.path.exists("figures"):
         os.makedirs("figures")
 
@@ -310,6 +312,8 @@ if __name__ == '__main__':
         os.makedirs("results")
 
     ROOT.gROOT.SetBatch(True)
+
+    njets = [int(options.njets[:options.njets.find("-")]),int(options.njets[options.njets.find("-")+1:])+1]
 
     print("Making pre and post fit distributions for:")
     if options.all:
@@ -326,7 +330,7 @@ if __name__ == '__main__':
                     for m in masses:
                         print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, suf, d))
                         card = "cards/{}_{}_{}_{}_{}{}.txt".format(options.year, s, m, d, suf, close)
-                        obs = getObs(card)
+                        obs = getObs(card, njets)
                         path = "{}/output-files/{}_{}_{}".format(options.path, s, m, options.year)
                         prefit = "ws_{}_{}_{}_{}_{}{}.root".format(options.year, s, m, d, suf, close)
                         postfit = "higgsCombine{}{}{}{}{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, suf, m, s, close[1:])
@@ -339,8 +343,8 @@ if __name__ == '__main__':
                         
                         name = "{}_{}_{}_{}_{}{}".format(options.year, s, m, d, suf, close)
 
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs)
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs, njets)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs, njets)
     else:
         signals = ["RPV"]
         masses = [350, 550, 850]
@@ -352,23 +356,24 @@ if __name__ == '__main__':
                 for s in signals:
                     for m in masses:
                         print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, suf, d))
-                        card = "{}_{}_{}_{}_{}_perfectClose.txt".format(options.year, s, m, d, suf)
-                        obs = getObs(card)
+                        card = "{}_{}_{}_{}_{}{}.txt".format(options.year, s, m, d, suf, close)
+                        obs = getObs(card, njets)
                         path = ".".format(options.path, s, m, options.year)
-                        prefit = "ws_{}_{}_{}_{}_{}_perfectClose.root".format(options.year, s, m, d, suf)
-                        postfit = "higgsCombine{}{}{}{}{}perfectClose.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, suf, m, s)
-                        fitDiag = "fitDiagnostics{}{}{}{}{}perfectClose.root".format(options.year, s, m, d, suf)
+                        prefit = "ws_{}_{}_{}_{}_{}{}.root".format(options.year, s, m, d, suf, close)
+                        postfit = "higgsCombine{}{}{}{}{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, suf, close[1:], m, s)
+                        fitDiag = "fitDiagnostics{}{}{}{}{}{}.root".format(options.year, s, m, d, suf, close[1:])
                         
                         pre_path = "{}/{}".format(path, prefit)
                         post_path = "{}/{}".format(path, postfit) 
                         fitDiag_path = "{}/{}".format(path, fitDiag)
                         signal = "{}_{}".format(s, m)
                         
-                        name = "{}_{}_{}_{}_{}_perfectClose".format(options.year, s, m, d, suf)
+                        name = "{}_{}_{}_{}_{}{}".format(options.year, s, m, d, suf, close)
 
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs)
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, False, True, False, "{}_bonly".format(d), "results/{}_FitPlots.root".format(name), obs, njets)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, suf, True, True, True, True, "{}_sb".format(d), "results/{}_FitPlots.root".format(name), obs, njets)
         
     
                 
-
+if __name__ == '__main__':
+    main()

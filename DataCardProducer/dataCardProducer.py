@@ -4,7 +4,7 @@ RUN2SF = 1 #3.82
 
 class dataCardMaker:
 
-    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType, suffix, year, setClosure):
+    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType, suffix, year, setClosure, min_nj, max_nj):
         
         self.path = path
         self.signal = signal
@@ -18,6 +18,8 @@ class dataCardMaker:
         self.suffix = suffix
         self.year = str(year)
         self.setClosure = setClosure
+        self.min_nj = min_nj
+        self.max_nj = max_nj
         self.fillBinValues()
         self.writeCards()
 
@@ -128,7 +130,7 @@ class dataCardMaker:
             tempproc = self.observed.keys()[0]
             shape_str = ""
             for reg in ["A", "B", "C", "D"]:
-                for nj in [7, 8, 9, 10, 11, 12]:
+                for nj in range(self.min_nj, self.max_nj+1):
                     ch = "Y{}_{}{}{}".format(self.year[-2:],reg,nj,self.suffix)
                     shape_str += "\nshapes * {} FAKE".format(ch)
             file.write(shape_str)
@@ -230,9 +232,7 @@ class dataCardMaker:
                 elif "pseudo" in self.dataType:
                     bkgd = "TT"
 
-                jbin = 0
                 for abin in range(0, len(self.observedPerBin), 4):
-                    jbin += 1
                     file.write("\n")
                     for ibin in range(0, 4):
                         rate = self.observedPerBin[abin+ibin]
@@ -244,6 +244,6 @@ class dataCardMaker:
                                 rate -= self.signal[proc]["binValues"][abin+ibin]
 
                         if ibin == 0:
-                            file.write("{0}{1}{4:<12} rateParam Y{5}_{2}{4} {3} (@0*@1/@2) beta{1}{4},gamma{1}{4},delta{1}{4}\n".format(params[ibin],jbin+6,self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.suffix,self.year[-2:]))
+                            file.write("{0}{1}{4:<12} rateParam Y{5}_{2}{4} {3} (@0*@1/@2) beta{1}{4},gamma{1}{4},delta{1}{4}\n".format(params[ibin],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.suffix,self.year[-2:]))
                         else: 
-                            file.write("{0}{1}{6:<12} rateParam Y{7}_{2}{6} {3} {4:<12} {5}\n".format(params[ibin],jbin+6,self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(3*rate),self.suffix,self.year[-2:]))
+                            file.write("{0}{1}{6:<12} rateParam Y{7}_{2}{6} {3} {4:<12} {5}\n".format(params[ibin],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(3*rate),self.suffix,self.year[-2:]))
