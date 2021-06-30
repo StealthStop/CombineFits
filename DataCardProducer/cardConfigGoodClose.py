@@ -1,43 +1,19 @@
 import sys
 
-#path = "./%s/"%(str(sys.argv[8]))
-
 lumi = 1.05
 
 year = 2016
 
-#mass = int(sys.argv[6])
-
-#model = str(sys.argv[7])
-
 #all backgrounds are entries in the dictionary. the path to the root file (starting from base path) and the systematic uncertainty are specified
-#observed = {
-#    "Data" : {
-#        "path" : "2016_Data.root",
-#    },
-#}
-
 observed = {
     "Other" : {
         "path" : "2016_BG_OTHER.root",
         "sys"  : 1.0
     },
-#   "DYJets" : {
-#       "path" : "2016_DYJetsToLL_M-50.root",
-#       "sys"  : 1.0
-#   },
-#   "Diboson" : {
-#       "path" : "2016_Diboson.root",
-#       "sys"  : 1.0
-#   },
     "QCD" : {
         "path" : "2016_QCD.root",
         "sys"  : 1.0
     },
-#   "ST" : {
-#       "path" : "2016_ST.root",
-#       "sys"  : 1.0
-#   },
     "TT" : {
         "path" : "2016_TT.root",
         "sys"  : 1.2
@@ -46,35 +22,8 @@ observed = {
         "path" : "2016_TTX.root",
         "sys"  : 1.0
     },
-#   "Triboson" : {
-#       "path" : "2016_Triboson.root",
-#       "sys"  : 1.0
-#   },
-#   "WJets" : {
-#       "path" : "2016_WJets.root",
-#       "sys"  : 1.0
-#   },
 }
 
-#background = {
-#    "Bkgd" : {
-#        "path" : "2016_Bkgd.root",
-#        "sys"  : 1.2
-#    },
-#}
-
-#all signals are entries in the dictionary. the path to the root file (starting from the base path) and the systematic uncertainty are specified 
-#signal = {
-#    "%s%d"%(model.split("_")[0],mass) : {
-#        "path" : "2016_%s_mStop-%d.root"%(model,mass),
-#        "sys"  : "--"
-#
-#    },
-#    "RPV550" : {
-#        "path" : "None",
-#        "sys"  : 1.504
-#    }
-#}
 #the names of the histograms to use along with number of bins to divide it into, which bin to start from, and which to end. use "last" to use the last bin
 histos = {
     "ha" : {
@@ -297,9 +246,4 @@ histos = {
 #other systematics. list the name of background/signal the systematic applies to under the "apply" key
 othersys = {
 
-    #"s1" : {
-    #    "sys" : 2.05,
-    #    "distr" : "gmN 4",
-    #    "apply" : ["TT"]
-    #}
 }
