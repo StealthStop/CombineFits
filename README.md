@@ -378,41 +378,90 @@ python makeFitPlots.py --twosigfit --bkgonlyfit --mass1 450 --model1 RPV --mass2
 
 This would extract the background-only fit as well as RPV 450 signal shape and RPV 850 signal shape. All these histograms get put into a ROOT file called `KELVIN_RPV450Combo16b.root`. Then we call `makeFitPlots.py` and ask it to show both signal shapes (thus we pass information about both signals---model and mass) and explicitly say we want the background-only fit.
 
-### Example for running makeDataCard.py
-
-This script will produce can produce either one or multiple data cards based on command line arguments. An example of running the script to make a single card is shown below.
-
-```
-cd DataCardProducer
-python makeDataCard.py -s RPV350 -H h_Mass_stop1vsstop2_PtRank_0l_HT500_ge2b_ge6j_ge2t_ge1dRbjets
-```
-
-The data card is produced in the new "Cards" directory with DataCardProducer. You can then compute a significance with this card by running the following command.
-
-```
-combine -M Significance path/to/datacard.txt -t -1 --expectSignal=1
-```
-
-To use the runCombineTool.py script over the full set of data cards, you can run makeDataCard.py with the default command line arguments to produce all the data cards and move them to the directory "CombinedLimit/TopSeed_Cards". You can then compute the significance for each of the signal models and variables and receive the output in a text file using the following command.
-
-```
-python runCombineTool.py
-```
-
-The significance values are output in the file "ExpectedSignificance.txt".
-
 ### Using produceDataCard.py
 
-`produceDataCard1D.py` is a script for making data cards from 1D or 2D histograms. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py` and outputs the data cacard to submit to Combine.
+`produceDataCard.py` is a script for making data cards using our ABCD regions from the neural network. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py` and outputs the data card to submit to Combine.
 
 Arguments:
 
 - `-c, --config [config file]` configuration file in the style of `DataCardProducer/cardConfig.py`.
 - `-o, --output [output path]` path to output destination. Writes to `datacard.txt` by default.
+- `-t, --dataType [dataType]` specify whether the data card constains pseudodata (pseudoData), pseudodata with signal injected (pseudoDataS), or data (data).
+- `-a, --ABCD` use the ABCD regions from neural network output to create data card.
+- `-s, --signal [model_mass]` used for making a specific data card for a given mass and signal model (separated by underscore).
+- `-l, --leptons [number of final state leptons]` specify which decay topology for which the cards should be made.
+- `-p, --path [NN inputs]` path to the neural network inputs for the data cards
+- `--all` produce all data cards for a given year (all models, all mass points, all final states, pseudodata with/without signal injected.
+- `--setClosure` force perfect ABCD closure for ttbar (only to be used with MC)
+
+Example usage for a single data card:
+```
+cd DataCardProducer
+python produceDataCard.py -c cardConfig -o mydatacard.txt --ABCD -s RPV_550 -l 0 -t pseudoDataS -p ../2016_DisCo_0l_1l_Inputs/
+```
+
+Or to make all data cards with MC event yields:
+```
+python produceDataCard.py -c cardConfigGoodClose -p ../2016_DisCo_0l_1l_Inputs/ --all 
+```
+
+### Running fits with Condor
+
+After the necessary data cards have been produced, `CombineFits/condor/condorSubmit.py` can be used to run various types of fitting procedures. 
+
+Relevant arguments:
+
+- `-d [Signals]` List of signal models, comma separated
+- `-t [DataType]` Specify whether running over pseudoData, pseudoDataS, or data
+- `-s [Suffix]` Specify the final state by number of leptons (e.g. 0l or 1l)
+- `-m [Masses]` List or range of masses (list: comma separated, range: inclusive on endpoints, separated by dash)
+- `-y [Year]` Desired year for fits
+- `--setClosure` Run fits using perfect closure data cards (must already be produced)
+- `-F` Run FitDiagnostics fitting method
+- `-A` Run AsymptoticLimit and Significance fitting methods
+- `--output [Outpath]` Name of directory where output of each condor job goes 
+
+Example usage:
+```
+python condorSubmit.py -y 2016 -d RPV,SYY -m 300-1400 -t pseudoDataS -F -A --output Fit_2016
+```
+
+### Making pre- and post-fit Njet distributions
+
+`CombineFits/DataCardProducer/make_fit_plots.py` is a script for making pre- and post-fit Njet distributions. It requires the output of the FitDiagnostics combine method.
+
+Relevant arguments:
+
+- `-s, --signal [Signal model]` Name of signal process
+- `-y, --year [Year]` Year for data cards used in fit
+- `-m, --mass [Mass]` Mass for data cards used in fit
+- `-d, --dataType [Data Type]` Specify whether fit was run over pseudoData, pseudoDataS, or data
+- `-p, --path [Path to Condor directory]` Path to the condor directory with the FitDiagnostics results
+- `-s, --suffix [Number of final state leptons]` Specify the number of final state leptons as 0l or 1l
+- `-n, --njets [Njet range in data cards]` Specify the range of Njets for the bins in data cards (separated with a dash, e.g. 7-12)
+- `--plotb/--plotsb/--plotsig/--plotdata` Include background fit, signal+background fit, signal component, or observed data in plots
+- `--all` Make the pre- and post-fit Njets distributions for all signal models, masses, and final states for both pseudoData and pseudoDataS
 
 Example usage:
 
 ```
-cd DataCardProducer
-python produceDataCard.py -c cardConfig -o mydatacard.txt
+python make_fit_plots.py -y 2016 --path ../condor/Fit_2016 -s RPV -m 550 -d pseudoDataS --plotsb --plotb --plotdata --plotsig
 ```
+
+The pre- and post-fit distributions will be saved in the `figures` directory and the raw histograms will be saved in the `resutls` directory.
+
+### Making p-value plots
+
+`tabel_signal_strength.py` is a script that will produce p-value plots using the fit results from a condor directory as input. The script presumes that the name of this directory is `CombineFits/condor/Fit_<year>`.
+
+Relavent arguments:
+- `--basedir` Name of base condor directory containing fit results
+- `--pdfName` Name to add to the end of each p-value plot pdf (usually the date)
+- `--perfectClosure` Use the perfect closure fit results when making p-value plots
+- `--approved` Is the plot approved
+
+Example usage:
+```
+python table_signal_string.py --pdfName=Jan12021
+```
+
