@@ -3,3 +3,6 @@ Keras_*
 *root
 *tex
 *~
+*condor/Fit_*
+*condor/FitDiagnostics_*
+*.pyc

@@ -123,23 +123,28 @@ def main():
                 outDir = model+"_"+mass+"_"+options.year
                 if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
                     os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
+                if not os.path.isdir("%s/output-files/cards"%(options.outPath)):
+                    os.system("cp -r %s/src/CombineFits/DataCardProducer/cards %s/output-files"%(environ["CMSSW_BASE"],options.outPath))
                 if not options.toy and not options.toyS:
                     outputFiles = [
                         "higgsCombine%s%s%s%s%s%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:],  mass, model),
                         "higgsCombine%s%s%s%s%s%s.FitDiagnostics.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:], mass, model),
                         "higgsCombine%s%s%s%s%s%s_SignifExp.Significance.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:], mass, model),
-                        "higgsCombineSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root " % (mass, model),
+                        "higgsCombine%s%s%s%s%s%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root " % (options.year, model, mass, options.dataType, suf, close[1:],mass, model),
                         "higgsCombine%s.HybridNew.mH%s.MODEL%s.root" % (options.year, mass, model),
                         "ws_%s_%s_%s_%s_%s%s.root"       % (options.year, model, mass, options.dataType, suf, close),
                         "fitDiagnostics%s%s%s%s%s%s.root" % (options.year, model, mass, options.dataType, suf, close[1:]), 
-                        "impacts_%s%s%s.json"       % (options.year, model, mass),
-                        "impacts_%s%s%s_%s.pdf"     % (options.year, model, mass, options.dataType),
+                        "impacts_%s%s%s%s%s.json"       % (options.year, model, mass, suf, close[1:]),
+                        "impacts_%s%s%s%s%s_%s.pdf"     % (options.year, model, mass, suf, close[1:], options.dataType),
                         "log_%s%s%s%s%s%s_Asymp.txt"      % (options.year, model, mass, options.dataType, suf, close[1:]),
                         "log_%s%s%s%s%s%s_FitDiag.txt"    % (options.year, model, mass, options.dataType, suf, close[1:]),
                         "log_%s%s%s%s%s%s_Sign_sig.txt"   % (options.year, model, mass, options.dataType, suf, close[1:]),
                         "log_%s%s%s%s%s%s_Sign_noSig.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s_multiDim.txt"   % (options.year, model, mass),
+                        "log_%s%s%s%s%s_multiDim.txt"   % (options.year, model, mass, suf, close[1:]),
                         "log_%s%s%s_HybridNew.txt"  % (options.year, model, mass),
+                        "log_%s%s%s%s%s%sstep1.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
+                        "log_%s%s%s%s%s%sstep2.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
+                        "log_%s%s%s%s%s%sstep3.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
                         "%s_%s_%s_%s_%s%s.txt"        % (options.year, model, mass, options.dataType, suf, close),
                     ]
                 
