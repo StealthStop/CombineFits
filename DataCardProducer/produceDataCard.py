@@ -13,6 +13,8 @@ def main():
     parser.add_option("--closureUnc", dest="closureUnc", action="store_true",   default = False, help="Set closure uncertainty using perfect closure case")
     parser.add_option("--closureUncUncorr", dest="closureUncUncorr", action="store_true",   default = False, help="Set closure uncertainty using perfect closure case (uncorrelated closure uncertainties)")
     parser.add_option("--closureReal", dest="closureReal", action="store_true",   default = False, help="Set uncorrelated closure uncertainties to a fixed value with floating parameters to adjust these nusiances parameters (realistic closure NP case)")
+    parser.add_option("--closureCorrectionUp", dest="closureCorrectionUp", action="store_true",   default = False, help="Set uncorrelated closure correction to +1 sigma of its nominal value")
+    parser.add_option("--closureCorrectionDown", dest="closureCorrectionDown", action="store_true",   default = False, help="Set uncorrelated closure correction to -1 sigma of its nominal value")
     parser.add_option("--closureUp", dest="closureUp", action="store_true",   default = False, help="Set perfect closure + 1 sigma for datacards in the A region")
     parser.add_option("--closureDown", dest="closureDown", action="store_true",   default = False, help="Set perfect closure - 1 sigma for datacards in the A region")
     parser.add_option("--Run2", dest="Run2", action="store_true", default = False, help="Scale 2016 pseudodata to full Run 2 lumi")
@@ -66,7 +68,7 @@ def main():
                             outpath = "cards/{}_{}_{}_{}_{}{}.txt".format(year, s, m, d, l, close)
 
                             print("Writing data card to {}".format(outpath))
-                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.Run2, options.NoSigBCD, min_nj, max_nj)
+                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.closureCorrectionUp, options.closureCorrectionDown, options.Run2, options.NoSigBCD, min_nj, max_nj)
                         
     elif options.leptons == "None":
         parser.error('Please specify number of final state leptons with -l')
@@ -90,7 +92,7 @@ def main():
         }
 
         print("Writing data card to "+options.outpath)
-        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.Run2, options.NoSigBCD, min_nj, max_nj)
+        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.closureCorrectionUp, options.closureCorrectionDown, options.Run2, options.NoSigBCD, min_nj, max_nj)
 
 if __name__ == "__main__":
     main()

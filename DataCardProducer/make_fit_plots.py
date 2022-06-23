@@ -29,6 +29,8 @@ from ROOT import gStyle
 gStyle.SetOptStat(0)
 ROOT.TH1.AddDirectory(False)
 ROOT.TH1.SetDefaultSumw2(1)
+ROOT.TH2.SetDefaultSumw2()
+ROOT.gStyle.SetEndErrorSize(0)
 
 if options.all:
     ROOT.gROOT.SetBatch(True)
@@ -218,7 +220,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plo
                 pull = 0
             else:
                 pull = b/data_e
-            pull_unc = 1
+            pull_unc = e/data_e
             h_temp.SetBinContent(j+1, pull)
             h_temp.SetBinError(j+1, pull_unc)
         h_temp.SetLineColor(kBlack)
@@ -250,15 +252,15 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plo
         
         hlist_post_sig[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_sig[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_sig[i].GetYaxis().SetRangeUser(0.1, 2E5)
+        hlist_post_sig[i].GetYaxis().SetRangeUser(10, 2E5)
         
         hlist_post_sb[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_sb[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_sb[i].GetYaxis().SetRangeUser(0.1, 2E5)
+        hlist_post_sb[i].GetYaxis().SetRangeUser(10, 2E5)
         
         hlist_post_b[i].GetYaxis().SetTitle("Num. Events (A.U.)")
         hlist_post_b[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_b[i].GetYaxis().SetRangeUser(0.1, 2E5)
+        hlist_post_b[i].GetYaxis().SetRangeUser(10, 2E5)
         
         if plotsig:
             hlist_post_sig[i].Draw("HIST E SAME")
@@ -274,7 +276,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, suf, plotb, plotsb, plo
 
         p2_list[i].cd()
         hlist_ratio[i].SetTitle("")
-        hlist_ratio[i].GetYaxis().SetRangeUser(-3,3)
+        hlist_ratio[i].GetYaxis().SetRangeUser(-1.2,1.2)
         hlist_ratio[i].GetYaxis().SetTitle("(Fit-Data)/Sqrt(Data)")
         hlist_ratio[i].GetYaxis().SetTitleSize(0.1)
         hlist_ratio[i].GetYaxis().SetLabelSize(0.05)

@@ -5,7 +5,7 @@ sigScale = 1
 
 class dataCardMaker:
 
-    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType, suffix, year, setClosure, closureUp, closureDown, closureUpConst, closureDownConst, closureUnc, closureUncUncorr, closureReal, Run2, NoSigBCD, min_nj, max_nj):
+    def __init__(self, path, signal, observed, histos, lumi, outpath, othersys, doABCD, dataType, suffix, year, setClosure, closureUp, closureDown, closureUpConst, closureDownConst, closureUnc, closureUncUncorr, closureReal, closureCorrectionUp, closureCorrectionDown, Run2, NoSigBCD, min_nj, max_nj):
         
         self.path = path
         self.signal = signal
@@ -26,7 +26,9 @@ class dataCardMaker:
         self.closureUnc = closureUnc
         self.closureUncUncorr = closureUncUncorr
         self.closureReal = closureReal
-        self.closureManip = self.closureUp or self.closureDown or self.closureUpConst or self.closureDownConst or self.closureUnc or self.closureUncUncorr or self.closureReal
+        self.closureCorrectionUp = closureCorrectionUp
+        self.closureCorrectionDown = closureCorrectionDown
+        self.closureManip = self.closureUp or self.closureDown or self.closureUpConst or self.closureDownConst or self.closureUnc or self.closureUncUncorr or self.closureReal or self.closureCorrectionUp or self.closureCorrectionDown
         self.RUN2SF = 1
         if Run2:
             self.RUN2SF = 137.0 / 35.9 
@@ -37,7 +39,7 @@ class dataCardMaker:
         self.writeCards()
 
     def calcBinValues(self, tfile):
-        binValues = []; binNames = []
+        binValues = []; binErrors =[]; binNames = []
         for hist in sorted(self.histos.keys()):
             if len(self.histos.keys()) == 1:
                 h = tfile.Get(self.histos[hist]["name"][:14] + self.suffix + self.histos[hist]["name"][14:])
@@ -88,23 +90,26 @@ class dataCardMaker:
                 regions = self.histos[hist]["name"][-4::]
                 mask = self.getBinMask()
                 for bin in range(self.histos[hist]["start"], lastbin, skip):
-                    val = round(self.RUN2SF * h.Integral(bin+1, bin+1), 1)
+                    #val = round(self.RUN2SF * h.Integral(bin+1, bin+1), 1)
+                    val = round(self.RUN2SF * h.GetBinContent(bin+1))
+                    err = self.RUN2SF * h.GetBinError(bin+1)
                     reg = regions[int(bin/5)]
                     if val < 0.1: val = 0.1
                     binValues.append(val)
+                    binErrors.append(err)
                     binNames.append(reg+str(7 + bin % 5))
 
-        return binValues, binNames
+        return binValues, binErrors, binNames
                     
 
     def fillBinValues(self):
         self.nbins = 0
         for sg in self.signal.keys():
             tfile = ROOT.TFile.Open(self.path+self.signal[sg]["path"])            
-            self.signal[sg]["binValues"], self.signal[sg]["binNames"] = self.calcBinValues(tfile)
+            self.signal[sg]["binValues"], self.signal[sg]["binErrors"], self.signal[sg]["binNames"] = self.calcBinValues(tfile)
         for ob in self.observed.keys():
             tfile = ROOT.TFile.Open(self.path+self.observed[ob]["path"])
-            self.observed[ob]["binValues"], self.observed[ob]["binNames"] = self.calcBinValues(tfile)
+            self.observed[ob]["binValues"], self.observed[ob]["binErrors"], self.observed[ob]["binNames"] = self.calcBinValues(tfile)
         self.nbins = 0
         for h in self.histos.keys():
             if self.histos[h]["disco"]:
@@ -125,6 +130,7 @@ class dataCardMaker:
                     obs_ac = 0
                     if n <= 4 and ob == "TT" and self.closureManip:
                         temp = (self.observed[ob]["binValues"][n + 5] * self.observed[ob]["binValues"][n + 10] / self.observed[ob]["binValues"][n + 15])
+                        temp_unc = temp * math.sqrt(pow(self.observed[ob]["binErrors"][n+5]/self.observed[ob]["binValues"][n+5],2) + pow(self.observed[ob]["binErrors"][n+10]/self.observed[ob]["binValues"][n+10],2) + pow(self.observed[ob]["binErrors"][n+15]/self.observed[ob]["binValues"][n+15],2))
                         if self.closureUnc or self.closureReal or self.closureUncUncorr:
                             obs += self.observed[ob]["binValues"][n]
                         if self.setClosure:
@@ -138,10 +144,17 @@ class dataCardMaker:
                         if self.closureDownConst:
                             obs -= temp * self.closureDownConst / 100
                         obs_ac = self.observed[ob]["binValues"][n]
-                        closure_unc = str(round(pow(obs_ac/temp,1), 2))
-                        closure_unc_unc = str(round(pow(obs_ac/temp,1) * math.sqrt(pow(math.sqrt(obs_ac)/obs_ac,2) + pow(math.sqrt(temp)/temp,2)), 2))
+                        obs_ac_unc = self.observed[ob]["binErrors"][n]
+                        closure_unc = str(round(obs_ac/temp,4))
+                        closure_unc_unc = str(round((obs_ac/temp) * math.sqrt(pow(obs_ac_unc/obs_ac,2) + pow(temp_unc/temp,2)),4))
+                        if self.closureCorrectionDown:
+                            closure_unc = str(round(float(closure_unc) - float(closure_unc_unc),4))
+                            closure_unc_unc = float(closure_unc) * math.sqrt(pow(float(closure_unc_unc)/float(closure_unc),2))# + pow(0.20,2))
+                        if self.closureCorrectionUp:
+                            closure_unc = str(round(float(closure_unc) + float(closure_unc_unc),4))
+                            closure_unc_unc = float(closure_unc) * math.sqrt(pow(float(closure_unc_unc)/float(closure_unc),2))# + pow(0.20,2))
                         if closure_unc == "1.0":
-                            closure_unc = "1.01"
+                            closure_unc = "1.0"
                         self.closureUncertainties.append(closure_unc)
                         self.closureUncertaintiesUnc.append(closure_unc_unc)
                     else:
@@ -160,6 +173,7 @@ class dataCardMaker:
                     obs_ac = 0
                     if n <= 4 and ob == "TT" and self.closureManip:
                         temp = (self.observed[ob]["binValues"][n + 5] * self.observed[ob]["binValues"][n + 10] / self.observed[ob]["binValues"][n + 15])
+                        temp_unc = temp * math.sqrt(pow(self.observed[ob]["binErrors"][n+5]/self.observed[ob]["binValues"][n+5],2) + pow(self.observed[ob]["binErrors"][n+10]/self.observed[ob]["binValues"][n+10],2) + pow(self.observed[ob]["binErrors"][n+15]/self.observed[ob]["binValues"][n+15],2))
                         if self.closureUnc or self.closureReal or self.closureUncUncorr:
                             obs += self.observed[ob]["binValues"][n]
                         if self.setClosure: 
@@ -173,10 +187,17 @@ class dataCardMaker:
                         if self.closureDownConst:
                             obs -= temp * self.closureDownConst / 100
                         obs_ac = self.observed[ob]["binValues"][n]
-                        closure_unc = str(round(pow(obs_ac/temp,1), 2))
-                        closure_unc_unc = str(pow(obs_ac/temp,1) * math.sqrt(pow((math.sqrt(obs_ac)/obs_ac),2) + pow((math.sqrt(temp)/temp),2)))
+                        obs_ac_unc = self.observed[ob]["binErrors"][n]
+                        closure_unc = str(round(obs_ac/temp,4))
+                        closure_unc_unc = str(round((obs_ac/temp) * math.sqrt(pow(obs_ac_unc/obs_ac,2) + pow(temp_unc/temp,2)),4))
+                        if self.closureCorrectionDown:
+                            closure_unc = str(round(float(closure_unc) - float(closure_unc_unc),4))
+                            closure_unc_unc = float(closure_unc) * math.sqrt(pow(float(closure_unc_unc)/float(closure_unc),2))# + pow(0.20,2))
+                        if self.closureCorrectionUp:
+                            closure_unc = str(round(float(closure_unc) + float(closure_unc_unc),4))
+                            closure_unc_unc = float(closure_unc) * math.sqrt(pow(float(closure_unc_unc)/float(closure_unc),2))# + pow(0.20,2))
                         if closure_unc == "1.0":
-                            closure_unc = "1.01"
+                            closure_unc = "1.0"
                         self.closureUncertainties.append(closure_unc)
                         self.closureUncertaintiesUnc.append(closure_unc_unc)
                     else:
@@ -324,36 +345,17 @@ class dataCardMaker:
                 for nj in range(self.min_nj, self.max_nj + 1):
                     
                     sys_str = "{0:<8}".format("\nnp_ClosureNj" + str(nj) + self.suffix + '\t')
-                    sys_str += "{0:<7}".format("rateParam ")
-                    for i, unc in enumerate(self.closureUncertainties):
-                        if i + 7 == nj:
-                            sys_str += "Y{2}_{0}{1} TT ".format(self.observed["TT"]["binNames"][nj-7],self.suffix,self.year[-2:])
-                            sys_str += "{0}".format(unc, round((1-float(self.closureUncertaintiesUnc[i])*float(unc)),2), round((1.+float(self.closureUncertaintiesUnc[i]))*float(unc),2))
-                    file.write(sys_str)
-                    
-                    sys_str = "{0:<8}".format("\nnp_ClosureNj" + str(nj) + self.suffix + '\t')
-                    sys_str += "{0:<7}".format("param ")
-                    for i, unc in enumerate(self.closureUncertainties):
-                        if i + 7 == nj:
-                            sys_str += "{0} {1}".format(unc, round((float(self.closureUncertaintiesUnc[i])*float(unc)),2))
-                    file.write(sys_str)
-                    
-                '''
-                for nj in range(self.min_nj, self.max_nj + 1):
-                    sys_str = "{0:<8}".format("\nnp_ClosureNj" + str(nj) + self.suffix + 'Unc\t')
                     sys_str += "{0:<7}".format("lnN ")
-                    for i, unc in enumerate(self.closureUncertaintiesUnc):
-                        if not mask[i]:
-                            continue
-                        for sg in self.signal.keys():
-                            sys_str += "{} ".format("--")
-                        for bg in self.observed.keys():
-                            if bg == "TT" and nj - 7 == i:
-                                sys_str += "{} ".format(1 + float(unc))
-                            else:
-                                sys_str += "{} ".format("--")
+                    for i, unc in enumerate(self.closureUncertainties):
+                        for j in range(0,4):
+                            for k in range(0,5):
+                                if i + 7 == nj and j == 0 and k == 1:
+                                    #sys_str += "Y{2}_{0}{1} TT ".format(self.observed["TT"]["binNames"][nj-7],self.suffix,self.year[-2:])
+                                    sys_str += "{} ".format(round(1 + float(self.closureUncertaintiesUnc[i]),4))
+                                else:
+                                    sys_str += "{} ".format("--")
                     file.write(sys_str)
-                '''
+            
             if self.othersys:
                 for sys in self.othersys.keys():
                     sys_str = "{0:<8}".format("\n"+sys + self.suffix + '\t')
@@ -395,24 +397,28 @@ class dataCardMaker:
                         for proc in self.observed.keys():
                             if proc != bkgd:
                                 rate -= self.observed[proc]["binValues"][abin+ibin]
-                        #if self.dataType == "pseudoDataS":
-                        #    for proc in self.signal.keys():
-                        #        rate -= self.signal[proc]["binValues"][abin+ibin]/sigScale
-
                         if ibin == 0:
-                            file.write("{0}{1}{4:<12} rateParam Y{5}_{2}{4} {3} (@0*@1/@2) beta{1}{4},gamma{1}{4},delta{1}{4}\n".format(params[ibin%4],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.suffix,self.year[-2:]))
+                            file.write("{0}{1}{4:<12} rateParam Y{5}_{2}{4} {3} (@0*@1/@2*{6}) beta{1}{4},gamma{1}{4},delta{1}{4}\n".format(params[ibin%4],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.suffix,self.year[-2:], round(float(self.closureUncertainties[abin]),4)))
                         else: 
                             file.write("{0}{1}{6:<12} rateParam Y{7}_{2}{6} {3} {4:<12} {5}\n".format(params[ibin%4],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(3*rate),self.suffix,self.year[-2:])) 
-            if self.closureReal:
-                file.write("\n")
-                sys_str = "closure group = "
-                for nj in range(self.min_nj, self.max_nj + 1):
-                    sys_str += "{0} ".format("np_ClosureNj" + str(nj) + self.suffix)
-                file.write(sys_str)
-            
-            #sys_str = "\n\n* autoMCStats 0"
-            #file.write(sys_str)               
- 
+
+            '''for j,signal1 in enumerate(self.signal.keys() + self.observed.keys()):
+                for i,reg in enumerate(["A", "B", "C", "D"]):
+                    for nj in range(self.min_nj, self.max_nj+1):
+                        if signal1 == "TT":
+                            continue
+                        sig_str = "{} ".format("\nMCStat_{}_nJet{}_".format(reg, nj)+signal1+self.suffix)
+                        sig_str += "{0:<7}".format("lnN")
+                        for bin in range(self.nbins * len(self.signal.keys() + self.observed.keys())):
+                            if bin == i * 5 * (self.max_nj - self.min_nj + 1) + 5 * (nj-7) + j:
+                                if j == 0:
+                                    sig_str += "{} ".format(round(1 + (self.signal[signal1]["binErrors"][i*5+(nj-7)]/self.signal[signal1]["binValues"][i*5+(nj-7)]),3))
+                                else:
+                                    sig_str += "{} ".format(round(1 + (self.observed[signal1]["binErrors"][i*5+(nj-7)]/self.observed[signal1]["binValues"][i*5+(nj-7)]), 3))
+                            else:
+                                sig_str += "{} ".format("--")
+                        file.write(sig_str)
+            '''
     def getBinMask(self):
         mask = []
         for k in range(4):

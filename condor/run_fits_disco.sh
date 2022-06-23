@@ -17,8 +17,8 @@ inject=${14}
 syst=${15}
 suffix=${16}
 base_dir=`pwd`
-rMax=20
-rMin=-20
+rMax=2
+rMin="-0.2"
 
 if [ $syst == None ] 
 then
@@ -65,17 +65,16 @@ echo "text2workspace.py cards/${year}_${signalType}_${mass}_${dataType}_${suffix
 
 ws=ws_${year}_${signalType}_${mass}_${dataType}_${suffix}${close}.root
 
-#fallBack="--cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH"
-fallBack=""
-fitOptions="${ws} -m ${mass} --keyword-value MODEL=${signalType} ${fallBack}" # --freezeNuisanceGroup=closure"
+fallBack="--cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH"
+fitOptions="${ws} -m ${mass} --keyword-value MODEL=${signalType} ${fallBack}"
 echo ${fitOptions}
 # Run the asympotic fits
 if [ $doAsym == 1 ] 
 then
     echo "Running Asymptotic fits"
-    combine -M AsymptoticLimits ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin --robustFit=1 -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_AsymLimit > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Asymp.txt
-    combine -M Significance ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin -t -1 --expectSignal=1 --robustFit=1 -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_SignifExp > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Sign_sig.txt
-    combine -M Significance ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin --robustFit=1 -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_SignifExp > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Sign_noSig.txt
+    combine -M AsymptoticLimits ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_AsymLimit > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Asymp.txt
+    combine -M Significance ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin -t -1 --expectSignal=1 -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_SignifExp > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Sign_sig.txt
+    combine -M Significance ${fitOptions} --verbose 2 --rMax $rMax --rMin $rMin -n ${year}${signalType}${mass}${dataType}${suffix}${close1}_SignifExp > log_${year}${signalType}${mass}${dataType}${suffix}${close1}_Sign_noSig.txt
 fi
 
 # Run the fit diagnostics fits (takes forever to run)

@@ -241,6 +241,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
     std::vector<double> limits_p2s(npoints,0);
 
     // Loop over mass points
+    //std::vector<string> final_states = {"0l","1l","combo"};
     std::vector<string> final_states = {"0l","1l","combo"};
     string extra = "";
 
@@ -265,7 +266,6 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
             const string& name = year + model + mass + "pseudoData" + suf + close + extra; 
             const string& fitter_file = filedir+"/"+model+"_"+mass+"_"+year+"/higgsCombine"+name+"."+fitType+".mH"+mass+".MODEL"+model+".root";
         
-            std::cout << fitter_file << std::endl;
             // Load the root file and read the tree and leaves
             TFile *f = new TFile(fitter_file.c_str());
             //std::cout << f->IsZombie() << std::endl;
@@ -302,7 +302,6 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
 
             f->Close();
         }
-        
 
         // Define the cross section times branching fraction (called sigBr here):
         std::vector<double> sigBr;
