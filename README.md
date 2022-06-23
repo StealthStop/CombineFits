@@ -438,6 +438,7 @@ Relevant arguments:
 - `-d, --dataType [Data Type]` Specify whether fit was run over pseudoData, pseudoDataS, or data
 - `-p, --path [Path to Condor directory]` Path to the condor directory with the FitDiagnostics results
 - `-s, --suffix [Number of final state leptons]` Specify the number of final state leptons as 0l or 1l
+- `-n, --njets [Njet range in data cards]` Specify the range of Njets for the bins in data cards (separated with a dash, e.g. 7-12)
 - `--plotb/--plotsb/--plotsig/--plotdata` Include background fit, signal+background fit, signal component, or observed data in plots
 - `--all` Make the pre- and post-fit Njets distributions for all signal models, masses, and final states for both pseudoData and pseudoDataS
 
@@ -454,6 +455,7 @@ The pre- and post-fit distributions will be saved in the `figures` directory and
 `tabel_signal_strength.py` is a script that will produce p-value plots using the fit results from a condor directory as input. The script presumes that the name of this directory is `CombineFits/condor/Fit_<year>`.
 
 Relavent arguments:
+- `--basedir` Name of base condor directory containing fit results
 - `--pdfName` Name to add to the end of each p-value plot pdf (usually the date)
 - `--perfectClosure` Use the perfect closure fit results when making p-value plots
 - `--approved` Is the plot approved
