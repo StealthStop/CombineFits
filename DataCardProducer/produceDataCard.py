@@ -10,7 +10,18 @@ def main():
     parser.add_option("-t", "--dataType", dest="dataType", type='string',   default = 'data', help="Specify if running over data or pseudo data")
     parser.add_option("--all", dest="all", action="store_true",   default = False, help="Make all data cards (all signal models, PseudoData w/ and w/o Signal injected, 0l and 1l)")
     parser.add_option("--setClosure", dest="setClosure", action="store_true",   default = False, help="Set perfect closure for datacards in the A region")
+    parser.add_option("--closureUnc", dest="closureUnc", action="store_true",   default = False, help="Set closure uncertainty using perfect closure case")
+    parser.add_option("--closureUncUncorr", dest="closureUncUncorr", action="store_true",   default = False, help="Set closure uncertainty using perfect closure case (uncorrelated closure uncertainties)")
+    parser.add_option("--closureReal", dest="closureReal", action="store_true",   default = False, help="Set uncorrelated closure uncertainties to a fixed value with floating parameters to adjust these nusiances parameters (realistic closure NP case)")
+    parser.add_option("--closureCorrectionUp", dest="closureCorrectionUp", action="store_true",   default = False, help="Set uncorrelated closure correction to +1 sigma of its nominal value")
+    parser.add_option("--closureCorrectionDown", dest="closureCorrectionDown", action="store_true",   default = False, help="Set uncorrelated closure correction to -1 sigma of its nominal value")
+    parser.add_option("--closureUp", dest="closureUp", action="store_true",   default = False, help="Set perfect closure + 1 sigma for datacards in the A region")
+    parser.add_option("--closureDown", dest="closureDown", action="store_true",   default = False, help="Set perfect closure - 1 sigma for datacards in the A region")
+    parser.add_option("--Run2", dest="Run2", action="store_true", default = False, help="Scale 2016 pseudodata to full Run 2 lumi")
+    parser.add_option("--NoSigBCD", dest="NoSigBCD", action="store_true",   default = False, help="Remove signal from BCD regions for signal contamination test")
     parser.add_option("-a", "--ABCD",     action="store_true", dest="ABCD", default=False, help = "Switch to make card for ABCD method in Combine")
+    parser.add_option("--closureUpConst", dest="closureUpConst", action="store", type="int", default = 0, help="Set perfect closure + constant percentage for datacards in the A region")
+    parser.add_option("--closureDownConst", dest="closureDownConst", action="store", type="int", default = 0, help="Set perfect closure - constant percentage for datacards in the A region")
     parser.add_option("-s", "--signal",     action="store", type='string', dest="signal", default="RPV_550", help = "Name of signal and mass for card separated by \'_\' (e.g. RPV_550)")
     parser.add_option("-l", "--leptons", action="store", type="string", dest="leptons", default="None", help = "Number of leptons in final state (0 or 1)")
     parser.add_option("-p", "--path",     action="store", type='string', dest="path", default=".", help = "Path to root files")
@@ -20,7 +31,7 @@ def main():
         min_nj = 8
     else:
         min_nj = 7
-    max_nj = 12
+    max_nj = 11
     
     if options.config == "None":
         parser.error('Config file not given, specify with -c')
@@ -57,13 +68,13 @@ def main():
                             outpath = "cards/{}_{}_{}_{}_{}{}.txt".format(year, s, m, d, l, close)
 
                             print("Writing data card to {}".format(outpath))
-                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure, min_nj, max_nj)
+                            dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, outpath, configfile.othersys, options.ABCD, d, "_" + l, year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.closureCorrectionUp, options.closureCorrectionDown, options.Run2, options.NoSigBCD, min_nj, max_nj)
                         
     elif options.leptons == "None":
         parser.error('Please specify number of final state leptons with -l')
     else:
         configfile = importlib.import_module(options.config)
-       
+   
         if(options.signal.find("SYY") != -1):
             model = "Stealth" + options.signal.split("_")[0] + "_2t6j"    
         elif options.signal.find("RPV") != -1:
@@ -81,7 +92,7 @@ def main():
         }
 
         print("Writing data card to "+options.outpath)
-        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure, min_nj, max_nj)
+        dcm(options.path, signal, configfile.observed, configfile.histos, configfile.lumi, options.outpath, configfile.othersys, options.ABCD, options.dataType, "_" + options.leptons + "l", year, options.setClosure, options.closureUp, options.closureDown, options.closureUpConst, options.closureDownConst, options.closureUnc, options.closureUncUncorr, options.closureReal, options.closureCorrectionUp, options.closureCorrectionDown, options.Run2, options.NoSigBCD, min_nj, max_nj)
 
 if __name__ == "__main__":
     main()

@@ -205,8 +205,8 @@ histos = {
         "start"  : 50, #if histogram is 2d, input as list [start x, start y]
         "end"    : 150, #if histogram is 2d, input as list [end x, end y]
         "disco"  : True #option to bypass info above for double disco cards, bypass if True
-    },
-    "hu" : {
+    }, 
+   "hu" : {
         "region" : "A",
         "Njets"  : 12,
         "name"   : "h_DoubleDisCo_disc1_disc2_Njets12incl_A",
