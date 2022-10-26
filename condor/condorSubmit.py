@@ -4,16 +4,23 @@ import optparse
 import subprocess
 import time
 
+# Pass a list of files to tar up
 def makeExeAndFriendsTarball(filestoTransfer, fname, path):
     system("mkdir -p %s" % fname)
     for fn in filestoTransfer:
-        system("cd %s; ln -s %s" % (fname, fn))
-        
+
+        if "DataCardProducer" in fn:
+            system("cd %s; ln -s %s cards" % (fname, fn))
+        else:
+            system("cd %s; ln -s %s" % (fname, fn))
+       
     tarallinputs = "tar czvf %s/%s.tar.gz %s --dereference"% (path, fname, fname)
     print tarallinputs
     system(tarallinputs)
     system("rm -r %s" % fname)
 
+# Parse an option from the command for exanding a range into a list
+# E.g. "300-1400" ==> ["300", "350", "400", ..., "1400"]
 def getOptionList(option, failMessage):
     l = []
     if option:
@@ -31,76 +38,70 @@ def main():
     repo = "HiggsAnalysis/CombinedLimit"
     seed = int(time.time())
     
-    # Parse command line arguments
     parser = optparse.OptionParser("usage: %prog [options]\n")
+    parser.add_option ('-d',               dest='signalType',        type='string', default = '',      help="List of signal model, comma separated")
+    parser.add_option ('-t',               dest='dataType',          type='string', default = 'data',  help="Specify if running over data or pseudo data")
+    parser.add_option ('-s', '--channel',  dest='channel',           type='string', default = 'None',  help="Specify which final state (0l or 1l)")
+    parser.add_option ('-m',               dest='masssets',          type='string', default = '',      help="List of mass models, comma separated or range (e.g. 300-1400)")
+    parser.add_option ('-y',               dest='year',              type='string', default = 'Run2UL',help="year")
+    parser.add_option ('-c',               dest='noSubmit',    action='store_true', default = False,   help="Do not submit jobs.  Only create condor_submit.txt.")
+    parser.add_option ('-A',               dest='doAsym',      action='store_true', default = False,   help="Specify AsymptoticLimits and Significance fit command to run")
+    parser.add_option ('-F',               dest='doFitDiag',   action='store_true', default = False,   help="Specify FitDiagnostics fit command to run")
+    parser.add_option ('-M',               dest='doMulti',     action='store_true', default = False,   help="Specify MultiDimFit fit command to run")
+    parser.add_option ('-I',               dest='doImpact',    action='store_true', default = False,   help="Specify impact fit command to run")
+    parser.add_option ('--output',         dest='outPath',           type='string', default = '.',     help="Name of directory where output of each condor job goes")
+    parser.add_option ('--toy',            dest='toy',         action='store_true', default = False,   help="Limits: Submit toy jobs instead of the normal set of fits")
+    parser.add_option ('-T',               dest='numToys',           type='int',    default = 1000,    help="Specify number of toys per job")
+    parser.add_option ('--rMin',           dest='rMin',              type='float',  default = 0.05,    help="Specify minimum r value")
+    parser.add_option ('--rMax',           dest='rMax',              type='float',  default = 1.00,    help="Specify maximum r value")
+    parser.add_option ('--rStep',          dest='rStep',             type='float',  default = 0.05,    help="Specify step size")
+    parser.add_option ('--jPerR',          dest='jPerR',             type='int',    default = 5,       help="Specify jobs per r setting")
+    parser.add_option ('--toyS',           dest='toyS',        action='store_true', default = False,   help="Sig.:   Submit toy jobs instead of the normal set of fits")
+    parser.add_option ('--nJobs',          dest='numJobs',           type='int',    default = -1,      help="Can specify the number of jobs for toyS")
+    parser.add_option ('-i',               dest='iterations',        type='int',    default =  1,      help="Can specify the number of iterations for toyS")
+    parser.add_option ('--cards',          dest='cards',             type='string', default = 'cards', help="Folder containing data cards")
 
-    parser.add_option ('--inPut_2016',     dest='inputRoot2016',     type='string', default = 'DisCo_2016',     help="input root file directory: 2016")
-    parser.add_option ('--inPut_2017',     dest='inputRoot2017',     type='string', default = 'DisCo_2017',     help="input root file directory: 2017")
-    parser.add_option ('--inPut_2018pre',  dest='inputRoot2018pre',  type='string', default = 'DisCo_2018pre',  help="input root file directory: 2018pre")
-    parser.add_option ('--inPut_2018post', dest='inputRoot2018post', type='string', default = 'DisCo_2018post', help="input root file directory: 2018post")
-    parser.add_option ('-d',               dest='signalType',        type='string', default = '',                    help="List of signal model, comma separated")
-    parser.add_option ('-t',               dest='dataType',          type='string', default = 'data',                help="Specify if running over data or pseudo data")
-    parser.add_option ('--syst',           dest='syst',              type='string', default = 'None',                help="Specify what systimatic variation you want when picking a dataType")
-    parser.add_option ('-s', '--suffix',           dest='suffix',              type='string', default = 'None',                help="Specify which final state (0l or 1l)")
-    parser.add_option ('-m',               dest='masssets',          type='string', default = '',                    help="List of mass models, comma separated or range (e.g. 300-1400)")
-    parser.add_option ('-y',               dest='year',              type='string', default = '2016',                help="year")
-    parser.add_option ('-c',               dest='noSubmit',    action='store_true', default = False,                 help="Do not submit jobs.  Only create condor_submit.txt.")
-    parser.add_option ('-A',               dest='doAsym',      action='store_true', default = False,                 help="Specify AsymptoticLimits and Significance fit command to run")
-    parser.add_option ('-F',               dest='doFitDiag',   action='store_true', default = False,                 help="Specify FitDiagnostics fit command to run")
-    parser.add_option ('-M',               dest='doMulti',     action='store_true', default = False,                 help="Specify MultiDimFit fit command to run")
-    parser.add_option ('-I',               dest='doImpact',    action='store_true', default = False,                 help="Specify impact fit command to run")
-    parser.add_option ('--setClosure',     dest='setClosure',  action='store_true', default = False,                 help="Specify whether to use nominal or perfect closure data cards")
-    parser.add_option ('--output',         dest='outPath',           type='string', default = '.',                   help="Name of directory where output of each condor job goes")
-    parser.add_option ('--inject',         dest='inject',            type='float' , default = 0,                     help="Inject signal at signal strength specified")
-    parser.add_option ('--toy',            dest='toy',         action='store_true', default = False,                 help="Limits: Submit toy jobs instead of the normal set of fits")
-    parser.add_option ('-T',               dest='numToys',           type='int',    default = 1000,                  help="Specify number of toys per job")
-    parser.add_option ('--rMin',           dest='rMin',              type='float',  default = 0.05,                  help="Specify minimum r value")
-    parser.add_option ('--rMax',           dest='rMax',              type='float',  default = 1.00,                  help="Specify maximum r value")
-    parser.add_option ('--rStep',          dest='rStep',             type='float',  default = 0.05,                  help="Specify step size")
-    parser.add_option ('--jPerR',          dest='jPerR',             type='int',    default = 5,                     help="Specify jobs per r setting")
-
-    parser.add_option ('--toyS',           dest='toyS',        action='store_true', default = False,                 help="Sig.:   Submit toy jobs instead of the normal set of fits")
-    parser.add_option ('--nJobs',          dest='numJobs',           type='int',    default = -1,                    help="Can specify the number of jobs for toyS")
-    parser.add_option ('-i',               dest='iterations',        type='int',    default =  1,                    help="Can specify the number of iterations for toyS")
-
+    # Parse command line arguments
     options, args = parser.parse_args()
-    signalType = getOptionList(options.signalType, "No dataset specified")
-    masssets = getOptionList(options.masssets, "No mass model specified")
 
-    doAsym = 1 if options.doAsym else 0
+    # Split up custom command line string arguments into simple lists
+    # E.g. "300-1400" ==> ["300", "350", "400", ..., "1400"]
+    signalType = getOptionList(options.signalType, "No dataset specified")
+    masssets   = getOptionList(options.masssets, "No mass model specified")
+
+    doAsym    = 1 if options.doAsym    else 0
     doFitDiag = 1 if options.doFitDiag else 0
-    doMulti = 1 if options.doMulti else 0
-    doImpact = 1 if options.doImpact else 0
-    doToyS = 1 if options.toyS else 0 
-    setClosure = 1 if options.setClosure else 0
+    doMulti   = 1 if options.doMulti   else 0
+    doImpact  = 1 if options.doImpact  else 0
+    doToyS    = 1 if options.toyS      else 0 
+
+    # If user specifies not fits, assume to do all of them
     if not doAsym and not doFitDiag and not doMulti and not doImpact:
-        doAsym=1
-        doFitDiag=1
-        doMulti=1
-        doImpact=1
+        doAsym    = 1
+        doFitDiag = 1
+        doMulti   = 1
+        doImpact  = 1
 
     executable = "run_fits_disco.sh"
     if options.toy or options.toyS:
         executable = "run_toys.sh"
 
+    # Construct list of options to write to condor submit txt file
     fileParts = []
     fileParts.append("Universe   = vanilla\n")
     fileParts.append("Executable = %s\n" % executable)
     fileParts.append("Should_Transfer_Files = YES\n")
     fileParts.append("WhenToTransferOutput = ON_EXIT\n")
-    #fileParts.append("request_disk = 1000000\n")
-    #fileParts.append("request_memory = 5000\n")
+    fileParts.append("RequestMemory = 1024\n")
     fileParts.append("x509userproxy = $ENV(X509_USER_PROXY)\n\n")
     fileParts.append("Transfer_Input_Files = {0}/CMSSW_10_2_13.tar.gz, {0}/exestuff.tar.gz\n".format(options.outPath))
 
-    if options.suffix == "None":
-        suffixes = ['0l', '1l', 'combo']
+    # If no specific channel is specified by the user
+    # assume to run over all channel combinations
+    if options.channel == "None":
+        channels = ['0l', '1l', 'combo']
     else:
-        suffixes = [options.suffix]
-    close = ""
-    if options.setClosure:
-        close = "_perfectClose"
-
+        channels = [options.channel]
 
     for st in signalType:
         st = st.strip()
@@ -116,36 +117,45 @@ def main():
 
         for mass in masssets:
             mass = mass.strip()
-            for suf in suffixes:
-                print st, mass, options.year, suf
-                
-                # create the directory
+            for channel in channels:
+                # Create the directory for cards and output files
                 outDir = model+"_"+mass+"_"+options.year
                 if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
                     os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
-                if not os.path.isdir("%s/output-files/cards"%(options.outPath)):
-                    os.system("cp -r %s/src/CombineFits/DataCardProducer/cards %s/output-files"%(environ["CMSSW_BASE"],options.outPath))
+                if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
+                    os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
+
                 if not options.toy and not options.toyS:
+
+                    tagName = "%s%s%s%s_%s"%(options.year, model, mass, options.dataType, channel)
+
                     outputFiles = [
-                        "higgsCombine%s%s%s%s%s%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:],  mass, model),
-                        "higgsCombine%s%s%s%s%s%s.FitDiagnostics.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:], mass, model),
-                        "higgsCombine%s%s%s%s%s%s_SignifExp.Significance.mH%s.MODEL%s.root" % (options.year, model, mass, options.dataType, suf, close[1:], mass, model),
-                        "higgsCombine%s%s%s%s%s%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root " % (options.year, model, mass, options.dataType, suf, close[1:],mass, model),
-                        "higgsCombine%s.HybridNew.mH%s.MODEL%s.root" % (options.year, mass, model),
-                        "ws_%s_%s_%s_%s_%s%s.root"       % (options.year, model, mass, options.dataType, suf, close),
-                        "fitDiagnostics%s%s%s%s%s%s.root" % (options.year, model, mass, options.dataType, suf, close[1:]), 
-                        "impacts_%s%s%s%s%s.json"       % (options.year, model, mass, suf, close[1:]),
-                        "impacts_%s%s%s%s%s_%s.pdf"     % (options.year, model, mass, suf, close[1:], options.dataType),
-                        "log_%s%s%s%s%s%s_Asymp.txt"      % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s%s_FitDiag.txt"    % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s%s_Sign_sig.txt"   % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s%s_Sign_noSig.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s_multiDim.txt"   % (options.year, model, mass, suf, close[1:]),
-                        "log_%s%s%s_HybridNew.txt"  % (options.year, model, mass),
-                        "log_%s%s%s%s%s%sstep1.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s%sstep2.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "log_%s%s%s%s%s%sstep3.txt" % (options.year, model, mass, options.dataType, suf, close[1:]),
-                        "%s_%s_%s_%s_%s%s.txt"        % (options.year, model, mass, options.dataType, suf, close),
+                        "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                        "higgsCombine%s.FitDiagnostics.mH%s.MODEL%s.root"                % (tagName, mass, model),
+                        "higgsCombine%s_SignifExp.Significance.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                        "higgsCombine%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                        "ws_%s.root"                                                     % (tagName),
+                        "fitDiagnostics%s.root"                                          % (tagName), 
+                        "impacts_%s.json"                                                % (tagName),
+                        "impacts_%s%s%s_%s_%s.pdf"                                       % (options.year, model, mass, channel, options.dataType),
+                        "log_%s_Asymp.txt"                                               % (tagName),
+                        "log_%s_FitDiag.txt"                                             % (tagName),
+                        "log_%s_Sign.txt"                                                % (tagName),
+                        "log_%s_step1.txt"                                               % (tagName),
+                        "log_%s_step2.txt"                                               % (tagName),
+                        "log_%s_step3.txt"                                               % (tagName),
+                        "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                        "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
+                        "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
+                        "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
+                        "impacts_%s_Asimov.json"                                         % (tagName),
+                        "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
+                        "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
+                        "log_%s_Sign_Asimov.txt"                                         % (tagName),
+                        "log_%s_step1_Asimov.txt"                                        % (tagName),
+                        "log_%s_step2_Asimov.txt"                                        % (tagName),
+                        "log_%s_step3_Asimov.txt"                                        % (tagName),
+
                     ]
                 
                     transfer = "transfer_output_remaps = \""
@@ -156,13 +166,12 @@ def main():
                     transfer += "\"\n"
                         
                     fileParts.append(transfer)
-                    fileParts.append("Arguments = %s %s %s %s %s %s %s %s %i %i %i %i %i %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, options.inputRoot2018pre, options.inputRoot2018post, 
-                                                                                                  model, mass, options.year, options.dataType, setClosure, doAsym, doFitDiag, doMulti, doImpact, 
-                                                                                                  options.inject, options.syst, suf))
-                    fileParts.append("Output = %s/log-files/MyFit_%s_%s.stdout\n"%(options.outPath, model, mass))
-                    fileParts.append("Error = %s/log-files/MyFit_%s_%s.stderr\n"%(options.outPath, model, mass))
-                    fileParts.append("Log = %s/log-files/MyFit_%s_%s.log\n"%(options.outPath, model, mass))
+                    fileParts.append("Arguments = %s %s %s %s %i %i %i %i %s\n" % (model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel))
+                    fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s.stdout\n"%(options.outPath, model, mass, channel))
+                    fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s.stderr\n"%(options.outPath, model, mass, channel))
+                    fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s.log\n"%(options.outPath, model, mass, channel))
                     fileParts.append("Queue\n\n")
+
                 else:
                     nSteps = int(round((options.rMax - options.rMin)/options.rStep))
                     jPerR = options.jPerR                
@@ -195,9 +204,8 @@ def main():
                             transfer += "\"\n"
 
                             fileParts.append(transfer)
-                            fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n" % (options.inputRoot2016, options.inputRoot2017, options.inputRoot2018pre, options.inputRoot2018post,
-                                                                                                    model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), 
-                                                                                                    str(options.iterations), str(doToyS), options.syst, suf))
+                            fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), 
+                                                                                                    str(options.iterations), str(doToyS), channel))
                             fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, model, mass, str(r), str(seed)))
                             fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, model, mass, str(r), str(seed)))
                             fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, model, mass, str(r), str(seed)))
@@ -209,8 +217,7 @@ def main():
     fout.close()
 
     #Tar up area
-    filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cards",
-                   ]
+    filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/%s"%(options.cards)]
 
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
 
