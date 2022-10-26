@@ -30,8 +30,12 @@
 #include "TLine.h"
 #include "TLegend.h"
 #include "CMS_lumi.C"
+#include <sys/stat.h>
 
-void makePlots(const string today = "Jan17_2019", const string filedir = "fit_results_v5_Jan17_2019", const string year = "2017", const string model = "RPV", const string limType = "Observed", const string fitType = "AsymptoticLimits") 
+//void makePlots(const string today = "Jan17_2019", const string filedir = "fit_results_v5_Jan17_2019", const string year = "2017", const string model = "RPV", const string limType = "Observed", const string fitType = "AsymptoticLimits")
+
+void makePlots(const string plot_Labels = "Oct_2022", const string input_Files = "", const string year = "Run2UL", const string model = "RPV", const string limType = "Observed", const string fitType = "AsymptoticLimits", const string dataType = "")
+
 {
     // =============================================================
     TStyle *tdrStyle = new TStyle("tdrStyle","Style for P-TDR");
@@ -167,13 +171,13 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
 
     // Settings for CMS_lumi macro
     writeExtraText = true;
-    extraText = "Preliminary";
+    extraText      = "Preliminary";
     int iPeriod = 4;    // 1=7TeV, 2=8TeV, 3=7+8TeV, 7=7+8+13TeV 
-    if     (year=="2016")      lumi_13TeV = "137.2 fb^{-1}"; //35.9
+    if     (year=="2016")      lumi_13TeV = "35.9 fb^{-1}"; //35.9
     else if(year=="2017")      lumi_13TeV = "41.5 fb^{-1}";
     else if(year=="2018pre")   lumi_13TeV = "21.1 fb^{-1}";
     else if(year=="2018post")  lumi_13TeV = "38.7 fb^{-1}";
-    else if(year=="2016_2017") lumi_13TeV = "77.4 fb^{-1}";
+    else if(year=="Run2UL")    lumi_13TeV = "137 fb^{-1}";
 
     // second parameter in example_plot is iPos, which drives the position of the CMS logo in the plot
     // iPos=11 : top-left, left-aligned
@@ -197,23 +201,29 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
     //string channel = "SYY2L";
     //string channel = "SHH2L";
 
-    string date = "Jan17_19";
-    string ssave = "---------------------------------------------------------------";
-    string ssave_base = "./sigBrLim_"+model+"_"+year+"_";
-    bool DRAW_OBS = true;
-    bool DRAW_LOGOS = true;
+    // create limit_plots directory
+    string date       = "Jan17_19";
+    string ssave      = "---------------------------------------------------------------";
+    
+    string outDir   = "limit_plots";
+    string fullPath = input_Files + "/" + outDir;
+    mkdir(fullPath.c_str(), 0777);
+    string ssave_base = fullPath + "/sigBrLim_" + model + "_" + year + "_";
+    
+    bool DRAW_OBS     = true;
+    bool DRAW_LOGOS   = true;
 
     // ****************************************************
 
-    int W = 800;
-    int H = 600;
+    int W     = 800;
+    int H     = 600;
     int W_ref = 800; 
     int H_ref = 600; 
     // references for T, B, L, R
-    float T = 0.08*H_ref;
-    float B = 0.13*H_ref; 
-    float L = 0.13*W_ref;
-    float R = 0.04*W_ref;
+    float T   = 0.08*H_ref;
+    float B   = 0.13*H_ref; 
+    float L   = 0.13*W_ref;
+    float R   = 0.04*W_ref;
 
     gStyle->SetCanvasDefH      (H);
     gStyle->SetCanvasDefW      (W);
@@ -242,7 +252,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
 
     // Loop over mass points
     //std::vector<string> final_states = {"0l","1l","combo"};
-    std::vector<string> final_states = {"0l","1l","combo"};
+    std::vector<string> final_states = {"1l"};
     string extra = "";
 
     if(fitType == "AsymptoticLimits")
@@ -254,17 +264,21 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         extra = "_SignifExp";
     }
  
-    for (const auto& suf : final_states)
+    for (const auto& channel : final_states)
     {
         for (int i=0; i<npoints; i++) 
         {
             const string& mass = std::to_string(int(xpoints[i]));
             string close = "";
-            if (filedir.find("perfect") != std::string::npos) {
+            
+            if (input_Files.find("perfect") != std::string::npos) 
+            {
                 close = "perfectClose";
             }
-            const string& name = year + model + mass + "pseudoData" + suf + close + extra; 
-            const string& fitter_file = filedir+"/"+model+"_"+mass+"_"+year+"/higgsCombine"+name+"."+fitType+".mH"+mass+".MODEL"+model+".root";
+            
+            // note that you have to change this line manually for running for pseudoData
+            const string& name = year + model + mass + dataType + "_" + channel + close + extra;
+            const string& fitter_file = input_Files + "/" + model + "_" + mass + "_" + year + "/higgsCombine" + name + "." + fitType + ".mH" + mass + ".MODEL" + model + ".root";
         
             // Load the root file and read the tree and leaves
             TFile *f = new TFile(fitter_file.c_str());
@@ -272,12 +286,12 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
 
             if(f->IsZombie() ||  !f->GetListOfKeys()->Contains("limit"))
             {
-                limits_m2s[i] = 0;
-                limits_m1s[i] = 0;
-                limits_mean[i] = 0;
-                limits_p1s[i] = 0;
-                limits_p2s[i] = 0;
-                limits_obs[i] = 0;
+                limits_m2s[i]    = 0;
+                limits_m1s[i]    = 0;
+                limits_mean[i]   = 0;
+                limits_p1s[i]    = 0;
+                limits_p2s[i]    = 0;
+                limits_obs[i]    = 0;
                 limits_obsErr[i] = 0;        
                 continue;
             }
@@ -307,7 +321,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         std::vector<double> sigBr;
         std::vector<double> sigBr1SPpercent;
         std::vector<double> sigBr1SMpercent;
-      
+        
         // cross sections and uncertainties from
         //  https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVstopsbottom
         const std::vector<double>& stop_pair_Br =           { 10.00, 4.43, 2.15, 1.11,  0.609, 0.347, 0.205, 0.125, 0.0783, 0.0500, 0.0326, 0.0216,  0.0145, 
@@ -336,7 +350,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         double projectingXmin = xpoints.front()-50, projectingXmax = xpoints.back()+50;
         double projectingRLimitYmin = 0.0005, projectingRLimitYmax = 100;
         std::string projectingRLimitXYtitles = ";m_{#tilde{t}} [GeV]; 95% CL upper limit on #sigma#bf{#it{#Beta}} [pb]";
-        ssave = ssave_base+today+"_CLs";
+        ssave = ssave_base + plot_Labels + "_CLs";
 
         std::vector<double> limits_exp(npoints,0);
         for(int n=0; n<npoints; n++)
@@ -411,8 +425,8 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         //lb.plot();
 
         TCanvas *cCanvas = new TCanvas(ssave.c_str(),"Canvas");
-        TString stmp = "hframe"; stmp += ssave;
-        TH1F *hframe= new TH1F(stmp, projectingRLimitXYtitles.c_str(), 1000, projectingXmin, projectingXmax);
+        TString stmp     = "hframe"; stmp += ssave;
+        TH1F *hframe     = new TH1F(stmp, projectingRLimitXYtitles.c_str(), 1000, projectingXmin, projectingXmax);
         hframe->SetMinimum(projectingRLimitYmin);
         hframe->SetMaximum(projectingRLimitYmax);
         hframe->SetStats(0);
@@ -421,7 +435,8 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
             
         cCanvas->SetLogy(projectingRLimitLogY);
 
-        TGraph *grMean = new TGraph(npoints, xpoints.data(), limits_exp.data()); 
+        //
+        TGraph *grMean   = new TGraph(npoints, xpoints.data(), limits_exp.data()); 
         TGraph *grYellow = new TGraph(2*npoints);
         for(int n=0; n<npoints; n++)
         {
@@ -432,6 +447,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         grYellow->SetLineColor(kOrange);
         grYellow->Draw("f");
 
+        //
         TGraph *grGreen = new TGraph(2*npoints);
         for(int n=0; n<npoints; n++)
         {
@@ -442,6 +458,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         grGreen->SetLineColor(kGreen+1);
         grGreen->Draw("f");
 
+        //
         TLine *lineOne = new TLine(projectingXmin,1, projectingXmax, 1);
         lineOne->SetLineWidth(2);
         lineOne->SetLineStyle(1);
@@ -454,6 +471,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         grMean->SetMarkerSize(0);
         grMean->Draw("lp");
 
+        //
         TGraph* grObs = nullptr;
         if (DRAW_OBS) 
         {
@@ -588,7 +606,7 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
         //gr->SetMarkerStyle(1);
         //gr->Draw("ALP,same");
 
-        CMS_lumi(cCanvas,iPeriod,iPos);
+        CMS_lumi(cCanvas,iPeriod,iPos,writeExtraText); // SEM
         cCanvas->Update();
         cCanvas->RedrawAxis();
         cCanvas->GetFrame()->Draw();
@@ -611,14 +629,8 @@ void makePlots(const string today = "Jan17_2019", const string filedir = "fit_re
             cmstext->Draw("same");
         }
 
-        std::string seps = filedir+"/"+ssave+"_"+suf+".eps";
-        std::string sgif = filedir+"/"+ssave+"_"+suf+".gif";
-        std::string sroot = filedir+"/"+ssave+"_"+suf+".root";
-        std::string spdf = filedir+"/"+ssave+"_"+suf+".pdf";
-        cCanvas->Print(sroot.c_str());
-        cCanvas->Print(seps.c_str());
-        cCanvas->Print(sgif.c_str());
+        std::string spdf  = fullPath + ssave + "_" + channel + "_" +  dataType + ".pdf";
         cCanvas->Print(spdf.c_str());
-        cCanvas->Print((ssave+"_"+limType+"_"+suf+".pdf").c_str());
+        cCanvas->Print((ssave + "_" + limType + "_" + channel + "_" +  dataType + ".pdf").c_str());
     }
 }
