@@ -32,7 +32,8 @@ def main():
         print(options.config)
         configfile = importlib.import_module(options.config)
  
-        signals = ["RPV", "StealthSYY"]
+        #signals = ["RPV", "StealthSYY"]
+        signals = ["RPV"]
         masses = [x for x in range(300, 1450, 50)]
         dataTypes = ["pseudoData", "pseudoDataS"]       
         #leptons = ["0l", "1l", "combo"]

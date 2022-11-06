@@ -118,12 +118,12 @@ systematics = {
 # TT based systematics coming from uncertainty in MC correction factor (TTvar / TT)
 # Divided into detector-based and modeling-based categories (at the moment)
 MCcorr_Systs_Det = [
-                    #"JECup", "JECdown", 
-                    #"JERup", "JERdown"
+                    "JECup", "JECdown", 
+                    "JERup", "JERdown"
 ]
 MCcorr_Systs_Mod = [
-                    #"fsrUp", "fsrDown",
-                    #"isrUp", "isrDown", 
+                    "fsrUp", "fsrDown",
+                    "isrUp", "isrDown", 
                     "erdON", 
                     "hdampUP", "hdampDOWN", 
                     "TuneCP5up", "TuneCP5down"
