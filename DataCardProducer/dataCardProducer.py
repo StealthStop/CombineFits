@@ -41,7 +41,7 @@ class dataCardMaker:
 
         self.RUN2SF = 1.0
         if Run2:
-            self.RUN2SF = 137.0 / 35.9 
+            self.RUN2SF = 138.0 / 35.9 
 
         self.NoMCcorr = NoMCcorr
 

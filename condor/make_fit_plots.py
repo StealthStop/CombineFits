@@ -42,7 +42,7 @@ totalPadSize = 2 * pad1and4Size + 2 * pad2and3Size
 # -------------------
 # get fit information
 # -------------------
-def getFitInfo(fitDiag_path, pre_path, signal, year, suf, njets):
+def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
 
     f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
     f_pre = ROOT.TFile.Open(pre_path)
@@ -64,28 +64,28 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, suf, njets):
         for i in range(njets[0],njets[1]):
             try:
                 postfit_sb[reg].append((i, 
-                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinContent(1),
+                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinError(1)
                     ))
                 postfit_b[reg].append((i, 
-                    f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                    f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinContent(1),
+                    f_fit.Get("shapes_fit_b/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinError(1)
                     ))
                 #prefit_sb[reg].append((i, w_pre.function("shapes_prefit/{}{}/".format(reg,i))))
                 prefit_b[reg].append((i, 
-                    f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinContent(1),
-                    f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,suf)).GetBinError(1)
+                    f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinContent(1),
+                    f_fit.Get("shapes_prefit/Y{}_{}{}_{}/total".format(year[-2:],reg,i,channel)).GetBinError(1)
                     ))
                 postfit_sig[reg].append((i, 
-                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,suf)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,suf)).GetBinError(1)
+                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,channel)).GetBinContent(1),
+                    f_fit.Get("shapes_fit_s/Y{}_{}{}_{}/total_signal".format(year[-2:],reg,i,channel)).GetBinError(1)
                     ))
             except Exception as e:
-                print("Fit for {}_{}_{} Failed".format(year, signal, suf))
+                print("Fit for {}_{}_{} Failed".format(year, signal, channel))
                 return
             data[reg].append((i, 
-                w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,suf)),
-                sqrt(w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,suf))),
+                w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,channel)),
+                sqrt(w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,channel))),
                 ))
 
     f_fit.Close()
@@ -185,14 +185,14 @@ def save_to_root(hlist, outfile):
 def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb, plotdata, plotsig, fitName, outfile, obs, njets, path):
     
     close  = ""
-    dirTag = options.path.split("/")[2].split("_")[-1]
+    dirTag = options.path.split("_")[-1]
 
     if pre_path.find("perfectClose") != -1:
         close += "_perfectClose"
     try: 
-        pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, suf, njets)
+        pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets)
     except:
-        print("Fit for {}_{}_{} Failed".format(year, signal, suf))
+        print("Fit for {}_{}_{} Failed".format(year, signal, channel))
         return
     hlist_data = []
     hlist_pre_b = []
@@ -307,26 +307,32 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
         c1.Update()
         c1.Paint()
 
-    c1.SaveAs("%s/fit_plots/%s/"%(options.path,dirTag) + year + "_" + signal + "_" + channel + "_" + fitName + ".pdf")
+    c1.SaveAs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/%s/"%(options.path,dirTag) + year + "_" + signal + "_" + channel + "_" + fitName + ".pdf")
 
 # ---------------
 # ---------------
 def getObs(card, njets):
+
     with open(card, "r") as f:
+
         lines = f.readlines()
 
         data_temp = []
 
         for l in lines:
+
             if l.find("observation") != -1:
-                data_temp = l.split(" ")[1:-1]
-        
+
+                data_temp = l.split(" ")[1:-1]    
+    
         data = {'A': [], 'B': [], 'C': [], 'D': []}
         ABCD = ['A','B','C','D']
        
         for i, reg in enumerate(ABCD):
+
             for j in range(0,njets[1]-njets[0]):
-                data[reg].append((njets[0]+j,float(data_temp[i*(njets[1]-njets[0])+j]), sqrt(float(data_temp[i*(njets[1]-njets[0])+j]))))
+
+                data[reg].append( ( njets[0]+j, float(data_temp[i*(njets[1]-njets[0])+j]), sqrt(float(data_temp[i*(njets[1]-njets[0])+j])) ) )
 
         return data
 
@@ -335,15 +341,16 @@ def getObs(card, njets):
 # -------------
 def main():   
 
-    if not os.path.exists("%s/fit_plots"%(options.path)):
-        os.makedirs("%s/fit_plots"%(options.path))
+    dirTag = options.path.split("_")[-1]
+
+    if not os.path.exists("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/%s/"%(options.path,dirTag)):
+        os.makedirs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/%s/"%(options.path,dirTag))
 
     if not os.path.exists("results"):
         os.makedirs("results")
 
     ROOT.gROOT.SetBatch(True)
     njets  = [int(options.njets[:options.njets.find("-")]),int(options.njets[options.njets.find("-")+1:])+1]
-    dirTag = options.path.split("/")[2].split("_")[-1]
 
     print("Making pre and post fit distributions for:")
     
@@ -354,12 +361,12 @@ def main():
 
         #signals   = ["RPV", "StealthSYY"            ]
         signals   = ["RPV"]
-        masses    = [m for m in range(300, 1450, 50)]
+        #masses    = [m for m in range(300, 1450, 50)]
+        masses    = [350, 550, 850]
         dataTypes = ["pseudoData", "pseudoDataS"    ]
-        #channels  = ["0l", "1l"                     ]
-        channels  = ["1l"]
-        close     = ""
+        channels  = ["0l", "1l"                     ]
 
+        close     = ""
         if options.setClosure:
             close = "_perfectClose"
 
@@ -396,11 +403,13 @@ def main():
         signals   = ["RPV"]
         masses    = [350, 550, 850]
         dataTypes = ["pseudoData", "pseudoDataS"]
-        channels  = ["1l"]
+        channels  = options.channel
+       
         close     = ""
+
         if options.setClosure:
             close = "_perfectClose"
-        
+ 
         for c in channels:
             for d in dataTypes:
                 for s in signals:

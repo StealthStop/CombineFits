@@ -1,6 +1,7 @@
 # make a table of the signal strength and associated signifances. 
 # Do this for every signal point
 
+import os
 import argparse
 import ROOT
 from array import array
@@ -45,7 +46,8 @@ class Plotter():
                        "2018"        : "2018",
                        "Run2UL"      : "Run2UL", 
                        "0l"          : "fully-hadronic", 
-                       "1l"          : "semi-leptonic", 
+                       "1l"          : "semi-leptonic",
+                       "2l"          : "fully-leptonic", 
                        "combo"       : "Combo", 
         }
 
@@ -57,6 +59,7 @@ class Plotter():
                        "Run2UL"      : ROOT.kBlack,
                        "0l"          : ROOT.kRed+1,
                        "1l"          : ROOT.kBlue+1,
+                       "2l"          : ROOT.kCyan+1,
                        "combo"       : ROOT.kGreen+1,
         }
 
@@ -106,7 +109,7 @@ class Plotter():
     # -----------------
     # Make pvalue plots
     # -----------------
-    def makePValuePlot(self, path, dataSets, runType, approved, wip, years = ["2016"], channels = ["0l", "1l", "combo"], models = ["RPV"]):
+    def makePValuePlot(self, path, dataSets, runType, approved, wip, years = ["2016"], channels = ["0l", "1l", "2l", "combo"], models = ["RPV"]):
 
         # Use any of the DataSet objects to get range of mass points
         tempDataSet = dataSets["%s_%s_%s"%(years[0], models[0], channels[0])]
@@ -115,10 +118,10 @@ class Plotter():
 
         Xmin = xpoints[0]
         Xmax = xpoints[-1]
-        Ymin = 5.0e-10
+        Ymin = 5.0e-37 # 5.0e-10
 
         if runType != "pseudoDataS":
-            Ymin = 5.0e-10 # 5.0e-37
+            Ymin = 5.0e-37 # 5.0e-10 
         Ymax = 1
     
         numSigma = 4
@@ -222,18 +225,19 @@ class Plotter():
         cmstext.SetTextSize(0.060)
         cmstext.SetTextFont(61)
         cmstext.DrawLatex(ROOT.gPad.GetLeftMargin(), 1 - (ROOT.gPad.GetTopMargin() - 0.017), "CMS")
-        cmstext.SetTextSize(0.055)
+        cmstext.SetTextSize(0.035)
         cmstext.SetTextFont(52)
 
         if not approved:
-            if not wip:
+            if wip:
                 cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Work in Progress")
             else:
                 cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Preliminary")
    
         cmstext.SetTextFont(42)
         cmstext.SetTextAlign(31)
-        cmstext.DrawLatex(1 - ROOT.gPad.GetRightMargin(), 1 - (ROOT.gPad.GetTopMargin() - 0.017), "137 fb^{-1} (13 TeV)")
+        cmstext.SetTextSize(0.045)
+        cmstext.DrawLatex(1 - ROOT.gPad.GetRightMargin(), 1 - (ROOT.gPad.GetTopMargin() - 0.017), "138 fb^{-1} (13 TeV)")
     
         c1, aux = self.drawSignificanceLines(c1, Xmin, Xmax, numSigma)
 
@@ -311,7 +315,7 @@ def makeSigTex(name, l):
 
     for dic in l:
        
-         caption = ""
+        caption = ""
         
         if dic["runtype"] == "pseudoDataS": 
             caption = "Best fit signal strengths for %s model in MC with signal injection" % dic["model"] 
@@ -341,17 +345,17 @@ def makeSigTex(name, l):
 # -------------
 def main():
     parser = argparse.ArgumentParser("usage: %prog [options]\n")
-    parser.add_argument('--basedir',   dest='basedir',   type=str,            default = '.',                        help = "Path to output files"            )
-    parser.add_argument('--outdir',    dest='outdir',    type=str,            default = '.',                        help = "Path to put output files"        )
-    parser.add_argument('--pdfName',   dest='pdfName',   type=str,            default = '',                         help = "name to add at the end of pdf"   )
-    parser.add_argument('--approved',  dest='approved',                       default = False, action='store_true', help = 'Is plot approved'                )
-    parser.add_argument('--wip',       dest='wip',                            default = False, action='store_true', help = 'Is plot a work in progress'      )
-    parser.add_argument('--asimov',    dest='asimov',                         default = False, action='store_true', help = 'Is plot w/wo asimov style'       )
-    parser.add_argument('--models',    dest='models',    type=str, nargs="+", default = ["RPV"] ,                   help = 'Which models to plot for'        )
-    parser.add_argument('--dataTypes', dest='dataTypes', type=str, nargs="+", default = ["pseudoDataS"] ,           help = 'Which dataTypes to plot'         )
-    parser.add_argument('--years',     dest='years',     type=str, nargs="+", default = ["Run2UL"] ,                help = 'Which years to plot'             )
-    parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "combo"] ,     help = 'Which channels to plot'          )
-    parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,           help = 'End points of mass range to plot')
+    parser.add_argument('--basedir',   dest='basedir',   type=str,            default = '.',                         help = "Path to output files"            )
+    parser.add_argument('--outdir',    dest='outdir',    type=str,            default = '.',                         help = "Path to put output files"        )
+    parser.add_argument('--pdfName',   dest='pdfName',   type=str,            default = '',                          help = "name to add at the end of pdf"   )
+    parser.add_argument('--approved',  dest='approved',                       default = False, action='store_true',  help = 'Is plot approved'                )
+    parser.add_argument('--wip',       dest='wip',                            default = False, action='store_true',  help = 'Is plot a work in progress'      )
+    parser.add_argument('--asimov',    dest='asimov',                         default = False, action='store_true',  help = 'Is plot w/wo asimov style'       )
+    parser.add_argument('--models',    dest='models',    type=str, nargs="+", default = ["RPV"] ,                    help = 'Which models to plot for'        )
+    parser.add_argument('--dataTypes', dest='dataTypes', type=str, nargs="+", default = ["pseudoDataS"] ,            help = 'Which dataTypes to plot'         )
+    parser.add_argument('--years',     dest='years',     type=str, nargs="+", default = ["Run2UL"] ,                 help = 'Which years to plot'             )
+    parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "2l", "combo"], help = 'Which channels to plot'          )
+    parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,            help = 'End points of mass range to plot')
 
     args    = parser.parse_args()
     pdfName = "_"+args.pdfName if args.pdfName != '' else args.pdfName
@@ -362,7 +366,7 @@ def main():
     Mass & Best fit signal strength & Observed Significance & p-value\\\\ \hline
     """    
     path      = args.basedir
-    outPath   = args.basedir + "/" + args.outdir
+    outPath   = args.basedir + "/" + "output-files/" + "plots_dataCards_TT_allTTvar/" + args.outdir
     models    = args.models
     dataTypes = args.dataTypes
     years     = args.years
