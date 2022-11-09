@@ -13,7 +13,7 @@ def main():
     parser.add_option("--Run2",                  dest="Run2",           action="store_true", default=False,                     help="Scale 2016 pseudodata to full Run 2 lumi")
     parser.add_option("-s", "--signal",          dest="signal",         action="store",      default="RPV_550",  type='string', help="Name of signal and mass for card separated by \'_\' (e.g. RPV_550)")
     parser.add_option("-I", "--injectedSignal",  dest="injectedSignal", action="store",      default="SAME",     type='string', help="Name of signal and mass to inject for all cards")
-    parser.add_option("-l", "--leptons",         dest="leptons",        action="store",      default="Nonetype", type="string", help="Number of leptons in final state (0 or 1)")
+    parser.add_option("-l", "--leptons",         dest="leptons",        action="store",      default=" ",        type="string", help="Number of leptons in final state (0,1,2,combo)")
     parser.add_option("-p", "--path",            dest="path",           action="store",      default="./",       type='string', help="Path to root files")
     parser.add_option("-y", "--year",            dest="year",           action="store",      default="Run2UL",   type='string', help="Year for producing datacards")
     parser.add_option("--minNjet",               dest="minNjet",        action="store",      default=7,          type="int",    help="Min Njet bin to use")
@@ -36,8 +36,7 @@ def main():
         signals = ["RPV"]
         masses = [x for x in range(300, 1450, 50)]
         dataTypes = ["pseudoData", "pseudoDataS"]       
-        #leptons = ["0l", "1l", "combo"]
-        leptons = ["1l"]
+        leptons = ["0l", "1l", "combo"]
 
         for s in signals:
             for m in masses:
