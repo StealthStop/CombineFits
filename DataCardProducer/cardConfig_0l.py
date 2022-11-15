@@ -43,7 +43,7 @@ observed = {
     },
     "QCD" : {
         "path"      : "$YEAR_QCD.root",
-        "sys"       : 1.0, # 1.2
+        "sys"       : 1.0, 
         "hist"      : obs_hist, 
         "type"      : "bkg", 
         "fit"       : True,
@@ -92,8 +92,6 @@ observed = {
 #     "njets" : Total number of Njets bins for each A, B, C, D region (6)
 # }
 
-#sys_path  = "$YEAR_TT_TTvar_Syst_$CHANNEL.root"       # for TT
-#sys_path  = "$YEAR_$CHANNEL_QCDCR_Prediction.root"    # for QCD
 sys_path  = "$YEAR_TT_QCD_Syst_$CHANNEL_0.6_0.6.root" # including TT and QCD
 sys_hist  = "MCcorr_Ratio_MC_$SYST"
 sys_type  = "sys"
@@ -136,7 +134,7 @@ systematics = {
     ## QCD syst.
     #"QCD_Syst" : {
     #    "path"  : sys_path,
-    #    "hist"  : "Run2UL_Data_only_QCD_1l_QCDCR", # need to put correct histo here
+    #    "hist"  : "Run2UL_QCDCR_syst_0l", # need to put correct histo here
     #    "distr" : "lnN",
     #    "proc"  : "QCD",
     #    "type"  : sys_type,
@@ -170,3 +168,9 @@ for syst in MCcorr_Systs_Det + MCcorr_Systs_Mod:
         "start" : sys_start, 
         "end"   : sys_end,
     }
+
+
+
+
+
+

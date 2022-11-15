@@ -8,7 +8,7 @@ import copy
 # systematics   : Dictionary loaded from cardConfig to specify info about ROOT files and histograms
 # lumiSyst      : Flat systematic uncertainty applied to all bins in datacard
 # dataType      : Either pseudoData, pseudoDataS, or Data
-# channel       : Either "0l", "1l", or "combo"
+# channel       : Either "0l", "1l", "2l" or "combo"
 # year          : Which year to run on
 # model         : Which signal model "RPV" or "SYY" to use in the fit
 # mass          : Which signal mass point to use in the fit
@@ -24,7 +24,7 @@ import copy
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, Run2, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass):
      
         self.path          = path
         self.observed      = observed
@@ -32,21 +32,18 @@ class dataCardMaker:
         self.systematics   = systematics
         self.lumiSyst      = 1.05
         self.dataType      = dataType
-        self.channel        = channel
+        self.channel       = channel
         self.year          = year
         self.model         = model
         self.mass          = mass
         self.injectedModel = injectedModel
         self.injectedMass  = injectedMass
+        self.NoMCcorr      = NoMCcorr
+        self.min_nj        = min_nj
+        self.max_nj        = max_nj
 
         self.RUN2SF = 1.0
-        if Run2:
-            self.RUN2SF = 138.0 / 35.9 
-
-        self.NoMCcorr = NoMCcorr
-
-        self.min_nj    = min_nj
-        self.max_nj    = max_nj
+        
         self.njetStart = None
         self.njetEnd   = None
         self.njets     = None
@@ -71,16 +68,18 @@ class dataCardMaker:
             histName = histName.replace("$SYST", kwargs["extra"])
 
         h = tfile.Get(histName)
+        print "histName : ", histName
+        print "tfile    : ", tfile
 
-        nbins = h.GetNbinsX()
+        nbins          = h.GetNbinsX()
         self.njetStart = hdict["start"] 
-        self.njetEnd = hdict["end"]
-        self.njets = self.njetEnd - self.njetStart + 1
+        self.njetEnd   = hdict["end"]
+        self.njets     = self.njetEnd - self.njetStart + 1
 
         # Region labels e.g. "ABCD" are taken from last four characters of histogram name
         # See cardConfig for format of histogram name
         regions = hdict["hist"][-4::]
-        mask = self.getBinMask()
+        mask    = self.getBinMask()
 
         # Scale factor only applies to event counts, not systematic values or corrections
         SF = 1.0
@@ -94,8 +93,9 @@ class dataCardMaker:
 
             # Round all event count values to whole number (do not round systematic values of course)
             if hdict["type"] != "sys" and hdict["type"] != "corr":
+               
+                # Apply a floor to weighted event counts for any bkg or sig process 
                 roundedVal = round(val)
-                # Apply a floor to weighted event counts for any bkg or sig process
                 if roundedVal < 0.1:
                     binValues.append(0.1)
                 else:
@@ -113,33 +113,31 @@ class dataCardMaker:
     # --------------------------------------------------------------------------------------
     def fillBinValues(self):
 
-        # ------------------------------------------------------------
         # Loop over processes in the observed dictionary
         # and read their corresponding histogram bin entries
         # into a dictionary. Do this also for loading the systematics.
-        # ------------------------------------------------------------
         for proc in self.observed.keys():
 
             # Several keywords for $CHANNEL, $YEAR, etc. can be present in the 
             # ROOT file name and need to be replaced with actual values "1l", "2016", etc. 
             # For the special case of loading signal, _two_ files are loaded:
             # One file for signal component used in fit and other injected into pseudoData
-            path    = self.observed[proc]["path"].replace("$MASS", self.mass) \
-                                                 .replace("$MODEL", self.model) \
-                                                 .replace("$CHANNEL", self.channel) \
-                                                 .replace("$YEAR", self.year)
-            pathInj = self.observed[proc]["path"].replace("$MASS", self.injectedMass) \
-                                                 .replace("$MODEL", self.injectedModel) \
-                                                 .replace("$CHANNEL", self.channel) \
-                                                 .replace("$YEAR", self.year)
+            path    = self.observed[proc]["path"].replace("$MASS",    self.mass         ) \
+                                                 .replace("$MODEL",   self.model        ) \
+                                                 .replace("$CHANNEL", self.channel      ) \
+                                                 .replace("$YEAR",    self.year         )
+            pathInj = self.observed[proc]["path"].replace("$MASS",    self.injectedMass ) \
+                                                 .replace("$MODEL",   self.injectedModel) \
+                                                 .replace("$CHANNEL", self.channel      ) \
+                                                 .replace("$YEAR",    self.year         )
 
-            tfile    = ROOT.TFile.Open(self.path+"/"+path)
+            tfile    = ROOT.TFile.Open(self.path+"/"+path   )
             tfileInj = ROOT.TFile.Open(self.path+"/"+pathInj)
 
             newproc    = proc.replace("$MODEL", self.model) \
-                             .replace("$MASS", self.mass)
+                             .replace("$MASS",  self.mass )
             newprocInj = "INJECT_" + proc.replace("$MODEL", self.injectedModel) \
-                                         .replace("$MASS", self.injectedMass)
+                                         .replace("$MASS",  self.injectedMass )
 
             # Replace the "$MODEL_$MASS" key with actual model and mass key
             # Add "INJECT" prefix for key pointing to signal being injected
@@ -206,12 +204,17 @@ class dataCardMaker:
     # For writing out txt file datacard
     # ---------------------------------
     def writeCards(self):
+
+        # ------------------------------------------------------------
         # Get a mask for determining which bins to include in datacard
         # (based on minNjet and maxNjet specified on command line)
-        mask = self.getBinMask()
+        # ------------------------------------------------------------
+        mask  = self.getBinMask()
         masks = 0
+
         for i in mask:
             masks -= i - 1
+
         with open(self.outpath, "w") as file:
 
             jmax = 0
@@ -223,15 +226,19 @@ class dataCardMaker:
                 file.write("# INJECTING SIGNAL : {0}_{1}\n".format(self.injectedModel, self.injectedMass))
                 file.write("# FITTING SIGNAL   : {0}_{1}\n\n\n".format(self.model, self.mass))
 
+            # -----------------------------------------------------------------------
             # Write datacard header specifying number of processes, bins, systematics
+            # -----------------------------------------------------------------------
             file.write("imax {}  \n".format(self.obsNbins - masks))
             file.write("jmax {}  \n".format(jmax))
             file.write("kmax * \n")
             file.write("\n------------------------")
-            bin_str = "{} ".format("\nbin")
+            bin_str  = "{} ".format("\nbin")
             tempproc = self.observed.keys()[0]
 
+            # ---------------------------
             # Write out FAKE shapes lines
+            # ---------------------------
             shape_str = ""
             for reg in ["A", "B", "C", "D"]:
                 for nj in range(self.min_nj, self.max_nj+1):
@@ -240,7 +247,9 @@ class dataCardMaker:
             file.write(shape_str)
             file.write("\n------------------------")
 
+            # -------------------------
             # Write line for bin labels
+            # -------------------------
             for bin in range(self.obsNbins):
                 if not mask[bin]:
                     continue
@@ -248,7 +257,9 @@ class dataCardMaker:
                 bin_str += "{} ".format(temp_str)
             file.write(bin_str)
 
+            # ------------------------------------------------------
             # Write line for total observed event counts in each bin
+            # ------------------------------------------------------
             obs_str = "{} ".format("\nobservation")
             for obs in range(self.obsNbins):
                 if not mask[obs]:
@@ -266,7 +277,7 @@ class dataCardMaker:
                     continue
 
                 for proc in self.observed.keys():
-
+                    
                     # Exclude any processes not designated for fit
                     if not self.observed[proc]["fit"]:
                         continue
@@ -299,7 +310,9 @@ class dataCardMaker:
             process2_str = "{} ".format("\nprocess")
             file.write("\n--------------------------")
 
+            # -------------------------------------------------------
             # Write out 5% lumi systematic for all processes and bins
+            # -------------------------------------------------------
             lumi_str = "{0:<8}".format("\nlumi")
             lumi_str += "{0:<7}".format("lnN")
             for bin in range(self.obsNbins):
@@ -309,9 +322,9 @@ class dataCardMaker:
                     lumi_str += "{} ".format(self.lumiSyst)
             file.write(lumi_str)
 
-            # ---------------------------------------------------------
-            # Add 20% normalization systematic on signal and background
-            # ---------------------------------------------------------
+            # -----------------------------------------------------------
+            # Write 20% normalization systematic on signal and background
+            # -----------------------------------------------------------
             for process1 in self.observed.keys():
 
                 # Only put systematic for component being used in the fit
@@ -334,9 +347,9 @@ class dataCardMaker:
                             process_str += "{} ".format("--")
                 file.write(process_str)
 
-            # ---------------------------------------------------------
-            # Add in a line to datacard for each independent systematic
-            # ---------------------------------------------------------
+            # --------------------------------------------------------
+            # Write a line to datacard for each independent systematic
+            # --------------------------------------------------------
             for sys in self.systematics.keys():
             
                 # To skip MC correction factor (added in a different spot in datacard)
@@ -345,13 +358,16 @@ class dataCardMaker:
 
                 sys_str = "{0:<8}".format("\n"+"np_"+sys + "_" + self.channel + '\t')
                 sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+
                 for bin in range(self.obsNbins):
                     if not mask[bin]:
                         continue
 
                     for proc in self.observed.keys():
+                        
                         if not self.observed[proc]["fit"]:
                             continue
+                        
                         if bin >= self.sysNbins:
                             sys_str += "{} ".format("--")
                             continue
@@ -360,6 +376,7 @@ class dataCardMaker:
                             sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                         else:
                             sys_str += "{} ".format("--")
+
                 file.write(sys_str)
                     
             params = ["alpha", "beta", "gamma", "delta"]
@@ -379,14 +396,19 @@ class dataCardMaker:
                     for proc in self.observed.keys():
                         if proc != bkgd and self.observed[proc]["type"] != "sig":
                             rate -= self.observed[proc]["binValues"][abin+ibin]
+
+                    # ----------------------------
+                    # Write tt MC correction ratio
+                    # ----------------------------
                     if ibin == 0:
 
+                        # Hard-coded MC correction factor to 1.0 (turning off the correction in ABCD calculation)
                         if self.NoMCcorr:
-                            # Hard-coded MC correction factor to 1.0 (turning off the correction in ABCD calculation)
                             file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], 1.0))
+
+                        # Includes actual MC Correction Ratio
                         else:
-                            # Includes actual MC Correction
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrection"]["binValues"][abin],4)))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
 
                     else: 
                         file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 

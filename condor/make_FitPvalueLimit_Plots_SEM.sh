@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------
 # How run this script:
 # ./make_FitPvalueLimit_Plots_SEM.sh all
+# ./make_FitPvalueLimit_Plots_SEM.sh impact
 # ./make_FitPvalueLimit_Plots_SEM.sh fit
 # ./make_FitPvalueLimit_Plots_SEM.sh limit
 # ./make_FitPvalueLimit_Plots_SEM.sh pvalue
@@ -26,8 +27,8 @@ CARDS=("cardsInjectNominal")
 YEARS=("Run2UL")
 MODELS=("RPV")
 MASSES=("550")
-#CHANNELS=("1l")
-CHANNELS=("0l" "1l" "combo")
+#CHANNELS=("0l" "1l" "2l" "combo")
+CHANNELS=("1l" "2l" "combo")
 DATATYPES=("pseudoData" "pseudoDataS")
 
 for YEAR in ${YEARS[@]}; do
@@ -79,8 +80,8 @@ for YEAR in ${YEARS[@]}; do
                             echo "making pvalue plots -------------------------------------------"
                             #python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels ${CHANNEL} --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE}
                             #python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels ${CHANNEL} --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE} --asimov
-                            python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels 0l 1l combo --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE} --wip
-                            python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels 0l 1l combo --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE} --asimov --wip
+                            python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels 1l 2l combo --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE} --wip
+                            python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARD} --outdir pvalue_plots --models ${MODEL} --channels 1l 2l combo --pdf=pvalue_with_${CARD} --dataTypes ${DATATYPE} --asimov --wip
                             
                         fi
                     done
