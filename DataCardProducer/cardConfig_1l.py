@@ -42,9 +42,9 @@ observed = {
         "end"       : obs_end,
     },
     "QCD" : {
-        "path"      : "$YEAR_QCD.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$CHANNEL_0.6_0.6.root",
         "sys"       : 1.0, 
-        "hist"      : obs_hist, 
+        "hist"      : "$YEAR_Data_only_QCD_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
         "fit"       : True,
         "inj"       : True,
@@ -123,7 +123,7 @@ systematics = {
     # QCD TF (transfer factor)
     "QCD_TF" : {
         "path"  : sys_path,
-        "hist"  : "Run2UL_TF_$CHANNELOver$CHANNEL_QCDCRABCD",
+        "hist"  : "$YEAR_TF_$CHANNELOver$CHANNEL_QCDCRABCD",
         "distr" : "lnN",
         "proc"  : "QCD",
         "type"  : "TF",

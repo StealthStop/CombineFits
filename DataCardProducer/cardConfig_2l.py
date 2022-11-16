@@ -42,9 +42,9 @@ observed = {
         "end"       : obs_end,
     },
     "QCD" : {
-        "path"      : "$YEAR_QCD.root",
-        "sys"       : 1.2,
-        "hist"      : obs_hist, 
+        "path"      : "${YEAR}_TT_QCD_Syst_${CHANNEL}_0.6_0.6.root",
+        "sys"       : 1.0,
+        "hist"      : "$YEAR_Data_only_QCD_$CHANNEL_QCDCR",
         "type"      : "bkg", 
         "fit"       : True,
         "inj"       : True,

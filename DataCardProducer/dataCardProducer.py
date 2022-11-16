@@ -60,7 +60,8 @@ class dataCardMaker:
 
         # The histogram name will most likely contain the $CHANNEL keyword
         # and should be replaced with respective channel string e.g. 1l or 0l
-        histName = hdict["hist"].replace("$CHANNEL", self.channel)
+        histName = hdict["hist"].replace("$CHANNEL", self.channel) \
+                                .replace("$YEAR",    self.year)
         
         # If loading a systematic, replace $SYST keyword with actual name e.g. TT_JECup
         # that is passed in the kwargs
@@ -68,8 +69,6 @@ class dataCardMaker:
             histName = histName.replace("$SYST", kwargs["extra"])
 
         h = tfile.Get(histName)
-        print "histName : ", histName
-        print "tfile    : ", tfile
 
         nbins          = h.GetNbinsX()
         self.njetStart = hdict["start"] 
@@ -78,7 +77,7 @@ class dataCardMaker:
 
         # Region labels e.g. "ABCD" are taken from last four characters of histogram name
         # See cardConfig for format of histogram name
-        regions = hdict["hist"][-4::]
+        regions = "ABCD"
         mask    = self.getBinMask()
 
         # Scale factor only applies to event counts, not systematic values or corrections
@@ -105,6 +104,37 @@ class dataCardMaker:
            
             binErrors.append(err)
             binNames.append(reg+str(self.njetStart + bin % self.njets))
+
+        return binValues, binErrors, binNames, nbins
+
+    # --------------------------------------------------------------------
+    # Read bin values (transfer factor) from a histogram
+    # --------------------------------------------------------------------
+    def calcBinValuesTF(self, tfile, hdict, **kwargs):
+        binValues = []; binErrors =[]; binNames = []
+
+        # The histogram name will most likely contain the $CHANNEL keyword
+        # and should be replaced with respective channel string e.g. 1l or 0l
+        histName = hdict["hist"].replace("$CHANNEL", self.channel) \
+                                .replace("$YEAR",    self.year)
+        
+        h = tfile.Get(histName)
+
+        nbins          = h.GetNbinsX()
+
+        # Region labels e.g. "ABCD" are taken from last four characters of histogram name
+        # See cardConfig for format of histogram name
+        regions = "ABCD"
+        mask    = self.getBinMask()
+
+        for bin in range(0, nbins):
+            val = h.GetBinContent(bin+1)
+            err = h.GetBinError(bin+1)
+            reg = regions[int(bin)]
+
+            binValues.append(val)
+            binErrors.append(err)
+            binNames.append(reg)
 
         return binValues, binErrors, binNames, nbins
 
@@ -163,7 +193,10 @@ class dataCardMaker:
             tfile = ROOT.TFile.Open(self.path+"/"+ self.systematics[sy]["path"].replace("$CHANNEL", self.channel) \
                                                                                .replace("$YEAR", self.year))
 
-            self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
+            if self.systematics[sy]["type"] != "TF":
+                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
+            else:
+                self.systematics["QCD_TF"]["binValues"], self.systematics["QCD_TF"]["binErrors"], self.systematics["QCD_TF"]["binNames"], self.tfNbins = self.calcBinValuesTF(tfile, self.systematics["QCD_TF"])
 
         # Depending on if running for pseudoData(S) or Data
         # make the values for the "observed" line in the datacard
@@ -298,7 +331,7 @@ class dataCardMaker:
 
                         # For TT process, put the processID instead of the actual event counts
                         # as TT is calculated via the ABCD method
-                        if proc == "Data" or proc == "TT":
+                        if proc == "Data" or proc == "TT" or proc == "QCD":
                             rate_str += "{} ".format(self.observed[proc]["processID"])
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
@@ -379,7 +412,8 @@ class dataCardMaker:
 
                 file.write(sys_str)
                     
-            params = ["alpha", "beta", "gamma", "delta"]
+            params     = ["alpha", "beta", "gamma", "delta"]
+            moreparams = ["romeo", "sierra", "tango", "uniform", "qcdtf"]
             file.write("\n")
             bkgd = None
             if self.dataType == "Data":
@@ -412,6 +446,25 @@ class dataCardMaker:
 
                     else: 
                         file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 
+
+                file.write("\n")
+                # Write in QCD prediction based on scaling data from CR
+                for ibin in range(0, len(self.observedPerBin), self.njets):
+
+                    rate  = self.observed["QCD"]["binValues"][abin+ibin]
+
+                    # ------------------------------
+                    # Write QCD estimate to the card 
+                    # ------------------------------
+                    file.write("{0}{8}_{3:<12} rateParam Y{4}_{1}{8}_{3} {2} (@0*{5}) {6}{7}_{3}\n".format(moreparams[int(ibin / self.njets)],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)],"QCD",self.channel,self.year[-2:], round(rate,4), moreparams[4],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)], abin+self.njets+1))
+
+            file.write("\n")
+            for ibin in range(0, self.tfNbins):
+                tf    = self.systematics["QCD_TF"]["binValues"][ibin]
+                tfUnc = self.systematics["QCD_TF"]["binErrors"][ibin]
+
+                #file.write("{0}{1}_{5:<12} rateParam Y{6}_{1}_{5} {2} {3:<12} {4}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],"QCD",round(tf,4),"[{0},{1}]".format(round(tf-tfUnc, 4), round(tf+tfUnc,4)),self.channel,self.year[-2:])) 
+                file.write("{0}{1}_{4:<12} param {2:<12} {3}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],round(tf,4),round(tfUnc, 4),self.channel,self.year[-2:])) 
 
     # ----------------------------------------------------------------
     # Make a bin mask based on Njets range specified on command line
