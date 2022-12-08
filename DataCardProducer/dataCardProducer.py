@@ -26,21 +26,23 @@ class dataCardMaker:
 
     def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass):
      
-        self.path          = path
-        self.observed      = observed
-        self.outpath       = outpath
-        self.systematics   = systematics
-        self.lumiSyst      = 1.05
-        self.dataType      = dataType
-        self.channel       = channel
-        self.year          = year
-        self.model         = model
-        self.mass          = mass
-        self.injectedModel = injectedModel
-        self.injectedMass  = injectedMass
-        self.NoMCcorr      = NoMCcorr
-        self.min_nj        = min_nj
-        self.max_nj        = max_nj
+        self.path           = path
+        self.observed       = observed
+        self.outpath        = outpath
+        self.systematics    = systematics
+        self.lumiSyst       = 1.05
+        self.dataType       = dataType
+        self.channel        = channel
+        self.year           = year
+        self.model          = model
+        self.models         = "SYY" if "SYY" in model else "RPV"
+        self.mass           = mass
+        self.injectedModel  = injectedModel
+        self.injectedModels = "SYY" if "SYY" in model else "RPV"
+        self.injectedMass   = injectedMass
+        self.NoMCcorr       = NoMCcorr
+        self.min_nj         = min_nj
+        self.max_nj         = max_nj
 
         self.RUN2SF = 1.0
         
@@ -61,7 +63,8 @@ class dataCardMaker:
         # The histogram name will most likely contain the $CHANNEL keyword
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
-                                .replace("$YEAR",    self.year)
+                                .replace("$YEAR",    self.year) \
+                                .replace("$MODELS",   self.models)
         
         # If loading a systematic, replace $SYST keyword with actual name e.g. TT_JECup
         # that is passed in the kwargs
@@ -116,6 +119,7 @@ class dataCardMaker:
         # The histogram name will most likely contain the $CHANNEL keyword
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
+                                .replace("$MODELS",  self.models) \
                                 .replace("$YEAR",    self.year)
         
         h = tfile.Get(histName)
@@ -153,10 +157,12 @@ class dataCardMaker:
             # For the special case of loading signal, _two_ files are loaded:
             # One file for signal component used in fit and other injected into pseudoData
             path    = self.observed[proc]["path"].replace("$MASS",    self.mass         ) \
+                                                 .replace("$MODELS",  self.models       ) \
                                                  .replace("$MODEL",   self.model        ) \
                                                  .replace("$CHANNEL", self.channel      ) \
                                                  .replace("$YEAR",    self.year         )
             pathInj = self.observed[proc]["path"].replace("$MASS",    self.injectedMass ) \
+                                                 .replace("$MODELS",  self.injectedModels) \
                                                  .replace("$MODEL",   self.injectedModel) \
                                                  .replace("$CHANNEL", self.channel      ) \
                                                  .replace("$YEAR",    self.year         )
@@ -191,7 +197,8 @@ class dataCardMaker:
         # Loop over the systematics dictionary and load in Njets histograms for systs and MC correction factor
         for sy in self.systematics.keys():
             tfile = ROOT.TFile.Open(self.path+"/"+ self.systematics[sy]["path"].replace("$CHANNEL", self.channel) \
-                                                                               .replace("$YEAR", self.year))
+                                                                               .replace("$YEAR", self.year) \
+                                                                               .replace("$MODELS", self.models))
 
             if self.systematics[sy]["type"] != "TF":
                 self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
@@ -332,7 +339,7 @@ class dataCardMaker:
                         # For TT process, put the processID instead of the actual event counts
                         # as TT is calculated via the ABCD method
                         if proc == "Data" or proc == "TT" or proc == "QCD":
-                            rate_str += "{} ".format(self.observed[proc]["processID"])
+                            rate_str += "{} ".format(1)
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
 
@@ -456,15 +463,17 @@ class dataCardMaker:
                     # ------------------------------
                     # Write QCD estimate to the card 
                     # ------------------------------
-                    file.write("{0}{8}_{3:<12} rateParam Y{4}_{1}{8}_{3} {2} (@0*{5}) {6}{7}_{3}\n".format(moreparams[int(ibin / self.njets)],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)],"QCD",self.channel,self.year[-2:], round(rate,4), moreparams[4],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)], abin+self.njets+1))
+                    if "2l" not in self.channel:
+                        file.write("{0}{8}_{3:<12} rateParam Y{4}_{1}{8}_{3} {2} (@0*{5}) {6}{7}_{3}\n".format(moreparams[int(ibin / self.njets)],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)],"QCD",self.channel,self.year[-2:], round(rate,4), moreparams[4],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)], abin+self.njets+1))
 
             file.write("\n")
-            for ibin in range(0, self.tfNbins):
-                tf    = self.systematics["QCD_TF"]["binValues"][ibin]
-                tfUnc = self.systematics["QCD_TF"]["binErrors"][ibin]
+            if "2l" not in self.channel:
+                for ibin in range(0, self.tfNbins):
+                    tf    = self.systematics["QCD_TF"]["binValues"][ibin]
+                    tfUnc = self.systematics["QCD_TF"]["binErrors"][ibin]
 
-                #file.write("{0}{1}_{5:<12} rateParam Y{6}_{1}_{5} {2} {3:<12} {4}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],"QCD",round(tf,4),"[{0},{1}]".format(round(tf-tfUnc, 4), round(tf+tfUnc,4)),self.channel,self.year[-2:])) 
-                file.write("{0}{1}_{4:<12} param {2:<12} {3}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],round(tf,4),round(tfUnc, 4),self.channel,self.year[-2:])) 
+                    #file.write("{0}{1}_{5:<12} rateParam Y{6}_{1}_{5} {2} {3:<12} {4}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],"QCD",round(tf,4),"[{0},{1}]".format(round(tf-tfUnc, 4), round(tf+tfUnc,4)),self.channel,self.year[-2:])) 
+                    file.write("{0}{1}_{4:<12} param {2:<12} {3}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],round(tf,4),round(tfUnc, 4),self.channel,self.year[-2:])) 
 
     # ----------------------------------------------------------------
     # Make a bin mask based on Njets range specified on command line

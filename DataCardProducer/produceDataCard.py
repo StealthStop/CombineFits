@@ -59,6 +59,9 @@ def main():
                 
                 else:
                     Model = model + "_2t6j"
+                    if "SYY" in model:
+                        Model = "Stealth" + Model
+                        
 
                     if not os.path.isdir(args.outpath):
                         os.makedirs(args.outpath)
