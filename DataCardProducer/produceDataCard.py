@@ -86,9 +86,11 @@ def main():
                     # Must make copy of dictionary to do repeated string replacements in for loop key
                     tempObs = copy.copy(configfile.observed)
                     tempSys = copy.copy(configfile.systematics)
+                    tempMinNjet = copy.copy(configfile.obs_start)
+                    tempMaxNjet = copy.copy(configfile.obs_end)
 
                     # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                    dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, args.minNjet, args.maxNjet, Model, str(mass), injectedModel, str(injectedMass))
+                    dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass))
 
 if __name__ == "__main__":
     main()

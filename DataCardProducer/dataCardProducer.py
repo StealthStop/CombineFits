@@ -428,7 +428,7 @@ class dataCardMaker:
             elif "pseudo" in self.dataType:
                 bkgd = "TT"
 
-            for abin in range(self.min_nj - self.njetStart, self.max_nj - self.njets):
+            for abin in range(self.min_nj - self.njetStart, self.max_nj - self.min_nj + 1):
                 file.write("\n")
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if not mask[abin+ibin]:
@@ -464,7 +464,7 @@ class dataCardMaker:
                     # Write QCD estimate to the card 
                     # ------------------------------
                     if "2l" not in self.channel:
-                        file.write("{0}{8}_{3:<12} rateParam Y{4}_{1}{8}_{3} {2} (@0*{5}) {6}{7}_{3}\n".format(moreparams[int(ibin / self.njets)],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)],"QCD",self.channel,self.year[-2:], round(rate,4), moreparams[4],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)], abin+self.njets+1))
+                        file.write("{0}{8}_{3:<12} rateParam Y{4}_{1}{8}_{3} {2} (@0*{5}) {6}{7}_{3}\n".format(moreparams[int(ibin / self.njets)],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)],"QCD",self.channel,self.year[-2:], round(rate,4), moreparams[4],self.systematics["QCD_TF"]["binNames"][int(ibin / self.njets)], abin+self.min_nj))
 
             file.write("\n")
             if "2l" not in self.channel:
