@@ -1,5 +1,5 @@
 # ---------------------------------
-# Systematics for minpr backgrounds
+# Systematics for minor backgrounds
 # ---------------------------------
 # all backgrounds are entries in the dictionary. the path to the root file (starting from base path) and the systematic uncertainty are specified
 # "NAME OF PROCESS" : {
@@ -14,9 +14,9 @@
 #     "end"       : Ending Njets bin in histogram (12),
 # }
 
-obs_hist  = "h_njets_12incl_$CHANNEL_ABCD"
-obs_start = 7
-obs_end   = 12
+obs_hist  = "h_njets_13incl_$MODELS_$CHANNEL_ABCD"
+obs_start = 8
+obs_end   = 13
 
 observed = {
     "$MODEL_$MASS" : {
@@ -42,9 +42,9 @@ observed = {
         "end"       : obs_end,
     },
     "QCD" : {
-        "path"      : "$YEAR_TT_QCD_Syst_$CHANNEL_0.6_0.6.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root",
         "sys"       : 1.0, 
-        "hist"      : "$YEAR_Data_only_QCD_$CHANNEL_QCDCR", 
+        "hist"      : "$YEAR_Data_only_QCD_$MODELS_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
         "fit"       : True,
         "inj"       : True,
@@ -92,17 +92,17 @@ observed = {
 #     "njets" : Total number of Njets bins for each A, B, C, D region (6)
 # }
 
-sys_path  = "$YEAR_TT_QCD_Syst_$CHANNEL_0.6_0.6.root" # including TT and QCD
-sys_hist  = "MCcorr_Ratio_MC_$SYST"
+sys_path  = "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root" # including TT and QCD
+sys_hist  = "$YEAR_MCcorr_Ratio_MC_$SYST"
 sys_type  = "sys"
-sys_start = 7
-sys_end   = 12
+sys_start = 8
+sys_end   = 13
 
 systematics = {
     # Data-based TT systematics: Corrected Data Closure
     "CorrectedDataClosure" : {
         "path"  : sys_path,
-        "hist"  : "maximum_MCcorrectedData_Syst_All",
+        "hist"  : "$YEAR_maximum_MCcorrectedData_Syst_All",
         "distr" : "lnN",
         "proc"  : "TT",
         "type"  : sys_type,
@@ -112,7 +112,7 @@ systematics = {
     # MC-based TT systematics: Closure Correction Factor Ratio (TTvar/TT) in signal region (at boundary value 1.0)
     "MCcorrectionRatio" : {
         "path"  : sys_path,
-        "hist"  : "MCcorr_TT_TT",
+        "hist"  : "$YEAR_MCcorr_TT_TT",
         "distr" : "lnN",
         "proc"  : "TT",
         "type"  : "corr",
@@ -123,7 +123,7 @@ systematics = {
     # QCD TF (transfer factor)
     "QCD_TF" : {
         "path"   : sys_path,
-        "hist"   : "$YEAR_TF_$CHANNELOver$CHANNEL_QCDCRABCD",
+        "hist"   : "$YEAR_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD",
         "distr"  : "lnN",
         "proc"   : "QCD",
         "type"   : "TF",
