@@ -427,7 +427,7 @@ class dataCardMaker:
                             rate_str += "{} ".format(1)
                         elif proc == "QCD" and "2l" not in self.channel:
                             tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][bin][:1])
-                            rate_str += "{} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                            rate_str += "{:.1f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
                             
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
