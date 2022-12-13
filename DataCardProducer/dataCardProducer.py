@@ -1,6 +1,7 @@
 import ROOT
 import math
 import copy
+import collections
 
 # path          : Full path to the input ROOT files containing Njets histograms for event counts and systematic values
 # observed      : Dictionary loaded from cardConfig containing info about ROOT files, histograms etc.
@@ -478,6 +479,7 @@ class dataCardMaker:
             # --------------------------------------------------------
             # Write a line to datacard for each independent systematic
             # --------------------------------------------------------
+            self.systematics = collections.OrderedDict(sorted(self.systematics.items()))
             for sys in self.systematics.keys():
             
                 # To skip MC correction factor (added in a different spot in datacard)
