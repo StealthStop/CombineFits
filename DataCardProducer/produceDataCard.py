@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--year",            dest="year",           action="store",      default="Run2UL",                             type=str, help="Year for producing datacards"                    )
     parser.add_argument("--channel",         dest="channel",        action="store",      default="0l",                                 type=str, help="Which final state channel (0l, 1l, 2l)"  )
     parser.add_argument("--dataType",        dest="dataType",       nargs="+",           default=["pseudoData", "pseudoDataS"],        type=str, help="Data types: pseudoData, pseudoDataS, Data"       )
-    parser.add_argument("--model",           dest="model",          nargs="+",           default=["RPV", "SYY"],                       type=str, help="Signal models: RPV, SYY"                         )
+    parser.add_argument("--model",           dest="model",          nargs="+",           default=["RPV", "StealthSYY"],                       type=str, help="Signal models: RPV, SYY"                         )
     parser.add_argument("--mass",            dest="mass",           nargs="+",           default=map(str, list(range(300, 1450, 50))), type=str, help="All mass points"                                 )    
     parser.add_argument("--combo",           dest="combo",          nargs="+",           default=[],                                   type=str, help="Which channels to include in combo datacard"     )    
     parser.add_argument("--injectedSignal",  dest="injectedSignal", action="store",      default="SAME",                               type=str, help="Name of signal and mass to inject for all cards" )
@@ -59,8 +59,6 @@ def main():
                 
                 else:
                     Model = model + "_2t6j"
-                    if "SYY" in model:
-                        Model = "Stealth" + Model
                         
 
                     if not os.path.isdir(args.outpath):
