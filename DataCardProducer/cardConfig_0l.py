@@ -33,19 +33,19 @@ observed["$MODEL_$MASS"] = {
         "end"       : obs_end,
     }
 observed["TT"] = {
-        "path"      : "$YEAR_TT.root",
+        "path"      : "$YEAR_Data.root",
         "sys"       : 1.0, # 1.2
         "hist"      : obs_hist, 
         "type"      : "bkg", 
         "fit"       : True,
-        "inj"       : True,
-        "mcStat"    : False,
+        "inj"       : False, # Don't inject data
+        "mcStat"    : False, # Handled in general systematics because it has a different form
         "processID" : 1,
         "start"     : obs_start,
         "end"       : obs_end,
     }
 observed["QCD"] = {
-        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.85_0.74.root",
         "sys"       : 1.0, 
         "hist"      : "$YEAR_Data_only_QCD_$MODELS_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
@@ -80,7 +80,18 @@ observed["Other"] = {
         "start"     : obs_start, # starting njet bin
         "end"       : obs_end,
     }
-
+observed["TT_MC"] = {
+        "path"      : "$YEAR_TT.root",
+        "sys"       : 1.0, # 1.2
+        "hist"      : obs_hist, 
+        "type"      : "bkg", 
+        "fit"       : False,
+        "inj"       : True,
+        "mcStat"    : False,
+        "processID" : -999,
+        "start"     : obs_start,
+        "end"       : obs_end,
+    }
 
 # ---------------------------------
 # Systematics for TT, TTvar and QCD
@@ -111,6 +122,7 @@ systematics = {
         "hist"  : "$YEAR_maximum_MCcorrectedData_Syst_All",
         "distr" : "lnN",
         "proc"  : "TT",
+        "uncorr": True,
         "type"  : sys_type,
         "start" : sys_start, 
         "end"   : sys_end, 
@@ -137,6 +149,16 @@ systematics = {
         "end"   : sys_end, 
     },
 
+    # TTbar MC Stats
+    "TT_MCStat" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "param",
+        "proc"  : "TT",
+        "type"  : "mcStat",
+        "start" : sys_start, 
+        "end"   : sys_end, 
+    }
 
     ## QCD syst.
     #"QCD_Syst" : {

@@ -71,6 +71,7 @@ class Plotter():
                         "Run2UL"      : 0,
                         "0l"          : 4,
                         "1l"          : 3,
+                        "2l"          : 5,
                         "combo"       : 2,
         }
 

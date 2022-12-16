@@ -30,7 +30,7 @@ class dataCardMaker:
         self.observed       = observed
         self.outpath        = outpath
         self.systematics    = systematics
-        self.lumiSyst       = 1.025
+        self.lumiSyst       = 1.016
         self.dataType       = dataType
         self.channel        = channel
         self.year           = year
@@ -446,7 +446,9 @@ class dataCardMaker:
             for bin in range(self.obsNbins):
                 if not mask[bin]:
                     continue
-                for proc in range(len(self.observed.keys())):
+                for proc in self.observed.keys():
+                    if not self.observed[proc]["fit"]:
+                        continue
                     lumi_str += "{} ".format(self.lumiSyst)
             file.write(lumi_str)
 
@@ -484,34 +486,61 @@ class dataCardMaker:
                 if self.systematics[sys]["type"] != "sys":
                     continue
 
-                sys_str = "{0:<8}".format("\n"+"np_"+sys + "_" + self.channel + '\t')
-                sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+                doUncorr = "uncorr" in self.systematics[sys]
 
-                for bin in range(self.obsNbins):
-                    if not mask[bin]:
-                        continue
+                if doUncorr:
 
-                    for proc in self.observed.keys():
-                        
-                        if not self.observed[proc]["fit"]:
+                    for abin in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
+                        file.write("\n")
+                        for ibin in range(0, len(self.observedPerBin), self.njets):
+                            if ibin > 0:
+                                continue
+
+                            sys_str = "{0:<8}".format("\n"+"np_"+sys + self.systematics[sys]["binNames"][abin] + "_" + self.channel + '\t')
+                            sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+
+                            for ibin2 in range(0, len(self.observedPerBin), self.njets):
+                                for abin2 in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
+                                    for proc in self.observed.keys():
+                                        if not self.observed[proc]['fit']:
+                                            continue
+
+                                        if not mask[abin+ibin]:
+                                            continue
+                                        if self.systematics[sys]['proc'] == proc and abin == abin2 and ibin2 == 0:
+                                            sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][abin])
+                                        else:
+                                            sys_str += "{} ".format("--")
+                            file.write(sys_str)
+                else:
+                    sys_str = "{0:<8}".format("\n"+"np_"+sys + "_" + self.channel + '\t')
+                    sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+
+                    for bin in range(self.obsNbins):
+                        if not mask[bin]:
                             continue
-                        
-                        if bin >= self.sysNbins and not "nomHist" in self.systematics[sys].keys():
-                            sys_str += "{} ".format("--")
-                            continue
-                        elif bin >= self.varNbins:
-                            sys_str += "{} ".format("--")
-                            continue
-                      
-                        if proc == self.systematics[sys]["proc"]:
-                            if type(self.systematics[sys]["binValues"][bin]) == str:
-                                sys_str += "{} ".format(self.systematics[sys]["binValues"][bin])
+
+                        for proc in self.observed.keys():
+                            
+                            if not self.observed[proc]["fit"]:
+                                continue
+                            
+                            if bin >= self.sysNbins and not "nomHist" in self.systematics[sys].keys():
+                                sys_str += "{} ".format("--")
+                                continue
+                            elif bin >= self.varNbins:
+                                sys_str += "{} ".format("--")
+                                continue
+                          
+                            if proc == self.systematics[sys]["proc"]:
+                                if type(self.systematics[sys]["binValues"][bin]) == str:
+                                    sys_str += "{} ".format(self.systematics[sys]["binValues"][bin])
+                                else:
+                                    sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:
-                                sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
-                        else:
-                            sys_str += "{} ".format("--")
+                                sys_str += "{} ".format("--")
 
-                file.write(sys_str)
+                    file.write(sys_str)
 
             # Write lines for MC statistical uncertainty
             # Note: We could use autoMCStats if we were handing histograms into the datacard
@@ -537,7 +566,7 @@ class dataCardMaker:
                             for abin2 in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
                                 for process2 in self.observed.keys():
 
-                                    if not mask[abin+ibin]:
+                                    if not mask[abin+ibin] or not self.observed[process2]["fit"]:
                                         continue
                                     if process2 == process1 and abin2 == abin and ibin2 == ibin:
                                         if "QCD" in process1 and "2l" not in self.channel:
@@ -564,8 +593,10 @@ class dataCardMaker:
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if not mask[abin+ibin]:
                         continue
-                    rate = self.observedPerBin[abin+ibin]
+                    rate = self.observed[bkgd]["binValues"][abin+ibin]
                     for proc in self.observed.keys():
+                        if not self.observed[proc]["fit"]:
+                            continue
                         if proc != bkgd and self.observed[proc]["type"] != "sig":
                             if "QCD" in proc and "2l" not in self.channel:
                                 tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][abin+ibin][:1])
@@ -580,16 +611,23 @@ class dataCardMaker:
 
                         # Hard-coded MC correction factor to 1.0 (turning off the correction in ABCD calculation)
                         if self.NoMCcorr:
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], 1.0))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], 1.0))
 
                         # Includes actual MC Correction Ratio
                         else:
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
 
                     else: 
                         file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 
 
-                #file.write("\n")
+                # TTbar MC stat uncertainty applied to the alpha parameters
+                for ibin in range(0, len(self.observedPerBin), self.njets):
+                    if ibin == 0:
+                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["TT_MCStat"]["binErrors"][abin],round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                file.write("\n")
+
+                
+
                 ## Write in QCD prediction based on scaling data from CR
                 #for ibin in range(0, len(self.observedPerBin), self.njets):
 
