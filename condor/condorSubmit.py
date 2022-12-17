@@ -75,6 +75,15 @@ def main():
     doImpact  = 1 if options.doImpact  else 0
     doToyS    = 1 if options.toyS      else 0 
 
+    if doAsym:
+        extra = "_Asym"
+    if doFitDiag:
+        extra = "_FitDiag"
+    if doMulti:
+        extra = "_Multi"
+    if doImpact:
+        extra = "_Impact"
+
     # If user specifies not fits, assume to do all of them
     if not doAsym and not doFitDiag and not doMulti and not doImpact:
         doAsym    = 1
@@ -92,14 +101,17 @@ def main():
     fileParts.append("Executable = %s\n" % executable)
     fileParts.append("Should_Transfer_Files = YES\n")
     fileParts.append("WhenToTransferOutput = ON_EXIT\n")
-    fileParts.append("RequestMemory = 1024\n")
+    if "combo" not in options.channel:
+        fileParts.append("RequestMemory = 1024\n")
+    else:
+        fileParts.append("RequestMemory = 2048\n")
     fileParts.append("x509userproxy = $ENV(X509_USER_PROXY)\n\n")
     fileParts.append("Transfer_Input_Files = {0}/CMSSW_10_2_13.tar.gz, {0}/exestuff.tar.gz\n".format(options.outPath))
 
     # If no specific channel is specified by the user
     # assume to run over all channel combinations
     if options.channel == "None":
-        channels = ['0l', '1l', 'combo']
+        channels = ['0l', '1l', '2l','combo']
     else:
         channels = [options.channel]
 
@@ -118,99 +130,103 @@ def main():
         for mass in masssets:
             mass = mass.strip()
             for channel in channels:
-                # Create the directory for cards and output files
-                outDir = model+"_"+mass+"_"+options.year
-                if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
-                    os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
-                if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
-                    os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
+                for asimov in [0, 1]:
+                    # Create the directory for cards and output files
+                    outDir = model+"_"+mass+"_"+options.year
+                    if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
+                        os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
+                    if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
+                        os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
 
-                if not options.toy and not options.toyS:
+                    if not options.toy and not options.toyS:
 
-                    tagName = "%s%s%s%s_%s"%(options.year, model, mass, options.dataType, channel)
+                        tagName = "%s%s%s%s_%s"%(options.year, model, mass, options.dataType, channel)
 
-                    outputFiles = [
-                        "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
-                        "higgsCombine%s.FitDiagnostics.mH%s.MODEL%s.root"                % (tagName, mass, model),
-                        "higgsCombine%s_SignifExp.Significance.mH%s.MODEL%s.root"        % (tagName, mass, model),
-                        "higgsCombine%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root"        % (tagName, mass, model),
-                        "ws_%s.root"                                                     % (tagName),
-                        "fitDiagnostics%s.root"                                          % (tagName), 
-                        "impacts_%s.json"                                                % (tagName),
-                        "impacts_%s%s%s_%s_%s.pdf"                                       % (options.year, model, mass, channel, options.dataType),
-                        "log_%s_Asymp.txt"                                               % (tagName),
-                        "log_%s_FitDiag.txt"                                             % (tagName),
-                        "log_%s_Sign.txt"                                                % (tagName),
-                        "log_%s_step1.txt"                                               % (tagName),
-                        "log_%s_step2.txt"                                               % (tagName),
-                        "log_%s_step3.txt"                                               % (tagName),
-                        "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
-                        "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
-                        "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
-                        "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
-                        "impacts_%s_Asimov.json"                                         % (tagName),
-                        "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
-                        "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
-                        "log_%s_Sign_Asimov.txt"                                         % (tagName),
-                        "log_%s_step1_Asimov.txt"                                        % (tagName),
-                        "log_%s_step2_Asimov.txt"                                        % (tagName),
-                        "log_%s_step3_Asimov.txt"                                        % (tagName),
-
-                    ]
-                
-                    transfer = "transfer_output_remaps = \""
-                    for f in outputFiles:
-                        transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
-                        if f != outputFiles[-1]:
-                            transfer += "; "
-                    transfer += "\"\n"
-                        
-                    fileParts.append(transfer)
-                    fileParts.append("Arguments = %s %s %s %s %i %i %i %i %s\n" % (model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel))
-                    fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s.stdout\n"%(options.outPath, model, mass, channel))
-                    fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s.stderr\n"%(options.outPath, model, mass, channel))
-                    fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s.log\n"%(options.outPath, model, mass, channel))
-                    fileParts.append("Queue\n\n")
-
-                else:
-                    nSteps = int(round((options.rMax - options.rMin)/options.rStep))
-                    jPerR = options.jPerR                
-                    if options.toyS: 
-                        print "Running toyS"
-                        nSteps = options.numJobs - 1
-                        jPerR = 1
-
-                    for x in range(0, nSteps+1):                               
-                        r = options.rMin + float(x)*options.rStep 
-                        if options.toyS:
-                            r = 0
-                            print "    i = ", options.iterations
-                        else:
-                            print "    r = ", r
+                        outputFiles = [
+                            "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                            "higgsCombine%s.FitDiagnostics.mH%s.MODEL%s.root"                % (tagName, mass, model),
+                            "higgsCombine%s_SignifExp.Significance.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                            "higgsCombine%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                            "ws_%s.root"                                                     % (tagName),
+                            "fitDiagnostics%s.root"                                          % (tagName), 
+                            "impacts_%s.json"                                                % (tagName),
+                            "impacts_%s%s%s_%s_%s.pdf"                                       % (options.year, model, mass, channel, options.dataType),
+                            "log_%s_Asymp.txt"                                               % (tagName),
+                            "log_%s_FitDiag.txt"                                             % (tagName),
+                            "log_%s_Sign.txt"                                                % (tagName),
+                            "log_%s_step1.txt"                                               % (tagName),
+                            "log_%s_step2.txt"                                               % (tagName),
+                            "log_%s_step3.txt"                                               % (tagName),
+                            "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                            "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                            "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
+                            "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
+                            "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
+                            "impacts_%s_Asimov.json"                                         % (tagName),
+                            "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
+                            "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
+                            "log_%s_Sign_Asimov.txt"                                         % (tagName),
+                            "log_%s_step1_Asimov.txt"                                        % (tagName),
+                            "log_%s_step2_Asimov.txt"                                        % (tagName),
+                            "log_%s_step3_Asimov.txt"                                        % (tagName),
+                        ]
                     
-                        for y in range(jPerR):                        
-                            print "        seed = ", seed
+                        transfer = "transfer_output_remaps = \""
+                        for f in outputFiles:
+                            transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
+                            if f != outputFiles[-1]:
+                                transfer += "; "
+                        transfer += "\"\n"
+                            
+                        fileParts.append(transfer)
+                        fileParts.append("Arguments = %s %s %s %s %i %i %i %i %s %i\n" % (model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov))
+                        extraAsimov = ""
+                        if asimov == 1:
+                            extraAsimov += "_Asimov"
+                        fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s%s%s.stdout\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov))
+                        fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s%s%s.stderr\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov))
+                        fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s%s%s.log\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov))
+                        fileParts.append("Queue\n\n")
 
-                            outputFiles = [
-                                "ws_%s_%s_%s.root"       % (options.year, model, mass),
-                                "higgsCombine%s.HybridNew.mH%s.MODEL%s.%s.root" % (options.year, mass, model, modelr(seed)),
-                            ]
+                    else:
+                        nSteps = int(round((options.rMax - options.rMin)/options.rStep))
+                        jPerR = options.jPerR                
+                        if options.toyS: 
+                            print "Running toyS"
+                            nSteps = options.numJobs - 1
+                            jPerR = 1
 
-                            transfer = "transfer_output_remaps = \""
-                            for f in outputFiles:
-                                transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
-                                if f != outputFiles[-1]:
-                                    transfer += "; "
-                            transfer += "\"\n"
+                        for x in range(0, nSteps+1):                               
+                            r = options.rMin + float(x)*options.rStep 
+                            if options.toyS:
+                                r = 0
+                                print "    i = ", options.iterations
+                            else:
+                                print "    r = ", r
+                        
+                            for y in range(jPerR):                        
+                                print "        seed = ", seed
 
-                            fileParts.append(transfer)
-                            fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), 
-                                                                                                    str(options.iterations), str(doToyS), channel))
-                            fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, model, mass, str(r), str(seed)))
-                            fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, model, mass, str(r), str(seed)))
-                            fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, model, mass, str(r), str(seed)))
-                            fileParts.append("Queue\n\n")
-                            seed+=1
+                                outputFiles = [
+                                    "ws_%s_%s_%s.root"       % (options.year, model, mass),
+                                    "higgsCombine%s.HybridNew.mH%s.MODEL%s.%s.root" % (options.year, mass, model, modelr(seed)),
+                                ]
+
+                                transfer = "transfer_output_remaps = \""
+                                for f in outputFiles:
+                                    transfer += "%s = %s/output-files/%s/%s" % (f, options.outPath, outDir, f)
+                                    if f != outputFiles[-1]:
+                                        transfer += "; "
+                                transfer += "\"\n"
+
+                                fileParts.append(transfer)
+                                fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), 
+                                                                                                        str(options.iterations), str(doToyS), channel))
+                                fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, model, mass, str(r), str(seed)))
+                                fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, model, mass, str(r), str(seed)))
+                                fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, model, mass, str(r), str(seed)))
+                                fileParts.append("Queue\n\n")
+                                seed+=1
     
     fout = open("condor_submit.txt", "w")
     fout.write(''.join(fileParts))

@@ -33,19 +33,19 @@ observed["$MODEL_$MASS"] = {
         "end"       : obs_end,
     }
 observed["TT"] = {
-        "path"      : "$YEAR_TT.root",
+        "path"      : "$YEAR_Data.root",
         "sys"       : 1.0, 
         "hist"      : obs_hist, 
         "type"      : "bkg", 
         "fit"       : True,
-        "inj"       : True,
+        "inj"       : False,
         "mcStat"    : False,
         "processID" : 1,
         "start"     : obs_start,
         "end"       : obs_end,
     }
 observed["QCD"] = {
-        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.7_0.85.root",
         "sys"       : 1.0, 
         "hist"      : "$YEAR_Data_only_QCD_$MODELS_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
@@ -80,6 +80,18 @@ observed["Other"] = {
         "start"     : obs_start, # starting njet bin
         "end"       : obs_end,
     }
+observed["TT_MC"] = {
+        "path"      : "$YEAR_TT.root",
+        "sys"       : 1.0, # 1.2
+        "hist"      : obs_hist, 
+        "type"      : "bkg", 
+        "fit"       : False,
+        "inj"       : True,
+        "mcStat"    : False,
+        "processID" : -999,
+        "start"     : obs_start,
+        "end"       : obs_end,
+    }
 
 # ---------------------------------
 # Systematics for TT, TTvar and QCD
@@ -110,6 +122,7 @@ systematics = {
         "hist"  : "$YEAR_maximum_MCcorrectedData_Syst_All",
         "distr" : "lnN",
         "proc"  : "TT",
+        "uncorr": True,
         "type"  : sys_type,
         "start" : sys_start, 
         "end"   : sys_end, 
@@ -135,6 +148,17 @@ systematics = {
         "start" : sys_start, 
         "end"   : sys_end, 
     },
+
+    # TTbar MC Stats
+    "TT_MCStat" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "param",
+        "proc"  : "TT",
+        "type"  : "mcStat",
+        "start" : sys_start, 
+        "end"   : sys_end, 
+    }
 
     ## QCD syst.
     #"QCD_Syst" : {
@@ -165,7 +189,7 @@ for var in var_list:
             "downHist"  : "h_njets_12incl_$MODELS_$CHANNEL_ABCD_{}{}".format(var, down),
             "nomHist"   : "h_njets_12incl_$MODELS_$CHANNEL_ABCD".format(var),
             "distr"     : "lnN",
-            "proc"      : "$MODEL_$MASS",
+            "proc"      : proc,
             "type"      : "sys",
             "start"     : sys_start, 
             "end"       : sys_end, 
@@ -182,7 +206,7 @@ for var in var_list:
             "downHist"  : "h_njets_12incl_$MODELS_$CHANNEL_ABCD_{}{}".format(var, down),
             "nomHist"   : "h_njets_12incl_$MODELS_$CHANNEL_ABCD".format(var),
             "distr"     : "lnN",
-            "proc"      : proc,
+            "proc"      : "$MODEL_$MASS",
             "type"      : "sys",
             "start"     : sys_start, 
             "end"       : sys_end, 
