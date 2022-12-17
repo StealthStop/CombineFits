@@ -1,6 +1,7 @@
 import ROOT
 import math
 import copy
+import collections
 
 # path          : Full path to the input ROOT files containing Njets histograms for event counts and systematic values
 # observed      : Dictionary loaded from cardConfig containing info about ROOT files, histograms etc.
@@ -426,7 +427,7 @@ class dataCardMaker:
                             rate_str += "{} ".format(1)
                         elif proc == "QCD" and "2l" not in self.channel:
                             tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][bin][:1])
-                            rate_str += "{} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                            rate_str += "{:.1f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
                             
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
@@ -480,6 +481,7 @@ class dataCardMaker:
             # --------------------------------------------------------
             # Write a line to datacard for each independent systematic
             # --------------------------------------------------------
+            self.systematics = collections.OrderedDict(sorted(self.systematics.items()))
             for sys in self.systematics.keys():
             
                 # To skip MC correction factor (added in a different spot in datacard)
