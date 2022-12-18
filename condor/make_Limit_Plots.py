@@ -591,6 +591,7 @@ class LimitPlots():
         else:
             self.asimov = ""
         self.canvas.SaveAs(self.outputDir + "sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".pdf")
+        self.canvas.SaveAs(self.outputDir + "sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".png")
 
 # -------------
 # Main function
@@ -604,7 +605,7 @@ def main():
     parser.add_argument("--dataType",  dest="dataType",  type=str, default = "pseudoData",                             help = "which dataType to plot"          )
     parser.add_argument("--limitType", dest="limitType", type=str, default = "AsymptoticLimits",                       help = "which limitType to plot"         )
     parser.add_argument("--approved",  dest="approved",            default = False,              action="store_true",  help = "is plot approved"                )
-    parser.add_argument("--asimov",       dest="asimov",                 default = False,              action="store_true",  help = "use the Asimov data set"      )
+    parser.add_argument("--asimov",    dest="asimov",              default = False,              action="store_true",  help = "use the Asimov data set"         )
     parser.add_argument("--wip",       dest="wip",                 default = False,              action="store_true",  help = "is plot a work in progress"      )
 
 
