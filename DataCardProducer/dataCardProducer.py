@@ -483,7 +483,7 @@ class dataCardMaker:
             # --------------------------------------------------------
             self.systematics = collections.OrderedDict(sorted(self.systematics.items()))
             for sys in self.systematics.keys():
-            
+
                 # To skip MC correction factor (added in a different spot in datacard)
                 if self.systematics[sys]["type"] != "sys":
                     continue
@@ -533,7 +533,7 @@ class dataCardMaker:
                             elif bin >= self.varNbins:
                                 sys_str += "{} ".format("--")
                                 continue
-                          
+
                             if proc == self.systematics[sys]["proc"]:
                                 if type(self.systematics[sys]["binValues"][bin]) == str:
                                     sys_str += "{} ".format(self.systematics[sys]["binValues"][bin])
@@ -584,11 +584,7 @@ class dataCardMaker:
             params     = ["alpha", "beta", "gamma", "delta"]
             moreparams = ["romeo", "sierra", "tango", "uniform", "qcdtf"]
             file.write("\n")
-            bkgd = None
-            if self.dataType == "Data":
-                bkgd = "Data"
-            elif "pseudo" in self.dataType:
-                bkgd = "TT"
+            bkgd = "TT"
 
             for abin in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
                 file.write("\n")
@@ -613,7 +609,8 @@ class dataCardMaker:
 
                         # Hard-coded MC correction factor to 1.0 (turning off the correction in ABCD calculation)
                         if self.NoMCcorr:
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], 1.0))
+                            #file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], 1.0))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*{6}) beta{1}_{4},gamma{1}_{4},delta{1}_{4}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
 
                         # Includes actual MC Correction Ratio
                         else:
@@ -625,7 +622,10 @@ class dataCardMaker:
                 # TTbar MC stat uncertainty applied to the alpha parameters
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if ibin == 0:
-                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["TT_MCStat"]["binErrors"][abin],round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                        if self.NoMCcorr:
+                            pass
+                        else:
+                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["TT_MCStat"]["binErrors"][abin],round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
                 file.write("\n")
 
                 
