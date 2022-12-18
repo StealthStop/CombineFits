@@ -9,15 +9,16 @@
 command=$1
 
 #Configs=("cardConfig_0l" "cardConfig_1l" "cardConfig_2l")
-#CHANNELS=("0l" "1l" "2l" "combo")
-CHANNELS=("1l" "2l" "combo")
+CHANNELS=("0l" "1l" "2l" "combo")
+#CHANNELS=("1l")
 YEARS=("Run2UL")
-MODELS=("RPV")
+MODELS=("StealthSYY")
 DATATYPES=("pseudoData" "pseudoDataS")
-#MASSES=("300" "350" "400" "450" "500" "550" "600" "650" "700" "750" "800" "850" "900" "950" "1000" "1050" "1100" "1150" "1200" "1250" "1300" "1350" "1400")
-FITS=("-F -A -I")
+#DATATYPES=("pseudoDataS")
+FITS=("-A -F -I -M")
 MASSES=("300-1400")
-#CARDS=("cardsInjectRPV400" "cardsInjectNominal")
+MASSES_CARDS=("300" "350" "400" "450" "500" "550" "600" "650" "700" "750" "800" "850" "900" "950" "1000" "1050" "1100" "1150" "1200" "1250" "1300" "1350" "1400")
+#MASSES_CARDS=("350")
 CARDS=("cardsInjectNominal")
 
 # --------------
@@ -28,13 +29,18 @@ if [ $command == "cards" ]; then
     
     for YEAR in ${YEARS[@]}; do    
         for MODEL in ${MODELS[@]}; do
-                
-            python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectNominal --year Run2UL --lepton 0l --model ${MODEL}  
-            python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectNominal --year Run2UL --lepton 1l --model ${MODEL}  
-            python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectNominal --year Run2UL --lepton 2l --model ${MODEL} 
-            #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 0l --model ${MODEL} --injectedSignal ${MODEL}_400            
-            #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 1l --model ${MODEL} --injectedSignal ${MODEL}_400
-            #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 2l --model ${MODEL} --injectedSignal ${MODEL}_400 
+            for MASS in ${MASSES_CARDS[@]}; do   
+                #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectNominal_noSys    --year Run2UL --channel 0l --model ${MODEL} --mass ${MASS} --NoMCcorr
+                python produceDataCard.py --config cardConfig_1l --inpath inputs --outpath cardsInjectNominal_noSys    --year Run2UL --channel 1l --model ${MODEL} --mass ${MASS} --NoMCcorr
+                #python produceDataCard.py --config cardConfig_2l --inpath inputs --outpath cardsInjectNominal_noSys    --year Run2UL --channel 2l --model ${MODEL} --mass ${MASS} --NoMCcorr
+                #python produceDataCard.py  --combo 0l 1l 2l      --inpath inputs --outpath cardsInjectNominal_noSys    --year Run2UL              --model ${MODEL} --mass ${MASS}
+
+
+                #python produceDataCard.py --config cardConfig_2l --inpath inputs --outpath cardsInjectNominal --year Run2UL --channel 2l --model ${MODEL} 
+                #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 0l --model ${MODEL} --injectedSignal ${MODEL}_400            
+                #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 1l --model ${MODEL} --injectedSignal ${MODEL}_400
+                #python produceDataCard.py --config cardConfig_0l --inpath inputs --outpath cardsInjectRPV400 --year Run2UL --lepton 2l --model ${MODEL} --injectedSignal ${MODEL}_400 
+            done
         done
     done
 fi
