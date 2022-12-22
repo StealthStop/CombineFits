@@ -86,9 +86,10 @@ def main():
                     tempSys = copy.copy(configfile.systematics)
                     tempMinNjet = copy.copy(configfile.obs_start)
                     tempMaxNjet = copy.copy(configfile.obs_end)
+                    tempSpecial = copy.copy(configfile.special)
 
                     # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                    dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass))
+                    dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial)
 
 if __name__ == "__main__":
     main()
