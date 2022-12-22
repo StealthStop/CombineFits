@@ -197,6 +197,9 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
+    if var is "pdf":
+        continue
+
     up = "up" if var in ["JEC", "JER"] else "Up"
     down = "down" if var in ["JEC", "JER"] else "Down"
 
@@ -206,7 +209,7 @@ for var in var_list:
             "downHist"  : "h_njets_12incl_$MODELS_$CHANNEL_ABCD_{}{}".format(var, down),
             "nomHist"   : "h_njets_12incl_$MODELS_$CHANNEL_ABCD".format(var),
             "distr"     : "lnN",
-            "proc"      : "$MODEL_$MASS",
+            "proc"      : "SIG",
             "type"      : "sys",
             "start"     : sys_start, 
             "end"       : sys_end, 
@@ -237,3 +240,7 @@ for var in var_list:
 #        "start" : sys_start, 
 #        "end"   : sys_end,
 #    }
+
+special = {
+        "NoSigBCD": False
+    }
