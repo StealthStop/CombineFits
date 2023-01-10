@@ -632,7 +632,7 @@ class dataCardMaker:
 
                         # Includes actual MC Correction Ratio
                         else:
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
 
                     else: 
                         file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 
@@ -640,7 +640,7 @@ class dataCardMaker:
                 # TTbar MC stat uncertainty applied to the alpha parameters
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if ibin == 0:
-                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["TT_MCStat"]["binErrors"][abin],round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
                 file.write("\n")
 
                 

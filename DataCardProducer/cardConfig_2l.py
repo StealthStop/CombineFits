@@ -117,6 +117,29 @@ sys_start = 6
 sys_end   = 11
 
 systematics = {
+
+    # Closure Correction 
+    "ClosureCorrection" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "lnN",
+        "proc"  : "TT",
+        "type"  : "corr",
+        "start" : sys_start,
+        "end"   : sys_end,
+    },
+
+    # MC-based TT systematics: Statistical uncertainty on Closure Correction 
+    "ClosureCorrection_StatUnc" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "param",
+        "proc"  : "TT",
+        "type"  : "mcStat",
+        "start" : sys_start,
+        "end"   : sys_end,
+    },
+
     # Data-based TT systematics: Corrected Data Closure
     "CorrectedDataClosure" : {
         "path"  : sys_path,
@@ -125,32 +148,11 @@ systematics = {
         "proc"  : "TT",
         "uncorr": True,
         "type"  : sys_type,
-        "start" : sys_start, 
-        "end"   : sys_end, 
-    },
-    # MC-based TT systematics: Closure Correction Factor Ratio (TTvar/TT) in signal region (at boundary value 1.0)
-    "MCcorrectionRatio" : {
-        "path"  : sys_path,
-        "hist"  : "$YEAR_MCcorr_TT_TT",
-        "distr" : "lnN",
-        "proc"  : "TT",
-        "type"  : "corr",
-        "start" : sys_start, 
-        "end"   : sys_end, 
+        "start" : sys_start,
+        "end"   : sys_end,
     },
 
-    # TTbar MC Stats
-    "TT_MCStat" : {
-        "path"  : sys_path,
-        "hist"  : "$YEAR_MCcorr_TT_TT",
-        "distr" : "param",
-        "proc"  : "TT",
-        "type"  : "mcStat",
-        "start" : sys_start, 
-        "end"   : sys_end, 
-    }
-
-    # There is QCD estimation for 2l
+    # There is no QCD estimation for 2l
     # So, derive from MC - inside observed dictionary above
 }
 
@@ -179,7 +181,7 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
-    if var is "pdf":
+    if var is "pdf" or var is "scl" or var is "isr" or var is "fsr":
         continue
 
     up = "up" if var in ["JEC", "JER"] else "Up"
