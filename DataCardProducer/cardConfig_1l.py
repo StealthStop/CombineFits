@@ -116,6 +116,29 @@ sys_start = 7
 sys_end   = 12
 
 systematics = {
+
+    # Closure Correction 
+    "ClosureCorrection" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "lnN",
+        "proc"  : "TT",
+        "type"  : "corr",
+        "start" : sys_start,
+        "end"   : sys_end,
+    },
+
+    # MC-based TT systematics: Statistical uncertainty on Closure Correction 
+    "ClosureCorrection_StatUnc" : {
+        "path"  : sys_path,
+        "hist"  : "$YEAR_MCcorr_TT_TT",
+        "distr" : "param",
+        "proc"  : "TT",
+        "type"  : "mcStat",
+        "start" : sys_start,
+        "end"   : sys_end,
+    },
+
     # Data-based TT systematics: Corrected Data Closure
     "CorrectedDataClosure" : {
         "path"  : sys_path,
@@ -124,18 +147,8 @@ systematics = {
         "proc"  : "TT",
         "uncorr": True,
         "type"  : sys_type,
-        "start" : sys_start, 
-        "end"   : sys_end, 
-    },
-    # MC-based TT systematics: Closure Correction Factor Ratio (TTvar/TT) in signal region (at boundary value 1.0)
-    "MCcorrectionRatio" : {
-        "path"  : sys_path,
-        "hist"  : "$YEAR_MCcorr_TT_TT",
-        "distr" : "lnN",
-        "proc"  : "TT",
-        "type"  : "corr",
-        "start" : sys_start, 
-        "end"   : sys_end, 
+        "start" : sys_start,
+        "end"   : sys_end,
     },
 
     # QCD TF (transfer factor)
@@ -148,17 +161,6 @@ systematics = {
         "start" : sys_start, 
         "end"   : sys_end, 
     },
-
-    # TTbar MC Stats
-    "TT_MCStat" : {
-        "path"  : sys_path,
-        "hist"  : "$YEAR_MCcorr_TT_TT",
-        "distr" : "param",
-        "proc"  : "TT",
-        "type"  : "mcStat",
-        "start" : sys_start, 
-        "end"   : sys_end, 
-    }
 
     ## QCD syst.
     #"QCD_Syst" : {
@@ -197,7 +199,7 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
-    if var is "pdf":
+    if var is "pdf" or var is "scl" or var is "isr" or var is "fsr":
         continue
 
     up = "up" if var in ["JEC", "JER"] else "Up"

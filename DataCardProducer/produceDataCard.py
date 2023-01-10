@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--injectedSignal",  dest="injectedSignal", action="store",      default="SAME",                               type=str, help="Name of signal and mass to inject for all cards" )
     parser.add_argument("--minNjet",         dest="minNjet",        action="store",      default=7,                                    type=int, help="Min Njet bin to use"                             )
     parser.add_argument("--maxNjet",         dest="maxNjet",        action="store",      default=12,                                   type=int, help="Max Njet bin to use"                             )
-    parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use MC correction factor in ABCD calculation for TT")
+    parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use Closure Correction in ABCD calculation for TT")
     args = parser.parse_args()   
  
     # ---------------------------------------------
