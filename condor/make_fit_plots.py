@@ -24,23 +24,43 @@ parser.add_option("--all",            action="store_true",           dest="all",
 
 (options, args) = parser.parse_args()
 
-
 ROOT.TH1.AddDirectory(False)
 ROOT.TH1.SetDefaultSumw2(1)
 ROOT.TH2.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat("")
 ROOT.gStyle.SetPaintTextFormat("3.2f")
-ROOT.gStyle.SetFrameLineWidth(3)
-ROOT.gStyle.SetLineWidth(3)
+ROOT.gStyle.SetFrameLineWidth(1)
+ROOT.gStyle.SetLineWidth(1)
+ROOT.gStyle.SetEndErrorSize(0)
 ROOT.gROOT.ForceStyle()
+ROOT.gStyle.SetHatchesLineWidth(1)
 
 if options.all:
     ROOT.gROOT.SetBatch(True)
 
-borderSize   = 0.20
-pad1and4Size = 1.0 + borderSize
-pad2and3Size = 1.0
-totalPadSize = 2 * pad1and4Size + 2 * pad2and3Size
+borderSizeL  = 0.20
+borderSizeR  = 0.10
+pad1Size     = 0.2866
+pad2Size     = 0.2293
+pad3Size     = 0.2293
+pad4Size     = 0.2548
+
+textSizeM = [pad1Size / pad2Size, 1.0, 1.0, pad4Size / pad2Size]
+textSizeP = [1.0, 1.0, 1.0, -1.0]
+padRatio = 0.3 / 0.7
+
+#qcdgreen = ROOT.TColor.GetColor("#006d2c")
+
+#fitcol     = ROOT.TColor.GetColor("#ce1256")
+#fitcol     = ROOT.kBlue
+fitcol     = ROOT.TColor.GetColor("#8B2D8F")
+#sigpredcol = ROOT.TColor.GetColor("#99d8c9")
+sigobscol  = ROOT.TColor.GetColor("#2ca25f")
+sigpredcol = ROOT.TColor.GetColor("#85c2a3")
+
+#bkgobscol  = ROOT.TColor.GetColor("#807dba")
+#bkgobscol  = ROOT.TColor.GetColor("#ce1256")
+bkgobscol   = ROOT.TColor.GetColor("#5cb4e8")
 
 # -------------------
 # get fit information
@@ -54,6 +74,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
 
     data      = {}; data_unc = {}
     prefit_sb = OrderedDict(); prefit_b = OrderedDict(); postfit_sb = OrderedDict(); postfit_b = OrderedDict(); postfit_sig = OrderedDict()
+    prefit_sig = OrderedDict(); postfit_sb_b = OrderedDict()
 
     regs =["A", "B", "C", "D"] 
     if channel == "combo":
@@ -63,7 +84,9 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
     for reg in regs:
         prefit_sb[reg]   = []
         prefit_b[reg]    = []
+        prefit_sig[reg]  = []
         postfit_sb[reg]  = []
+        postfit_sb_b[reg]  = []
         postfit_b[reg]   = []
         postfit_sig[reg] = []       
 
@@ -83,22 +106,32 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
         for i in range(njets[0]-k,njets[1]+1-k):
             try:
                 postfit_sb[reg].append((i, 
-                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
-                    ))
+                     f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                     f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                     ))
+                postfit_sb_b[reg].append((i, 
+                     f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_background".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                     f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_background".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                     ))
                 postfit_b[reg].append((i, 
-                    f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                     f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                     f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                     ))
+                postfit_sig[reg].append((i, 
+                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
                     ))
+
                 #prefit_sb[reg].append((i, w_pre.function("shapes_prefit/{}{}/".format(reg,i))))
                 prefit_b[reg].append((i, 
                     f_fit.Get("shapes_prefit/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                     f_fit.Get("shapes_prefit/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
                     ))
-                postfit_sig[reg].append((i, 
-                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
-                    f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                prefit_sig[reg].append((i, 
+                    f_fit.Get("shapes_prefit/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                    f_fit.Get("shapes_prefit/{}Y{}_{}{}_{}/total_signal".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
                     ))
+
             except Exception as e:
                 print("Fit for {}_{}_{} Failed".format(year, signal, channel))
                 print(e)
@@ -111,7 +144,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
     f_fit.Close()
     f_pre.Close()
 
-    return prefit_b, postfit_b, postfit_sb, postfit_sig, data
+    return prefit_b, postfit_b, postfit_sb, postfit_sb_b, postfit_sig, prefit_sig, data
 
 # ---------------
 # make histograms
@@ -122,7 +155,7 @@ def makeHist(reg, bin_info, tag, njets, combo=False):
     if combo:
         k = int(reg[1:])
 
-    h = ROOT.TH1D("Region{}{}".format(reg, tag), "Region {}".format(reg), njets[1]-njets[0] + 1, njets[0] - k, njets[1] + 1 - k)
+    h = ROOT.TH1D("Region{}{}".format(reg, tag), "", njets[1]-njets[0] + 1, njets[0] - k, njets[1] + 1 - k)
 
     bins = bin_info[reg]
 
@@ -139,62 +172,52 @@ def makeHist(reg, bin_info, tag, njets, combo=False):
 # make canvas
 # -----------
 def makeCanvasAndPads(combo=False):
+    tag = "TEST" 
 
-    topPadList = []
-    ratioPadList = []
-
-    if combo:
-        c1 = ROOT.TCanvas("c1", "c1", 3600, 3000)
+    c1                          = ROOT.TCanvas( "c1_%s"%(tag), "c1_%s"%(tag), 0, 0, 1200, 480 )
     
-        for i in range(0,3):
-            topPadList.append(ROOT.TPad("p1_A{}".format(i), "p1_A{}".format(i), 0, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, 0.25, 1.0 - i * 0.333, ROOT.kWhite, 0, 0))
-            ratioPadList.append(ROOT.TPad("p2_A{}".format(i), "p2_A{}".format(i), 0, 0.666 - 0.333 * i + 0.333 * 0.01, 0.25, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-            topPadList.append(ROOT.TPad("p1_B{}".format(i), "p1_B{}".format(i), 0.25, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, 0.5, 1 - 0.333 * i, ROOT.kWhite, 0, 0))
-            ratioPadList.append(ROOT.TPad("p2_B{}".format(i), "p2_B{}".format(i), 0.25, 0.666 - 0.333 * i + 0.333 * 0.01, 0.5, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-            topPadList.append(ROOT.TPad("p1_C{}".format(i), "p1_C{}".format(i), 0.5, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, 0.75, 1 - 0.333 * i, ROOT.kWhite, 0, 0))
-            ratioPadList.append(ROOT.TPad("p2_C{}".format(i), "p2_C{}".format(i), 0.5, 0.666 - 0.333 * i + 0.333 * 0.01,   0.75, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-            topPadList.append(ROOT.TPad("p1_D{}".format(i), "p1_D{}".format(i), 0.75, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, 1.0, 1 - 0.333 * i, ROOT.kWhite, 0, 0))
-            ratioPadList.append(ROOT.TPad("p2_D{}".format(i), "p2_D{}".format(i), 0.75, 0.666 - 0.333 * i + 0.333 * 0.01, 1.0, 0.666 - 0.333 * i + 0.333 * 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-    else:
-        c1 = ROOT.TCanvas("c1", "c1", 3600, 1000)
+    p1_A1                       = ROOT.TPad( "p1_D1_%s"%(tag), "p1_D1_%s"%(tag), 0, 0.30, pad1Size, 1.0 )
+    p2_A1                       = ROOT.TPad( "p2_D1_%s"%(tag), "p2_D1_%s"%(tag), 0,    0, pad1Size, 0.30 )
     
-        topPadList.append(ROOT.TPad("p1_A", "p1_A", 0, 2.5 / 9.0, 0.25, 1.0, ROOT.kWhite, 0, 0))
-        ratioPadList.append(ROOT.TPad("p2_A", "p2_A", 0, 0.05, 0.25, 2.5 / 9.0, ROOT.kWhite, 0, 0))
+    p1_B2                       = ROOT.TPad( "p1_D2_%s"%(tag), "p1_D2_%s"%(tag), pad1Size, 0.30, pad1Size + pad2Size, 1.0 )
+    p2_B2                       = ROOT.TPad( "p2_D2_%s"%(tag), "p2_D2_%s"%(tag), pad1Size,    0, pad1Size + pad2Size, 0.30 )
+    
+    p1_C3                       = ROOT.TPad( "p1_D3_%s"%(tag), "p1_D3_%s"%(tag), pad1Size + pad2Size, 0.30, pad1Size + 2*pad2Size, 1.0 )
+    p2_C3                       = ROOT.TPad( "p2_D3_%s"%(tag), "p2_D3_%s"%(tag), pad1Size + pad2Size,    0, pad1Size + 2*pad2Size, 0.30 )
+    
+    p1_D4                       = ROOT.TPad( "p1_D4_%s"%(tag), "p1_D4_%s"%(tag), pad1Size + 2*pad2Size, 0.30, 1.0, 1.0 )
+    p2_D4                       = ROOT.TPad( "p2_D4_%s"%(tag), "p2_D4_%s"%(tag), pad1Size + 2*pad2Size,    0, 1.0, 0.30 )
 
-        topPadList.append(ROOT.TPad("p1_B", "p1_B", 0.25, 2.5 / 9.0, 0.5, 1.0, ROOT.kWhite, 0, 0))
-        ratioPadList.append(ROOT.TPad("p2_B", "p2_B", 0.25, 0.05, 0.5, 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-        topPadList.append(ROOT.TPad("p1_C", "p1_C", 0.5, 2.5 / 9.0, 0.75, 1.0, ROOT.kWhite, 0, 0))
-        ratioPadList.append(ROOT.TPad("p2_C", "p2_C", 0.5, 0.05,   0.75, 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-        topPadList.append(ROOT.TPad("p1_D", "p1_D", 0.75, 2.5 / 9.0, 1.0, 1.0, ROOT.kWhite, 0, 0))
-        ratioPadList.append(ROOT.TPad("p2_D", "p2_D", 0.75, 0.05, 1.0, 2.5 / 9.0, ROOT.kWhite, 0, 0))
-
-    return c1, topPadList, ratioPadList
+    return c1, [p1_A1, p1_B2, p1_C3, p1_D4], [p2_A1, p2_B2, p2_C3, p2_D4]
 
 # ---------------------
 # format canvas and pad
 # ---------------------
 def formatCanvasAndPads( c1, topPadArray, ratioPadArray ):
 
-    for iPad in range( len(topPadArray) ) :
+    for iPad in xrange( 0, len(topPadArray) ) :
+        topPadArray[iPad].SetLogy(1)
+        topPadArray[iPad].SetBottomMargin(0.0)
 
-        topPadArray[iPad].SetLogy()
-        topPadArray[iPad].SetBottomMargin(0.01 )
+        if iPad == 0 :
+            topPadArray[iPad].SetLeftMargin( borderSizeL )
+            ratioPadArray[iPad].SetLeftMargin( borderSizeL )
+        else :
+            topPadArray[iPad].SetLeftMargin( 0.0 )
+            ratioPadArray[iPad].SetLeftMargin( 0.0 )
 
-        topPadArray[iPad].SetLeftMargin(0.11)
-        topPadArray[iPad].SetRightMargin(0.04)
-        topPadArray[iPad].SetTopMargin(0.06 * (8.0 / 6.5))
-        ratioPadArray[iPad].SetLeftMargin(0.11)
-        ratioPadArray[iPad].SetRightMargin(0.04)
-        ratioPadArray[iPad].SetTopMargin(0.06 * (8.0 / 6.5))
-
+        if iPad == (len(topPadArray) - 1) :
+            topPadArray[iPad].SetRightMargin( borderSizeR )
+            ratioPadArray[iPad].SetRightMargin( borderSizeR )
+        else :
+            topPadArray[iPad].SetRightMargin( 0.0 )
+            ratioPadArray[iPad].SetRightMargin( 0.0 )
+        
         topPadArray[iPad].Draw()
 
+        ratioPadArray[iPad].SetTopMargin( 0.0 )
+        ratioPadArray[iPad].SetBottomMargin( 0.40 )
+        ratioPadArray[iPad].SetGridx(1)
         ratioPadArray[iPad].SetGridy(1)
         ratioPadArray[iPad].Draw()
 
@@ -212,10 +235,76 @@ def save_to_root(hlist, outfile):
 
     out.Close()
 
+def draw_ExtraInfo(canvas, iPad, packedInfo):
+
+    canvas.cd()
+
+    channelStr = ""
+    if "0l" in packedInfo:
+        channelStr = "Fully-Hadronic"
+    elif "1l" in packedInfo:
+        channelStr = "Semi-Leptonic"
+    elif "2l" in packedInfo:
+        channelStr = "Fully-Leptonic"
+
+    modelStr = ""
+    if "SYY" in packedInfo:
+        modelStr = "Stealth SYY"
+    elif "RPV" in packedInfo:
+        modelStr = "RPV"
+
+    regionStr = ""
+    textSizeF = 1.0
+    marginR   = 0.0
+    marginL   = 0.2
+    extraL    = 0.0
+    extraR    = 0.0
+    if iPad == 0:
+        extraR = 0.025
+        regionStr = "Region A"
+        textSizeF = pad1Size / pad2Size
+    elif iPad == 1:
+        extraR = 0.03
+        marginL = 0.0
+        extraL = 0.04
+        regionStr = "Region B"
+    elif iPad == 2:
+        extraR = 0.03
+        marginL = 0.0
+        extraL = 0.04
+        regionStr = "Region C"
+    elif iPad == 3:
+        marginL = 0.0
+        marginR = 0.1
+        extraL = 0.04
+        regionStr = "Region D"
+        textSizeF = pad4Size / pad2Size
+
+    text = ROOT.TLatex()
+    text.SetNDC(True)
+
+    text.SetTextSize(0.070 / textSizeF)
+    text.SetTextFont(62)
+    text.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
+    #text.SetTextColor(ROOT.TColor.GetColor("#88258c"))
+    #text.SetTextColor(ROOT.kBlack)
+
+    if regionStr != "":
+        text.SetTextAlign(33)
+        text.DrawLatex(1.0 - marginR - 0.2 * marginR - extraR, 0.88, regionStr)
+    text.SetTextAlign(13)
+    if modelStr != "" and iPad == 0:
+        text.DrawLatex(marginL + 0.2 * marginL + extraL, 0.88, modelStr)
+    if channelStr != "" and iPad == 0:
+        text.DrawLatex(marginL + 0.2 * marginL + extraL, 0.80, channelStr)
+
 # -----------------
 # draw lumi and CMS
 # -----------------
-def draw_LumiCMS(canvas, year, approved = False, wip = True):
+def draw_LumiCMS(canvas, iPad, year, approved = False, wip = True):
+
+    if iPad > 0 and iPad < 3:
+        return
 
     canvas.cd()
 
@@ -235,6 +324,8 @@ def draw_LumiCMS(canvas, year, approved = False, wip = True):
 
     lumiText += " (13 TeV)"
 
+    cmsTextSize = 1.0
+
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextAngle(0)
@@ -251,28 +342,31 @@ def draw_LumiCMS(canvas, year, approved = False, wip = True):
     # https://root.cern.ch/doc/master/classTAttText.html#ATTTEXT5
     latex.SetTextFont(42)
     latex.SetTextAlign(31)
-    latex.SetTextSize(0.65 * topMargin)
-    latex.DrawLatex(1.0 - rightMargin, 1.0 - topMargin + 0.2 * topMargin, lumiText)
+    latex.SetTextSize(0.7 * cmsTextSize * topMargin)
 
-    textXposition = leftMargin + 0.045 * (1.0 - leftMargin - rightMargin)
-    textYposition = 1.0 - topMargin - 0.045 * (1 - topMargin - bottomMargin)
+    if iPad == 3:
+        latex.DrawLatex(1.0 - rightMargin, 1.0 - topMargin + 0.2 * topMargin, lumiText)
+
+    textXposition = leftMargin
+    textYposition = 1.0 - topMargin + 0.2 * topMargin
 
     # Text alignment in ROOT
     # https://root.cern.ch/doc/master/classTAttText.html#ATTTEXT1
-    textAlignment = 13
-    cmsTextSize = 0.8
+    textAlignment = 11
 
     latex.SetTextFont(61)
     latex.SetTextSize(cmsTextSize * topMargin)
     latex.SetTextAlign(textAlignment)
-    latex.DrawLatex(textXposition, textYposition, "CMS")
+
+    if iPad == 0:
+        latex.DrawLatex(textXposition, textYposition, "CMS")
 
     # Label with "Prelimiary" if not approved and "work in progress" is WIP
     if not approved:
 
         latex.SetTextFont(52)
         latex.SetTextAlign(textAlignment)
-        latex.SetTextSize(0.5 * cmsTextSize * topMargin)
+        latex.SetTextSize(0.6 * cmsTextSize * topMargin)
 
         extraText = ""
         if not wip:
@@ -280,27 +374,58 @@ def draw_LumiCMS(canvas, year, approved = False, wip = True):
         else:
             extraText = "Work in Progress"
 
-        latex.DrawLatex(textXposition, textYposition - 1.2 * cmsTextSize * topMargin, extraText) 
+        if iPad == 0:
+            latex.DrawLatex(textXposition + 0.21, textYposition, extraText) 
+
+def drawWithNoYerr(c, h, color):
+    c.cd()
+ 
+    lines = []
+    for i in range(h.GetNbinsX()):
+        y = h.GetBinContent(i+1)
+        x1 = h.GetBinLowEdge(i+1)
+        x2 = h.GetBinWidth(i+1)+x1
+        l = ROOT.TLine(x1,y,x2,y)
+        l.SetLineColor(color)
+        l.SetLineWidth(2)
+        l.Draw("SAME")
+        lines.append(l)
+
+    return lines
 
 # --------------
 # make fit plots
 # --------------
-def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb, plotdata, plotsig, fitName, outfile, obs, njets, path):
+def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, plotb, plotsb, plotdata, plotsig, plotsigref, fitName, outfile, obs, njets, path):
+
+    nLegItems = 0
+    if plotb:
+        nLegItems += 1
+    if plotsb:
+        nLegItems += 1
+    if plotdata:
+        nLegItems += 1
+    if plotsig:
+        nLegItems += 1
+    if plotsigref:
+        nLegItems += 1
     
     close  = ""
 
     if pre_path.find("perfectClose") != -1:
         close += "_perfectClose"
     try: 
-        pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets)
+        pre_b, post_b, post_sb, post_sb_b, post_sig, pre_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets)
     except:
         print("Fit for {}_{}_{} Failed".format(year, signal, channel))
         return
 
     hlist_data = []
     hlist_pre_b = []
+    hlist_pre_sig = []
     hlist_post_b = []
     hlist_post_sb = []
+    hlist_post_sb_b = []
     hlist_post_sig = []
 
     regs = obs.keys()
@@ -310,9 +435,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
         hlist_pre_b.append(makeHist(   reg, pre_b,    "_pre_bonly",   njets, channel == "combo") )
         hlist_post_b.append(makeHist(  reg, post_b,   "_post_bonly",  njets, channel == "combo") )
         hlist_post_sb.append(makeHist( reg, post_sb,  "_post_sb",     njets, channel == "combo") )
+        hlist_post_sb_b.append(makeHist( reg, post_sb_b,  "_post_sb_b",     njets, channel == "combo") )
         hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal", njets, channel == "combo") )
-
-
+        hlist_pre_sig.append(makeHist(reg, pre_sig, "_pre_signal", njets, channel == "combo") )
 
     #save_to_root(hlist_data, outfile)
     #save_to_root(hlist_pre_b, outfile)
@@ -321,24 +446,36 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
     #save_to_root(hlist_post_sig, outfile)
  
     for i in range(len(hlist_pre_b)):
-        hlist_post_b[i].SetLineColor(kBlue)
-        hlist_post_b[i].SetFillColor(kBlue)
-        hlist_post_b[i].SetFillStyle(3001)
+        hlist_post_b[i].SetLineColor(fitcol)
+        hlist_post_b[i].SetFillColorAlpha(fitcol, 0.30)
+        #hlist_post_b[i].SetFillColorAlpha(ROOT.kGray, 0.90)
+        hlist_post_b[i].SetFillStyle(3744)
 
-        hlist_post_sb[i].SetLineColor(kRed)
-        hlist_post_sb[i].SetFillColor(kRed)
-        hlist_post_sb[i].SetFillStyle(3002)
+        hlist_post_sb_b[i].SetLineColor(bkgobscol)
+        hlist_post_sb_b[i].SetMarkerColor(bkgobscol)
 
-        hlist_post_sig[i].SetLineColor(kGreen)
+        hlist_post_sb[i].SetLineColor(fitcol)
+        hlist_post_sb[i].SetFillColorAlpha(fitcol, 0.30)
+        #hlist_post_sb[i].SetFillColorAlpha(ROOT.kGray, 0.90)
+        hlist_post_sb[i].SetFillStyle(3744)
+
+        hlist_pre_sig[i].SetLineColor(sigpredcol)
+        hlist_pre_sig[i].SetMarkerColor(sigpredcol)
+        hlist_post_sig[i].SetLineColor(sigobscol)
+        hlist_post_sig[i].SetMarkerColor(sigobscol)
 
         hlist_data[i].SetLineColor(kBlack)
     
     hlist_ratio = []
+    pull_unc_list = []
     for i in range(len(hlist_pre_b)):
         if plotsb:
             h_temp = copy.copy(hlist_post_sb[i])
+            h_temp2 = copy.copy(hlist_post_sb[i])
         else:
             h_temp = copy.copy(hlist_post_b[i])
+            h_temp2 = copy.copy(hlist_post_b[i])
+
         h_temp.Add(hlist_data[i], -1)
         for j in range(hlist_data[i].GetNbinsX()):
             b = h_temp.GetBinContent(j+1)
@@ -349,96 +486,147 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
                 pull = 0
             else:
                 pull = b/data_e
-            if b == 0 or data_b == 0:
-                pull_unc = 1.0
-            else:
-                pull_unc = abs(pull) * sqrt((e/b)**2 + (data_e/data_b)**2)
+            pull_unc = 1.0
             h_temp.SetBinContent(j+1, pull)
             h_temp.SetBinError(j+1, pull_unc)
+            h_temp2.SetBinContent(j+1, 0)
+            h_temp2.SetBinError(j+1, e/data_e)
         h_temp.SetLineColor(kBlack)
         hlist_ratio.append(h_temp)
+        pull_unc_list.append(h_temp2)
 
     c1, p1_list, p2_list = makeCanvasAndPads(channel == "combo")
 
     c1, p1_list, p2_list = formatCanvasAndPads(c1, p1_list, p2_list)
     
-    leg_list = []
-    for i in range(len(p1_list)): 
-        l = ROOT.TLegend(0.33, 0.75, 0.9, 0.9)
-        l.SetNColumns(2)
-        l.SetTextSize(0.05)
-        l.SetBorderSize(0)
-        l.SetFillStyle(0)
-
-        if plotsb:
-            l.AddEntry(hlist_post_sb[i], "Post S+B", "l")
-        if plotb:
-            l.AddEntry(hlist_post_b[i], "Post B", "l")
-        if plotdata:
-            l.AddEntry(hlist_data[i], "Data", "p")
-        if plotsig:
-            l.AddEntry(hlist_post_sig[i], "{}".format(signal), "l")
-    
-        leg_list.append(l)
-
+    survival = []
     for i in range(len(p1_list)):
         p1_list[i].cd()
         
-        hlist_post_sig[i].SetTitleSize(0.1)
-        hlist_post_sig[i].GetYaxis().SetTitle("Num. Events (A.U.)")
-        hlist_post_sig[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_sig[i].GetYaxis().SetRangeUser(1, 2E6)
-        hlist_post_sig[i].SetLineWidth(3)
+        if i == 0:
+
+            for hist in [hlist_post_sig[i], hlist_pre_sig[i], hlist_post_sb[i], hlist_post_b[i]]:
+                hist.GetYaxis().SetTitle("Number of Events")
+                hist.GetYaxis().SetTitleSize(0.175 * padRatio)
+                hist.GetYaxis().SetLabelSize(0.145 * padRatio)
+
+            hlist_ratio[i].GetYaxis().SetTitle("(val - fit) / #delta")
+            hlist_ratio[i].GetYaxis().SetTitleSize(0.175)
+            hlist_ratio[i].GetYaxis().SetTitleOffset(0.55)
+            hlist_ratio[i].GetYaxis().SetLabelSize(0.155)
+
+            pull_unc_list[i].GetYaxis().SetTitle("(val - fit) / #delta")
+            pull_unc_list[i].GetYaxis().SetTitleSize(0.175)
+            pull_unc_list[i].GetYaxis().SetTitleOffset(0.55)
+            pull_unc_list[i].GetYaxis().SetLabelSize(0.145)
+
+        elif i == 3:
+            hlist_ratio[i].GetXaxis().SetTitle("Number of Jets")        
+            hlist_ratio[i].GetXaxis().SetTitleOffset(0.0)
+            pull_unc_list[i].GetXaxis().SetTitle("Number of Jets")        
+            pull_unc_list[i].GetXaxis().SetTitleOffset(0.0)
+
+        hlist_post_sig[i].GetYaxis().SetRangeUser(2, 2E6)
+        hlist_post_sig[i].SetLineWidth(2)
         
-        hlist_post_sb[i].SetTitleSize(0.1)
-        hlist_post_sb[i].GetYaxis().SetTitle("Num. Events (A.U.)")
-        hlist_post_sb[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_sb[i].GetYaxis().SetRangeUser(1, 2E6)
-        hlist_post_sb[i].SetLineWidth(3)
+        hlist_pre_sig[i].GetYaxis().SetRangeUser(2, 2E6)
+        hlist_pre_sig[i].SetLineWidth(2)
+
+        hlist_post_sb[i].GetYaxis().SetRangeUser(2, 2E6)
+        hlist_post_sb[i].SetLineWidth(2)
         
-        hlist_post_b[i].SetTitleSize(0.1)
-        hlist_post_b[i].GetYaxis().SetTitle("Num. Events (A.U.)")
-        hlist_post_b[i].GetXaxis().SetTitle("N Jets")
-        hlist_post_b[i].GetYaxis().SetRangeUser(1, 2E6)
-        hlist_post_b[i].SetLineWidth(3)
+        hlist_post_sb_b[i].GetYaxis().SetRangeUser(2, 2E6)
+        hlist_post_sb_b[i].SetLineWidth(2)
+
+        hlist_post_b[i].GetYaxis().SetRangeUser(2, 2E6)
+        hlist_post_b[i].SetLineWidth(2)
         
+        if plotsigref:
+            hlist_pre_sig[i].Draw("L SAME")
         if plotsig:
-            hlist_post_sig[i].Draw("E0P SAME")
-        if plotb:
-            hlist_post_b[i].Draw("E1 SAME")
+            hlist_post_sig[i].Draw("L SAME")
+        if plotb and plotsb:
+            hlist_post_sb_b[i].Draw("L SAME")
+            #survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
+        if plotb and not plotsb:
+            hlist_post_b[i].Draw("E2 SAME")
+            survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
         if plotsb:
-            hlist_post_sb[i].Draw("E1 SAME")
+            hlist_post_sb[i].Draw("E2 SAME")
+            survival.append(drawWithNoYerr(p1_list[i], hlist_post_sb[i], fitcol))
         hlist_data[i].SetMarkerStyle(8)
-        hlist_data[i].SetMarkerSize(0.8)
+        hlist_data[i].SetMarkerSize(1)
+        hlist_data[i].SetLineWidth(2)
         if plotdata:
             hlist_data[i].Draw("E1 X0 SAME")
-        leg_list[i].Draw()
+
+        if i == 3:
+            l = None
+            if plotsigref:
+                l = ROOT.TLegend(0.32, 0.88 - nLegItems*0.075, 0.90, 0.81)
+            else:
+                l = ROOT.TLegend(0.52, 0.88 - nLegItems*0.075, 0.90, 0.81)
+            l.SetNColumns(1)
+            l.SetTextSize(0.05)
+            l.SetBorderSize(0)
+            l.SetFillStyle(0)
+
+            if plotsb:
+                l.AddEntry(hlist_post_sb[i], "Bkg+Sig Fit", "l")
+            if plotb and not plotsb:
+                l.AddEntry(hlist_post_b[i], "Bkg Fit", "l")
+            if plotdata:
+                l.AddEntry(hlist_data[i], "N observed", "pe")
+            if plotb and plotsb:
+                l.AddEntry(hlist_post_sb_b[i], "Bkg Obs.", "l")
+            if plotsig:
+                l.AddEntry(hlist_post_sig[i], "Signal Obs.", "l")
+            if plotsigref:
+                l.AddEntry(hlist_pre_sig[i], sigStr, "l")
+   
+            l.Draw("SAME")
 
         p2_list[i].cd()
         hlist_ratio[i].SetTitle("")
-        hlist_ratio[i].SetLineWidth(3)
-        hlist_ratio[i].GetYaxis().SetRangeUser(-2, 2)
-        hlist_ratio[i].GetYaxis().SetTitle("Fit-Data/#sigma_{Data}")
-        hlist_ratio[i].GetYaxis().SetTitleSize(0.1)
-        hlist_ratio[i].GetYaxis().SetTitleOffset(0.4)
-        hlist_ratio[i].GetYaxis().SetLabelSize(0.1)
-        hlist_ratio[i].GetXaxis().SetTitle("N_{Jets}")        
-        hlist_ratio[i].GetXaxis().SetLabelSize(0.1)
-        hlist_ratio[i].GetXaxis().SetTitleSize(0.1)        
-        hlist_ratio[i].GetXaxis().SetTitleOffset(0.0)
-       
-        hlist_ratio[i].Draw("E0P")
-        
-    for p in p1_list:
-        draw_LumiCMS(p, year, approved = False, wip = True)
+        hlist_ratio[i].SetLineWidth(2)
+        hlist_ratio[i].SetMarkerStyle(8)
+        hlist_ratio[i].SetMarkerSize(1)
+
+        hlist_ratio[i].GetYaxis().SetRangeUser(-2.4, 2.4)
+        hlist_ratio[i].GetXaxis().SetLabelSize(0.2)
+        hlist_ratio[i].GetXaxis().SetTitleSize(0.145)        
+        hlist_ratio[i].GetXaxis().SetLabelOffset(0.027)
+        hlist_ratio[i].GetYaxis().SetNdivisions(5, 5, 0)
+
+        pull_unc_list[i].GetYaxis().SetRangeUser(-2.4, 2.4)
+        pull_unc_list[i].GetXaxis().SetLabelSize(0.23)
+        pull_unc_list[i].GetXaxis().SetTitleSize(0.145 * pad1Size/pad4Size)        
+        pull_unc_list[i].GetXaxis().SetLabelOffset(0.020)
+        pull_unc_list[i].GetXaxis().SetTitleOffset(1.1)
+        pull_unc_list[i].GetYaxis().SetNdivisions(5, 5, 0)
+
+        pull_unc_list[i].SetLineWidth(0)
+
+        for bin in range(1, hlist_ratio[i].GetNbinsX()+1):
     
-        #c1.Update()
-        #c1.Paint()
+            label = str(njets[0] + bin - 1)
+            if label == str(njets[-1]):
+                label = "#geq " + str(njets[0] + bin - 1)
 
-    c1.SaveAs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + "_" + fitName + ".png")
+            hlist_ratio[i].GetXaxis().SetBinLabel(bin, label)
+            pull_unc_list[i].GetXaxis().SetBinLabel(bin, label)
 
-# ---------------
-# ---------------
+        pull_unc_list[i].Draw("E2")
+        hlist_ratio[i].Draw("E0P SAME")
+        hlist_ratio[i].Draw("AXIG SAME")
+        hlist_ratio[i].Draw("AXIS SAME")
+
+        draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
+        draw_ExtraInfo(p1_list[i], i, channel+signal)
+   
+    for ext in ["pdf"]:
+        c1.SaveAs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + "_" + fitName + ".%s"%(ext))
+
 def getObs(card, njets, combo=False):
 
     if combo:
@@ -507,7 +695,7 @@ def main():
         #masses    = [m for m in range(300, 1450, 50)]
         masses    = [350, 550, 850, 1150]
         dataTypes = ["pseudoData", "pseudoDataS"]
-        channels  = ["0l", "1l", "2l", "combo"]
+        channels  = ["0l", "1l", "2l"]
         #channels  = ["combo"]
 
         close     = ""
@@ -518,6 +706,14 @@ def main():
             for d in dataTypes:
                 for s in signals:
                     for m in masses:
+
+                        sigStr = ""
+                        if "RPV" in s:
+                            sigStr = "RPV"
+                        elif "SYY" in s:
+                            sigStr = "SYY"
+
+                        sigStr += " m_{ #tilde{t}} = %d GeV"%(m)
 
                         if c == "2l":
                             njets = [6, 11]
@@ -548,8 +744,13 @@ def main():
                         if not os.path.isdir("%s/fit_plots/%s/"%(options.path,dirTag)):
                             os.makedirs("%s/fit_plots/%s/"%(options.path,dirTag))
 
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, False, True, False, "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, True,  True, True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                        # make_fit_plots(... plotb, plotsb, plotdata, plotsig, plotsigref ...)
+                        if d == "pseudoData":
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True, False, True,  "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True,  False,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                        elif d == "pseudoDataS":
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True,  False,  True,  "{}_bonly".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, True, True,  True,  False,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
 
     # ---------------------------------------------------------------
     # make fit plots for specific model, mass, channel, any data type
