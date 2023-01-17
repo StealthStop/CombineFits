@@ -268,6 +268,7 @@ class Plotter():
         hr.GetYaxis().SetNdivisions(4, 2, 0)
         hr.Draw()
 
+        channel = "1l"
         diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
         
         rvalue  = array('d', diagnostics["rList"])

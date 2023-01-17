@@ -22,13 +22,13 @@
 
 command=$1
 DATE=("09.12.2022")
-CARDS="cardsInjectNominal_12_16_22_RerunLimits"
+CARDS="cardsInjectNominal_12_19_22_Uncorr"
 #CARDS=("cardsInjectRPV400" "cardsInjectNominal")
 YEARS=("Run2UL")
 MODELS=("StealthSYY")
-MASSES=("550")
-CHANNELS=("0l" "1l" "2l" "combo")
-#CHANNELS=("0l" "1l" "2l")
+MASSES=("350 550 850 1150")
+#CHANNELS=("0l" "1l" "2l" "combo")
+CHANNELS=("1l")
 DATATYPES=("pseudoData" "pseudoDataS")
 
 for YEAR in ${YEARS[@]}; do

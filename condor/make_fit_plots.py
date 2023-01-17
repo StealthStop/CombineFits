@@ -103,10 +103,11 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
                 print("Fit for {}_{}_{} Failed".format(year, signal, channel))
                 print(e)
                 return
-            #data[reg].append((i, 
-            #    w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,channel)),
-            #    sqrt(w.set("observables").getRealValue("n_obs_binY{}_{}{}_{}".format(year[-2:],reg,i,channel))),
-            #    ))
+            data[reg].append((i, 
+                f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/data".format(ch, year[-2:], reg_temp, i, channel_temp)).Eval(0.5),
+                #f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/data".format(ch, year[-2:], reg_temp, i, channel_temp)).GetBinErrorLow(1),
+                #f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/data".format(ch, year[-2:], reg_temp, i, channel_temp)).GetBinErrorHigh(1),
+                ))
 
     f_fit.Close()
     f_pre.Close()
@@ -293,8 +294,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
         close += "_perfectClose"
     try: 
         pre_b, post_b, post_sb, post_sig, data = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets)
-    except:
+    except Exception as e:
         print("Fit for {}_{}_{} Failed".format(year, signal, channel))
+        print(e)
         return
 
     hlist_data = []
@@ -303,7 +305,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, plotb, plotsb,
     hlist_post_sb = []
     hlist_post_sig = []
 
-    regs = obs.keys()
+    regs = data.keys()
 
     for reg in regs:
         hlist_data.append(makeHist(    reg, obs,      "_data",        njets, channel == "combo") )
