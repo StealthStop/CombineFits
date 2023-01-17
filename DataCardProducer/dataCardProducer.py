@@ -486,6 +486,7 @@ class dataCardMaker:
             # Write a line to datacard for each independent systematic
             # --------------------------------------------------------
             self.systematics = collections.OrderedDict(sorted(self.systematics.items()))
+            sys_complete = []
             for sys in self.systematics.keys():
             
                 # To skip MC correction factor (added in a different spot in datacard)
@@ -519,8 +520,16 @@ class dataCardMaker:
                                             sys_str += "{} ".format("--")
                             file.write(sys_str)
                 else:
-                    sys_str = "{0:<8}".format("\n"+"np_"+sys + "_" + self.channel + '\t')
+                    var = sys.split("_")[1]
+
+                    sys_str = "{0:<8}".format("\n"+"np_"+var + "_" + self.channel + '\t')
                     sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+
+                    # Store list of systematics already handled to not double count
+                    if var in sys_complete:
+                        continue
+                    else:
+                        sys_complete.append(var)
 
                     for bin in range(self.obsNbins):
                         if not mask[bin]:
@@ -528,6 +537,10 @@ class dataCardMaker:
 
                         for proc in self.observed.keys():
                          
+                            # Up/Down variations for Other, TTX, and signal should be correlated
+                            # Use this list to check if the processes is one of these three
+                            corr_procs = ["Other", "TTX", "SIG"]
+
                             # Need to handle different signal masses correctly here
                             # Giving them all the name "SIG" in config from now on for syst. 
                             if "SYY" in proc or "RPV" in proc:
@@ -545,9 +558,10 @@ class dataCardMaker:
                                 sys_str += "{} ".format("--")
                                 continue
                           
-                            if sys_proc == self.systematics[sys]["proc"]:
+                            #if sys_proc == self.systematics[sys]["proc"]:
+                            if sys_proc in corr_procs:
                                 if type(self.systematics[sys]["binValues"][bin]) == str:
-                                    sys_str += "{} ".format(self.systematics[sys]["binValues"][bin])
+                                    sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:
