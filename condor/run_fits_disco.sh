@@ -91,9 +91,9 @@ then
     echo "Running Significance calculations"
     if [ $asimov == 1 ]
     then
-        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
+        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
     else
-        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMinLim --rMax $rMaxLim                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
+        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
     fi
 fi
 
