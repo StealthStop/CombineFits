@@ -199,8 +199,8 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
-    if var is "pdf" or var is "scl" or var is "isr" or var is "fsr":
-        continue
+    #if var is "pdf" or var is "scl" or var is "isr" or var is "fsr":
+    #    continue
 
     up = "up" if var in ["JEC", "JER"] else "Up"
     down = "down" if var in ["JEC", "JER"] else "Down"
