@@ -57,10 +57,10 @@ class Plotter():
                        "2017"        : ROOT.kGreen+1,
                        "2018"        : ROOT.kOrange+1,
                        "Run2UL"      : ROOT.kBlack,
-                       "0l"          : ROOT.kRed+1,
-                       "1l"          : ROOT.kBlue+1,
-                       "2l"          : ROOT.kCyan+1,
-                       "combo"       : ROOT.kGreen+1,
+                       "0l"          : ROOT.TColor.GetColor("#2ca25f"),
+                       "1l"          : ROOT.TColor.GetColor("#5cb4e8"),
+                       "2l"          : ROOT.TColor.GetColor("#CE1256"),
+                       "combo"       : ROOT.kBlack,
         }
 
         self.lstyles = {"2016"        : 0,
@@ -68,11 +68,23 @@ class Plotter():
                         "2016postVFP" : 3,
                         "2017"        : 2,
                         "2018"        : 7,
-                        "Run2UL"      : 0,
+                        "Run2UL"      : 1,
+                        "0l"          : 7,
+                        "1l"          : 7,
+                        "2l"          : 7,
+                        "combo"       : 1,
+        }
+
+        self.lwidths = {"2016"        : 3,
+                        "2016preVFP"  : 3,
+                        "2016postVFP" : 3,
+                        "2017"        : 3,
+                        "2018"        : 3,
+                        "Run2UL"      : 3,
                         "0l"          : 4,
-                        "1l"          : 3,
-                        "2l"          : 5,
-                        "combo"       : 2,
+                        "1l"          : 4,
+                        "2l"          : 4,
+                        "combo"       : 4,
         }
 
     # ---------------------------------------
@@ -84,6 +96,7 @@ class Plotter():
 
         entries = []
 
+        color = ROOT.TColor.GetColor("#8B2D8F")
         # Draw the 1sigma, 2sigma, and 3sigma lines
         # For 1 sigma: s = 0.68
         #   1 - (0.5 + s/2) = 0.5 - s/2
@@ -91,14 +104,14 @@ class Plotter():
 
             sigma = 0.5 - ROOT.TMath.Erf(float(s)/ROOT.TMath.Sqrt(2.0))/2.0
             L = ROOT.TLine(Xmin, sigma, Xmax, sigma)
-            L.SetLineColor(2)
+            L.SetLineColor(color)
             L.SetLineWidth(2)
             L.Draw("same")
     
             S = ROOT.TPaveText(Xmax+16,sigma-0.25*sigma,Xmax+30,sigma+0.5*sigma,"")
             S.SetBorderSize(0)
             S.SetFillStyle(0)
-            S.SetTextColor(2)
+            S.SetTextColor(color)
             S.SetTextSize(0.045)
             S.AddText( str(s)+"#sigma" )
             S.Draw("same")
@@ -156,7 +169,7 @@ class Plotter():
         h.GetYaxis().SetNdivisions(4,2,0)
         h.Draw()
 
-        legend = ROOT.TLegend(0.20, 0.03, 0.83, 0.29,"")
+        legend = ROOT.TLegend(0.30, 0.03, 0.93, 0.29,"")
         legend.SetNColumns(2)
         legend.SetTextSize(0.05)
         legend.SetBorderSize(0)
@@ -181,37 +194,42 @@ class Plotter():
                     coption = None
                     soption = None
                     loption = None
+                    lwidth  = None
                     tag     = None
 
                     if len(years) == 1 and len(channels) > 1:
                         coption = self.colors[channel]
                         soption = self.lstyles[channel]
                         loption = self.labels[channel]
+                        lwidth  = self.lwidths[channel]
                         tag     = year
 
                     elif len(years) > 1 and len(channels) == 1:
                         coption = self.colors[year]
                         soption = self.lstyles[year]
                         loption = self.labels[year]
+                        lwidth  = self.lwidths[year]
                         tag     = channel
 
                     elif len(years) > 1 and len(channels) > 1:
                         coption = self.colors[year]
                         soption = self.lstyles[channel]
                         loption = "%s, %s"%(year, channel)
+                        lwidth  = self.lwidths[channel]
                         tag = "Multiple"
 
                     elif len(years) == 1 and len(channels) == 1:
                         coption = self.colors[year]
                         soption = self.lstyles[year]
                         loption = "%s, %s"%(year, channel)
+                        lwidth  = self.lwidths[year]
                         tag = "%s_%s"%(year, channel)
 
                     data = dataSets["%s_%s_%s"%(year, model, channel)].getData()
 
                     gr = ROOT.TGraph(npoints, array('d', xpoints), array('d', data["pList"]))
                     gr.SetLineColor(coption)
-                    gr.SetLineWidth(3)
+                    gr.SetLineWidth(lwidth)
                     gr.SetLineStyle(soption) 
                     gr.Draw("L SAME")
                     legend.AddEntry(gr, loption, "l")
@@ -226,7 +244,7 @@ class Plotter():
         cmstext.SetTextSize(0.060)
         cmstext.SetTextFont(61)
         cmstext.DrawLatex(ROOT.gPad.GetLeftMargin(), 1 - (ROOT.gPad.GetTopMargin() - 0.017), "CMS")
-        cmstext.SetTextSize(0.035)
+        cmstext.SetTextSize(0.045)
         cmstext.SetTextFont(52)
 
         if not approved:
@@ -277,7 +295,7 @@ class Plotter():
         zero    = array('d', diagnostics["zero"])
 
         rband = ROOT.TGraphAsymmErrors(npoints, array('d', xpoints), rvalue, zero, zero, rmvalue, rpvalue)
-        rband.SetFillColor(ROOT.kGreen+1)
+        rband.SetFillColor(ROOT.TColor.GetColor("#99D8C9"))
         rband.Draw("3 same")
 
         r = ROOT.TGraph(npoints, array('d', xpoints), rvalue)

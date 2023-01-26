@@ -230,13 +230,13 @@ class LimitPlots():
 
         if (self.model=="RPV"):
             latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.8 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 3.5 * textSize) - 0.55, "m_{#tilde{#chi}^{0}_{1}} = 100 GeV")
+            latex.DrawLatex(self.textXposition, (self.textYposition - 1.9 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
+            latex.DrawLatex(self.textXposition, (self.textYposition - 3.6 * textSize) - 0.55, "m_{#tilde{#chi}^{0}_{1}} = 100 GeV")
       
         elif (self.model=="StealthSYY"):
             latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t#tilde{S}g) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.2 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 2.4 * textSize) - 0.55, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
+            latex.DrawLatex(self.textXposition, (self.textYposition - 1.6 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
+            latex.DrawLatex(self.textXposition, (self.textYposition - 3.3 * textSize) - 0.55, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
         
     # ----------------
     # make limit plots
@@ -417,8 +417,8 @@ class LimitPlots():
         projectingXmin           = mass_points[0]  - 50 
         projectingXmax           = mass_points[-1] + 50
         projectingRLimitYmin     = 0.0005
-        projectingRLimitYmax     = 100
-        projectingRLimitXYtitles = ";m_{#tilde{t}} [GeV]; 95% CL upper limit on #sigma#bf{#it{#Beta}} [pb]"
+        projectingRLimitYmax     = 300
+        projectingRLimitXYtitles = ";m_{ #tilde{t}} [GeV]; 95% CL upper limit on #sigma#bf{#it{#Beta}} [pb]"
         plotLabel                = self.outputDir + "_CLs"
 
         # ----------------------------------
@@ -503,7 +503,7 @@ class LimitPlots():
             grMean_0l.SetMarkerSize(0)
             grMean_0l.SetLineWidth(2)
             grMean_0l.SetLineStyle(2)
-            grMean_0l.SetLineColor(ROOT.kRed)
+            grMean_0l.SetLineColor(ROOT.TColor.GetColor("#2ca25f"))
             grMean_0l.Draw("l")
 
             grMean_1l.SetMarkerSize(0)
@@ -515,7 +515,7 @@ class LimitPlots():
             grMean_2l.SetMarkerSize(0)
             grMean_2l.SetLineWidth(2)
             grMean_2l.SetLineStyle(2)
-            grMean_2l.SetLineColor(ROOT.kMagenta)
+            grMean_2l.SetLineColor(ROOT.TColor.GetColor("#CE1256"))
             grMean_2l.Draw("l")
 
         grObs.SetLineWidth(2)
@@ -530,7 +530,11 @@ class LimitPlots():
         grTheoryErr.SetFillColor(42)
 
         # add them to legend
-        legend = ROOT.TLegend(0.65, 0.62, 0.845, 0.88)
+        legend = None
+        if combo:
+            legend = ROOT.TLegend(0.55, 0.45, 0.87, 0.87)
+        else:
+            legend = ROOT.TLegend(0.55, 0.60, 0.87, 0.87)
         legend.SetFillColor(0)
         legend.SetFillStyle(0)
         legend.SetTextFont(42)
@@ -542,7 +546,7 @@ class LimitPlots():
         if (self.model=="RPV"):
             header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj"
             legend.SetHeader(header)
-        elif (self.model=="SYY"):
+        elif (self.model=="StealthSYY"):
             header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg"
             legend.SetHeader(header)
 
@@ -551,9 +555,9 @@ class LimitPlots():
         legend.AddEntry(grObs,    "Observed limit", "lp")
 
         if (self.model=="RPV"):
-            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t}#bar{#tilde{t}}} (NNLO+NNLL)", "lf")
-        elif (self.model=="SYY"):
-            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t}#bar{#tilde{t}}} (NNLO+NNLL)", "lf")
+            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
+        elif (self.model=="StealthSYY"):
+            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
 
         legend.Draw()
 
