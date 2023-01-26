@@ -21,14 +21,14 @@
 # ------------------------------------------------------------------------
 
 command=$1
-DATE=("09.12.2022")
-CARDS="cardsInjectNominal_12_19_22_Uncorr"
+CARDS="cardsInjectNominal"
 #CARDS=("cardsInjectRPV400" "cardsInjectNominal")
 YEARS=("Run2UL")
 MODELS=("StealthSYY")
-MASSES=("350 550 850 1150")
-#CHANNELS=("0l" "1l" "2l" "combo")
-CHANNELS=("1l")
+MASSES=("550")
+#MASSES=("350" "550" "850" "1150")
+CHANNELS=("0l" "1l" "2l" "combo")
+#CHANNELS=("0l" "1l" "2l")
 DATATYPES=("pseudoData" "pseudoDataS")
 
 for YEAR in ${YEARS[@]}; do
@@ -58,7 +58,7 @@ for YEAR in ${YEARS[@]}; do
                         echo "making limit plots -------------------------------------------"
                         #python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} 
                         python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip
-                        #python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --asimov --wip
+                        python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --asimov --wip
                     fi
 
                     for MASS in ${MASSES[@]}; do
@@ -67,9 +67,10 @@ for YEAR in ${YEARS[@]}; do
                         # copy the impact plots
                         # ---------------------
                         if [[ $command == "impact" ]]; then
-                            mkdir Fit_${YEAR}_with_${CARDS}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
+                            #mkdir Fit_${YEAR}_with_${CARDS}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
                             cd Fit_${YEAR}_with_${CARDS}/output-files/${MODEL}_${MASS}_Run2UL/
-                            scp -r impacts_${YEAR}${MODEL}${MASS}_${CHANNEL}_${DATATYPE}*.pdf ../plots_dataCards_TT_allTTvar/impact_plots/
+                            scp -r impacts_${YEAR}${MODEL}${MASS}_${CHANNEL}_${DATATYPE}.pdf ../plots_dataCards_TT_allTTvar/impact_plots/
+                            scp -r impacts_${YEAR}${MODEL}${MASS}_${CHANNEL}_${DATATYPE}_Asimov.pdf ../plots_dataCards_TT_allTTvar/impact_plots/
                             cd ../../../
                         fi
 
