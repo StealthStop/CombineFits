@@ -135,6 +135,8 @@ def main():
     else:
         channels = [options.channel]
 
+    if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
+        os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
     for st in signalType:
         st = st.strip()
         stauxi1 = ""; stauxi2 = ""
@@ -151,12 +153,11 @@ def main():
             mass = mass.strip()
             for channel in channels:
                 for asimov in [0, 1]:
+                    print("Queueing for {} {} Asimov:{}".format(mass, channel, bool(asimov)))
                     # Create the directory for cards and output files
                     outDir = model+"_"+mass+"_"+options.year
                     if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
                         os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
-                    if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
-                        os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
 
                     if not options.toy and not options.toyS:
 
@@ -175,7 +176,7 @@ def main():
                             "log_%s_FitDiag.txt"                                             % (tagName),
                             "log_%s_Sign.txt"                                                % (tagName),
                             "log_%s_step1.txt"                                               % (tagName),
-                            "log_%s_step2.txt"                                               % (tagName),
+                            #"log_%s_step2.txt"                                               % (tagName),
                             "log_%s_step3.txt"                                               % (tagName),
                             "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                             "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),

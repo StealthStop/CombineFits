@@ -577,12 +577,20 @@ class LimitPlots():
 
         grObs.Draw("lp")
 
-        #f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
+        if "SYY" in self.model:
+            f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
-        #old = f.Get("Figure 6b").Get("Graph1D_y3")
+            old = f.Get("Figure 6b").Get("Graph1D_y3")
 
-        #legend.AddEntry(old, "Old Expected Limit", "l")
-        #old.Draw("lp")
+            legend.AddEntry(old, "Old Expected Limit", "l")
+            old.Draw("lp")
+        elif "RPV" in self.model:
+            f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
+
+            old = f.Get("Figure 6a").Get("Graph1D_y3")
+
+            legend.AddEntry(old, "Old Expected Limit", "l")
+            old.Draw("lp")
 
         # -----------------------
         # draw signal information

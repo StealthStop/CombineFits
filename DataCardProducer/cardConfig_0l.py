@@ -45,7 +45,7 @@ observed["TT"] = {
         "end"       : obs_end,
     }
 observed["QCD"] = {
-        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.85_0.74.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root",
         "sys"       : 1.0, 
         "hist"      : "$YEAR_Data_only_QCD_$MODELS_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
@@ -109,7 +109,7 @@ observed["TT_MC"] = {
 #     "njets" : Total number of Njets bins for each A, B, C, D region (6)
 # }
 
-sys_path  = "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.85_0.74.root" # including TT and QCD
+sys_path  = "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.6_0.6.root" # including TT and QCD
 sys_hist  = "$YEAR_MCcorr_Ratio_MC_$SYST"
 sys_type  = "sys"
 sys_start = 8
@@ -175,7 +175,8 @@ systematics = {
 }
 
 # Up/Down Variations on minor background
-var_list  = ["JEC", "JER", "btg", "fsr", "isr", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
+var_list  = ["JEC", "JER", "btg", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
+#var_list  = ["JEC", "JER", "btg", "fsr", "isr", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
 #var_list  = ["JECup", "JECdown", "JERup", "JERdown", "btgUp", "btgDown", "fsrUp", "fsrDown", "isrUp", "isrDown", "jetUp", "jetDown", "pdfUp", "pdfDown", "prfUp", "prfDown", "puUp", "puDown", "sclUp", "sclDown", "ttgUp", "ttgDown"] 
 var_proc  = ["TTX", "Other"]
 
@@ -199,8 +200,8 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
-    #if var is "pdf" or var is "scl" or var is "isr" or var is "fsr":
-    #    continue
+    if var is "scl" or var is "isr" or var is "fsr":
+        continue
     
     up = "up" if var in ["JEC", "JER"] else "Up"
     down = "down" if var in ["JEC", "JER"] else "Down"

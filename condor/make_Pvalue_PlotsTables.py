@@ -181,7 +181,7 @@ class Plotter():
             if  model == "RPV": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj");
             
-            elif model == "SYY": 
+            elif model == "StealthSYY": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg");
             
             elif model == "SHH": 

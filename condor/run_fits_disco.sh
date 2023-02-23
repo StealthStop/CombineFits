@@ -82,18 +82,18 @@ then
     echo "Running Asymptotic fits"
     if [ $asimov == 1 ]
     then
-        combine -M AsymptoticLimits ${fitOptions} --verbose 2 --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=${inject} -n ${tagName}_AsymLimit_Asimov > log_${tagName}_Asymp.txt
+        combine -M AsymptoticLimits ${fitOptions} --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=${inject} -n ${tagName}_AsymLimit_Asimov > log_${tagName}_Asymp.txt
     else
-        combine -M AsymptoticLimits ${fitOptions} --verbose 2 --rMin $rMinLim --rMax $rMaxLim                                -n ${tagName}_AsymLimit > log_${tagName}_Asymp.txt
+        combine -M AsymptoticLimits ${fitOptions} --rMin $rMinLim --rMax $rMaxLim                                -n ${tagName}_AsymLimit > log_${tagName}_Asymp.txt
     fi    
 
     # Calculate significance using Asimov data set and actual observation
     echo "Running Significance calculations"
     if [ $asimov == 1 ]
     then
-        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
+        combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
     else
-        combine -M Significance ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
+        combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
     fi
 fi
 
@@ -105,9 +105,9 @@ then
     echo "Running FitDiagnostics"
     if [ $asimov == 1 ]
     then
-        combine -M FitDiagnostics ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --toysFrequentist --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
+        combine -M FitDiagnostics ${fitOptions} --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --toysFrequentist --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
     else
-        combine -M FitDiagnostics ${fitOptions} --verbose 2 --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
+        combine -M FitDiagnostics ${fitOptions} --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
     fi
 fi
 
@@ -126,13 +126,13 @@ then
     if [ $asimov == 1 ]
     then
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 > log_${tagName}_step2_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 -v -1 > log_${tagName}_step2_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}_Asimov.json > log_${tagName}_step3_Asimov.txt
         plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
     else
         # Generate impacts based on observation
         combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 > log_${tagName}_step2.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 -v -1 > log_${tagName}_step2.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}.json > log_${tagName}_step3.txt
         plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
     fi

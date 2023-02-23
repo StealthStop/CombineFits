@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2):
      
         self.path           = path
         self.observed       = observed
@@ -45,6 +45,8 @@ class dataCardMaker:
         self.NoMCcorr       = NoMCcorr
         self.min_nj         = min_nj
         self.max_nj         = max_nj
+        self.disc1          = str(disc1)
+        self.disc2          = str(disc2)
 
         self.RUN2SF = 1.0
         
@@ -66,7 +68,9 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
                                 .replace("$YEAR",    self.year) \
-                                .replace("$MODELS",   self.models)
+                                .replace("$MODELS",   self.models) \
+                                .replace("$DISC1",   self.disc1) \
+                                .replace("$DISC2",   self.disc2) 
         
         # If loading a systematic, replace $SYST keyword with actual name e.g. TT_JECup
         # that is passed in the kwargs
@@ -124,18 +128,23 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         upHistName = hdict["upHist"].replace("$CHANNEL", self.channel) \
                                     .replace("$YEAR",    self.year) \
-                                    .replace("$MODELS",   self.models)
+                                    .replace("$MODELS",   self.models) \
+                                    .replace("$DISC1",   self.disc1) \
+                                    .replace("$DISC2",   self.disc2) 
 
         downHistName = hdict["downHist"].replace("$CHANNEL", self.channel) \
                                         .replace("$YEAR",    self.year) \
-                                        .replace("$MODELS",   self.models)
-
+                                        .replace("$MODELS",   self.models) \
+                                        .replace("$DISC1",   self.disc1) \
+                                        .replace("$DISC2",   self.disc2) 
 
         # Also need to collect the nominal histogram for computing the 
         # systematic ratio 
         nomName = hdict["nomHist"].replace("$CHANNEL", self.channel) \
                                   .replace("$YEAR",    self.year) \
-                                  .replace("$MODELS",   self.models)
+                                  .replace("$MODELS",   self.models) \
+                                  .replace("$DISC1",   self.disc1) \
+                                  .replace("$DISC2",   self.disc2) 
 
         upRatio = copy.copy(tfile.Get(upHistName))
         downRatio = copy.copy(tfile.Get(downHistName))
@@ -191,7 +200,9 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
                                 .replace("$MODELS",  self.models) \
-                                .replace("$YEAR",    self.year)
+                                .replace("$YEAR",    self.year) \
+                                .replace("$DISC1",   self.disc1) \
+                                .replace("$DISC2",   self.disc2) 
         
         h = tfile.Get(histName)
 
@@ -241,7 +252,8 @@ class dataCardMaker:
             tfile    = ROOT.TFile.Open(self.path+"/"+path   )
             tfileInj = ROOT.TFile.Open(self.path+"/"+pathInj)
 
-            newproc    = proc.replace("$MODEL", self.model) \
+            newproc    = proc.replace("$MODELS", self.model) \
+                             .replace("$MODEL", self.model) \
                              .replace("$MASS",  self.mass )
             newprocInj = "INJECT_" + proc.replace("$MODEL", self.injectedModel) \
                                          .replace("$MASS",  self.injectedMass )
@@ -274,6 +286,7 @@ class dataCardMaker:
                                                                                .replace("$MODEL", self.model))
 
             self.systematics[sy]["proc"] = self.systematics[sy]["proc"].replace("$MODEL", self.model) \
+                                                                       .replace("$MODEL", self.model) \
                                                                        .replace("$MASS", self.mass)
 
             if "nomHist" in self.systematics[sy].keys():
@@ -561,7 +574,14 @@ class dataCardMaker:
                             #if sys_proc == self.systematics[sys]["proc"]:
                             if sys_proc in corr_procs:
                                 if type(self.systematics[sys]["binValues"][bin]) == str:
-                                    sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
+                                    ######################################
+                                    #          WARNING!!!!!!!!!!         #
+                                    ######################################
+                                    if sys_proc in "SIG" and var in "scl":
+                                        sys_str += "{} ".format("--")
+                                    ######################################
+                                    else:
+                                        sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:
