@@ -25,10 +25,11 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special):
      
         self.path           = path
         self.observed       = observed
+        self.special        = special
         self.outpath        = outpath
         self.systematics    = systematics
         self.lumiSyst       = 1.016
@@ -99,11 +100,11 @@ class dataCardMaker:
             if hdict["type"] != "sys" and hdict["type"] != "corr":
                
                 # Apply a floor to weighted event counts for any bkg or sig process 
-                roundedVal = round(val)
-                if roundedVal < 0.1:
-                    binValues.append(0.1)
-                else:
-                    binValues.append(roundedVal)
+                roundedVal = val
+                #if roundedVal < 0.1:
+                #    binValues.append(0.1)
+                #else:
+                binValues.append(roundedVal)
             else:
                 binValues.append(val)
            
@@ -311,6 +312,9 @@ class dataCardMaker:
                 obs = 0
                 for proc in self.observed.keys():
                     if self.observed[proc]["type"] == "sig" and self.observed[proc]["inj"]:
+                        # Remove signal contamination if requested (bottom of configs)
+                        if self.special["NoSigBCD"] and not "A" in self.observed[proc]["binNames"][n]:
+                            continue
                         obs += self.observed[proc]["binValues"][n]
                     elif self.observed[proc]["type"] == "bkg" and self.observed[proc]["inj"]:
                         if "QCD" in proc and "2l" not in self.channel:
@@ -413,7 +417,7 @@ class dataCardMaker:
 
                     if self.observed[proc]["type"] == "sig":
                         process2_str += "{} ".format(self.observed[proc]["processID"])
-                        if float(self.observed[proc]["binValues"][bin]) > 0.1:
+                        if not (self.special["NoSigBCD"] and not "A" in self.observed[proc]["binNames"][bin]):
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
                         else:
                             rate_str += "{} ".format(0.1)
@@ -427,7 +431,7 @@ class dataCardMaker:
                             rate_str += "{} ".format(1)
                         elif proc == "QCD" and "2l" not in self.channel:
                             tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][bin][:1])
-                            rate_str += "{:.1f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                            rate_str += "{:.3f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
                             
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
@@ -482,6 +486,7 @@ class dataCardMaker:
             # Write a line to datacard for each independent systematic
             # --------------------------------------------------------
             self.systematics = collections.OrderedDict(sorted(self.systematics.items()))
+            sys_complete = []
             for sys in self.systematics.keys():
 
                 # To skip MC correction factor (added in a different spot in datacard)
@@ -515,15 +520,34 @@ class dataCardMaker:
                                             sys_str += "{} ".format("--")
                             file.write(sys_str)
                 else:
-                    sys_str = "{0:<8}".format("\n"+"np_"+sys + "_" + self.channel + '\t')
+                    var = sys.split("_")[1]
+
+                    sys_str = "{0:<8}".format("\n"+"np_"+var + "_" + self.channel + '\t')
                     sys_str += "{0:<7}".format(self.systematics[sys]["distr"])
+
+                    # Store list of systematics already handled to not double count
+                    if var in sys_complete:
+                        continue
+                    else:
+                        sys_complete.append(var)
 
                     for bin in range(self.obsNbins):
                         if not mask[bin]:
                             continue
 
                         for proc in self.observed.keys():
-                            
+                         
+                            # Up/Down variations for Other, TTX, and signal should be correlated
+                            # Use this list to check if the processes is one of these three
+                            corr_procs = ["Other", "TTX", "SIG"]
+
+                            # Need to handle different signal masses correctly here
+                            # Giving them all the name "SIG" in config from now on for syst. 
+                            if "SYY" in proc or "RPV" in proc:
+                                sys_proc = "SIG"
+                            else:
+                                sys_proc = proc
+ 
                             if not self.observed[proc]["fit"]:
                                 continue
                             
@@ -533,10 +557,11 @@ class dataCardMaker:
                             elif bin >= self.varNbins:
                                 sys_str += "{} ".format("--")
                                 continue
-
-                            if proc == self.systematics[sys]["proc"]:
+                          
+                            #if sys_proc == self.systematics[sys]["proc"]:
+                            if sys_proc in corr_procs:
                                 if type(self.systematics[sys]["binValues"][bin]) == str:
-                                    sys_str += "{} ".format(self.systematics[sys]["binValues"][bin])
+                                    sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:
@@ -561,6 +586,8 @@ class dataCardMaker:
                         process_str = "{} ".format("\nCH" + self.channel + "_mcStat"+self.observed[process1]["binNames"][ibin+abin]+process1+"_"+self.year)
                         if "QCD" in process1 and "2l" not in self.channel:
                             process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin]))
+                        #elif self.observed[process1]["type"] == "sig" and self.special["NoSigBCD"] and not "A" in self.observed[process1]["binNames"][ibin+abin]: 
+                        #    process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin]))
                         else:
                             process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin] / self.observed[process1]["binWeights"][0]))
                         
@@ -574,6 +601,8 @@ class dataCardMaker:
                                         if "QCD" in process1 and "2l" not in self.channel:
                                             tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[process1]["binNames"][abin+ibin][:1])
                                             process_str += "{:.8f} ".format(self.systematics["QCD_TF"]["binValues"][tf_idx])
+                                        elif self.observed[process1]["type"] == "sig" and self.special["NoSigBCD"] and not "A" in self.observed[process1]["binNames"][ibin+abin]: 
+                                            process_str += "{:.8f} ".format(0.1 * self.observed[process1]["binWeights"][ibin+abin] / self.observed[process1]["binValues"][ibin+abin])
                                         else:
                                             process_str += "{:.8f} ".format(self.observed[process1]["binWeights"][0])
                                     else:
@@ -614,7 +643,7 @@ class dataCardMaker:
 
                         # Includes actual MC Correction Ratio
                         else:
-                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                            file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
 
                     else: 
                         file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 
@@ -622,10 +651,7 @@ class dataCardMaker:
                 # TTbar MC stat uncertainty applied to the alpha parameters
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if ibin == 0:
-                        if self.NoMCcorr:
-                            pass
-                        else:
-                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["TT_MCStat"]["binErrors"][abin],round(self.systematics["MCcorrectionRatio"]["binValues"][abin],4)))
+                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
                 file.write("\n")
 
                 

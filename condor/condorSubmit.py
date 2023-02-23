@@ -4,8 +4,28 @@ import optparse
 import subprocess
 import time
 
+def red(string):
+     CRED = "\033[91m"
+     CEND = "\033[0m"
+     return CRED + str(string) + CEND
+
+def cyan(string):
+     CRED = "\033[96m"
+     CEND = "\033[0m"
+     return CRED + str(string) + CEND
+
+def orange(string):
+     CRED = "\033[93m"
+     CEND = "\033[0m"
+     return CRED + str(string) + CEND
+
 # Pass a list of files to tar up
 def makeExeAndFriendsTarball(filestoTransfer, fname, path):
+    outputtar = "%s/%s.tar.gz"%(path, fname)
+    if os.path.exists(outputtar):
+        print(orange("Tar \"%s\" already exists, so not overwriting !"%(outputtar)))
+        return
+
     system("mkdir -p %s" % fname)
     for fn in filestoTransfer:
 
@@ -13,8 +33,8 @@ def makeExeAndFriendsTarball(filestoTransfer, fname, path):
             system("cd %s; ln -s %s cards" % (fname, fn))
         else:
             system("cd %s; ln -s %s" % (fname, fn))
-       
-    tarallinputs = "tar czvf %s/%s.tar.gz %s --dereference"% (path, fname, fname)
+
+    tarallinputs = "tar czvf %s %s --dereference"% (outputtar, fname)
     print tarallinputs
     system(tarallinputs)
     system("rm -r %s" % fname)
@@ -237,13 +257,21 @@ def main():
 
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
 
+    CMSSW_VERSION = os.environ["CMSSW_VERSION"]
+
     dirToTar  = ""
     for d in [".SCRAM", "biglib", "bin", "cfipython", "config", "doc", "external", "include", "lib", "logs", "objs", "python", "test", "tmp"]:
-        dirToTar += "${CMSSW_VERSION}/%s/ " % d
+        dirToTar += "%s/%s/ " %(CMSSW_VERSION,d) 
     for d in ["bin", "data", "docs", "interface", "macros", "scripts", "src", "test", "python"]:
-        dirToTar += "${CMSSW_VERSION}/src/HiggsAnalysis/CombinedLimit/%s/ " % d
-    dirToTar += "${CMSSW_VERSION}/src/CombineHarvester/ "
-    system("tar --exclude=*.root --exclude=tmp --exclude=.git --exclude=*.pdf --exclude=*.png -zcf %s/${CMSSW_VERSION}.tar.gz -C ${CMSSW_BASE}/.. %s" % (options.outPath, dirToTar))
+        dirToTar += "%s/src/HiggsAnalysis/CombinedLimit/%s/ " %(CMSSW_VERSION,d)
+    dirToTar += "%s/src/CombineHarvester/ "%(CMSSW_VERSION)
+
+    cmsswtar = "%s/%s.tar.gz"%(options.outPath, CMSSW_VERSION)
+    
+    if not os.path.exists(cmsswtar):
+        system("tar --exclude=*.root --exclude=tmp --exclude=.git --exclude=*.pdf --exclude=*.png -zcf %s/%s.tar.gz -C ${CMSSW_BASE}/.. %s" % (options.outPath, CMSSW_VERSION, dirToTar))
+    else:
+        print(orange("Tar \"%s\" already exists, so not overwriting !"%(cmsswtar)))
     
     if not options.noSubmit: 
         system('mkdir -p %s/log-files' % options.outPath)
