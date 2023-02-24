@@ -177,7 +177,6 @@ systematics = {
 # Up/Down Variations on minor background
 var_list  = ["JEC", "JER", "btg", "lep", "pdf", "prf", "pu", "scl"] 
 #var_list  = ["JEC", "JER", "btg", "fsr", "isr", "lep", "pdf", "prf", "pu", "scl"] 
-#var_list  = ["JECup", "JECdown", "JERup", "JERdown", "btgUp", "btgDown", "fsrUp", "fsrDown", "isrUp", "isrDown", "jetUp", "jetDown", "pdfUp", "pdfDown", "prfUp", "prfDown", "puUp", "puDown", "sclUp", "sclDown", "ttgUp", "ttgDown"] 
 var_proc  = ["TTX", "Other"]
 
 for var in var_list:

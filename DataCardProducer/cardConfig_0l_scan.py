@@ -33,7 +33,7 @@ observed["$MODEL_$MASS"] = {
         "end"       : obs_end,
     }
 observed["TT"] = {
-        "path"      : "$YEAR_Data.root",
+        "path"      : "$YEAR_TT.root",
         "sys"       : 1.0, # 1.2
         "hist"      : obs_hist, 
         "type"      : "bkg", 
@@ -177,7 +177,6 @@ systematics = {
 # Up/Down Variations on minor background
 var_list  = ["JEC", "JER", "btg", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
 #var_list  = ["JEC", "JER", "btg", "fsr", "isr", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
-#var_list  = ["JECup", "JECdown", "JERup", "JERdown", "btgUp", "btgDown", "fsrUp", "fsrDown", "isrUp", "isrDown", "jetUp", "jetDown", "pdfUp", "pdfDown", "prfUp", "prfDown", "puUp", "puDown", "sclUp", "sclDown", "ttgUp", "ttgDown"] 
 var_proc  = ["TTX", "Other"]
 
 for var in var_list:
