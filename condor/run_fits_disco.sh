@@ -19,6 +19,8 @@ shift
 channel=$1
 shift
 asimov=$1
+shift
+binEdgeName=$1
 
 base_dir=`pwd`
 rMax="20"
@@ -59,8 +61,8 @@ then
 fi
 
 # Make a workspace ROOT file for Higgs Combine to process
-stubName=${year}_${signalType}_${mass}_${dataType}_${channel}
-tagName=${year}${signalType}${mass}${dataType}_${channel}
+stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
+tagName=${year}${signalType}${mass}${dataType}_${channel}${binEdgeName}
 ws=ws_${tagName}.root
 
 echo "text2workspace.py cards/${stubName}.txt -o ${ws} -m ${mass} --keyword-value MODEL=${signalType}\n"

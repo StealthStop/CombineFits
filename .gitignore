@@ -6,3 +6,5 @@ Keras_*
 *condor/Fit_*
 *condor/FitDiagnostics_*
 *.pyc
+*condor/
+DataCardProducer/*
