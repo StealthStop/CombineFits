@@ -167,7 +167,7 @@ class Plotter():
     
         return ax
 
-    def plot_Var_vsDisc1Disc2(self, var, edges, bestVal, bestLoc, vmin, vmax, doLog = False, variable = ""):
+    def plot_Var_vsDisc1Disc2(self, var, edges, bestVal, bestLoc, vmin, vmax, mass, doLog = False, variable = ""):
 
         fig = plt.figure(figsize=(6, 5)) 
     
@@ -200,7 +200,7 @@ class Plotter():
         elif self.channel == "2l":
             ch = "Fully-Leptonic"
 
-        textLabel = "%s"%(variable) + " | %s"%(md) + " | %s"%(ch)
+        textLabel = "%s"%(variable) + " | %s"%(md) + r" ($m_{\tilde{t}} = %s$ GeV)"%(mass) + " | %s"%(ch)
         ax.text(0.02, 0.97, textLabel, transform=ax.transAxes, color="cadetblue",  fontsize=10,  fontweight='normal', va='center', ha='left')
 
         ax.text(bestLoc[0], bestLoc[1]+0.03, "(%.2f, %.2f)"%(bestLoc[0], bestLoc[1]), transform=ax.transAxes, color="black", fontsize=8, fontweight='normal', va='center', ha='center')
@@ -284,8 +284,8 @@ def main():
     edges = np.array([(float("0.%s"%(disc.split("_")[0])), float("0.%s"%(disc.split("_")[-1]))) for disc in discs])
 
     thePlotter = Plotter(outPath, cmsLabel, year, model, channel)
-    thePlotter.plot_Var_vsDisc1Disc2(signs,   edges, bestVal = maxSign, bestLoc = signEdge, vmin = 0.0,   vmax = 5.0,                variable = "Significance")
-    thePlotter.plot_Var_vsDisc1Disc2(obsLims, edges, bestVal = minLim,  bestLoc = limEdge,  vmin = 10e-2, vmax = 10.0, doLog = True, variable = "Limit")
+    thePlotter.plot_Var_vsDisc1Disc2(signs,   edges, bestVal = maxSign, bestLoc = signEdge, vmin = 0.0,   vmax = 5.0,  mass = mass,               variable = "Significance")
+    thePlotter.plot_Var_vsDisc1Disc2(obsLims, edges, bestVal = minLim,  bestLoc = limEdge,  vmin = 10e-2, vmax = 10.0, mass = mass, doLog = True, variable = "Limit")
 
 if __name__ == '__main__':
     main()
