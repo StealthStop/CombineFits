@@ -24,6 +24,7 @@ observed["$MODEL_$MASS"] = {
         "path"      : "$YEAR_$MODELS_$MASS.root",
         "sys"       : 1.05,
         "hist"      : obs_hist, 
+        "histWeight": obs_hist + "_weight", 
         "type"      : "sig", 
         "fit"       : True,
         "inj"       : False, # Choice of signal injection into pseudoDataS is handled by command line option
@@ -36,6 +37,7 @@ observed["TT"] = {
         "path"      : "$YEAR_TT.root",
         "sys"       : 1.0, # 1.2
         "hist"      : obs_hist, 
+        "histWeight": obs_hist + "_weight", 
         "type"      : "bkg", 
         "fit"       : True,
         "inj"       : False, # Don't inject data
@@ -60,6 +62,7 @@ observed["TTX"] = {
         "path"      : "$YEAR_TTX.root",
         "sys"       : 1.2,
         "hist"      : obs_hist, 
+        "histWeight": obs_hist + "_weight", 
         "type"      : "bkg", 
         "fit"       : True,
         "inj"       : True,
@@ -72,6 +75,7 @@ observed["Other"] = {
         "path"      : "$YEAR_BG_OTHER.root",
         "sys"       : 1.2,
         "hist"      : obs_hist,
+        "histWeight": obs_hist + "_weight", 
         "type"      : "bkg",
         "fit"       : True,
         "inj"       : True,
@@ -84,6 +88,7 @@ observed["TT_MC"] = {
         "path"      : "$YEAR_TT.root",
         "sys"       : 1.0, # 1.2
         "hist"      : obs_hist, 
+        "histWeight": obs_hist + "_weight", 
         "type"      : "bkg", 
         "fit"       : False,
         "inj"       : True,

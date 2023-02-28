@@ -72,6 +72,20 @@ class dataCardMaker:
                                 .replace("$DISC1",   self.disc1) \
                                 .replace("$DISC2",   self.disc2) 
         
+        # Weights need to be handled carefully for the bin edge scanning data cards
+        # Since we are filling those histograms with SetBinContent, the weight is incorrect
+        # A second histogram is added to the config which includes the average event weight and should be grabbed if available
+        if "histWeight" in hdict.keys():
+            weightHistName = hdict["histWeight"].replace("$CHANNEL", self.channel) \
+                                                .replace("$YEAR",    self.year) \
+                                                .replace("$MODELS",   self.models) \
+                                                .replace("$DISC1",   self.disc1) \
+                                                .replace("$DISC2",   self.disc2) 
+
+            hWeight = tfile.Get(weightHistName)
+
+            weight = hWeight.GetBinContent(5)
+
         # If loading a systematic, replace $SYST keyword with actual name e.g. TT_JECup
         # that is passed in the kwargs
         if "extra" in kwargs:
@@ -97,7 +111,10 @@ class dataCardMaker:
         for bin in range(0, nbins):
             val = SF * h.GetBinContent(bin+1)
             err = SF * h.GetBinError(bin+1)
-            wgt = SF * (h.GetSumOfWeights() / h.GetEntries())
+            if "histWeight" in hdict.keys():
+                wgt = weight
+            else:
+                wgt = SF * (h.GetSumOfWeights() / h.GetEntries())
             reg = regions[int(bin/self.njets)]
 
             # Round all event count values to whole number (do not round systematic values of course)
