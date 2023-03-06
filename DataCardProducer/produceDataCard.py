@@ -59,7 +59,8 @@ def main():
                             for channel in args.combo:
                                 comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, args.outpath, channel, disc1, disc2)
                             comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, args.outpath, disc1, disc2)
-                        
+                            
+                            print("combineCards.py {}".format(comboStr))
                             os.system("combineCards.py {0}".format(comboStr))
                         
                         else:

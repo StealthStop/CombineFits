@@ -180,11 +180,14 @@ systematics = {
 }
 
 # Up/Down Variations on minor background
-var_list  = ["JEC", "JER", "btg", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
-#var_list  = ["JEC", "JER", "btg", "fsr", "isr", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
+#var_list  = ["JEC", "JER", "btg", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
+var_list  = ["JEC", "JER", "btg", "fsr", "isr", "jet", "pdf", "prf", "pu", "scl", "ttg"] 
 var_proc  = ["TTX", "Other"]
 
 for var in var_list:
+    if var is "scl" or var is "isr" or var is "fsr":
+        continue
+
     for proc in var_proc:
         name = "BG_OTHER" if proc == "Other" else proc
         up = "up" if var in ["JEC", "JER"] else "Up"
@@ -204,8 +207,8 @@ for var in var_list:
 
 # Up/Down Variations on signal
 for var in var_list:
-    if var is "scl" or var is "isr" or var is "fsr":
-        continue
+    #if var is "scl" or var is "isr" or var is "fsr":
+    #    continue
     
     up = "up" if var in ["JEC", "JER"] else "Up"
     down = "down" if var in ["JEC", "JER"] else "Down"

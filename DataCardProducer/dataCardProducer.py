@@ -193,8 +193,8 @@ class dataCardMaker:
             valUp = 10.0 if valUp > 10 else valUp
             valDown = 10.0 if valDown > 10 else valDown
 
-            valUp = 0.1 if valUp < 0.1 else valUp
-            valDown = 0.1 if valDown < 0.1 else valDown
+            valUp = 1.0 if valUp == 0.0 else valUp
+            valDown = 1.0 if valDown == 0.0 else valDown
 
             val = "{:.3f}/{:.3f}".format(valDown, valUp)
             err = "{}/{}".format(errDown, errUp)
@@ -590,14 +590,13 @@ class dataCardMaker:
                           
                             #if sys_proc == self.systematics[sys]["proc"]:
                             if sys_proc in corr_procs:
-                                if type(self.systematics[sys]["binValues"][bin]) == str:
-                                    ######################################
-                                    #          WARNING!!!!!!!!!!         #
-                                    ######################################
-                                    if sys_proc in "SIG" and var in "scl":
-                                        sys_str += "{} ".format("--")
-                                    ######################################
-                                    else:
+
+                                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                # NEEDS TO BE REMOVED AFTER RENTUPILIZATION
+                                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                if any(x in sys for x in ["isr", "fsr", "scl", "pdf"]) and ("Other" in sys_proc or "TTX" in sys_proc):
+                                    sys_str += "{} ".format("--")
+                                elif type(self.systematics[sys]["binValues"][bin]) == str:
                                         sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
