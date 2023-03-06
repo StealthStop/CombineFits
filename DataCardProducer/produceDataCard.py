@@ -22,6 +22,7 @@ def main():
     parser.add_argument("--minNjet",         dest="minNjet",        action="store",      default=7,                                    type=int, help="Min Njet bin to use"                             )
     parser.add_argument("--maxNjet",         dest="maxNjet",        action="store",      default=12,                                   type=int, help="Max Njet bin to use"                             )
     parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use Closure Correction in ABCD calculation for TT")
+    parser.add_argument("--binEdges",        dest="binEdges",       nargs="+",           default=[10,100,10],                              type=int, help="Do not use Closure Correction in ABCD calculation for TT")
     args = parser.parse_args()   
  
     # ---------------------------------------------
@@ -39,57 +40,62 @@ def main():
         configfile = importlib.import_module(args.config)
 
     # loop over to make the cards
-    for model in args.model:
+    for disc1 in range(args.binEdges[0], args.binEdges[1], args.binEdges[2]):
 
-        for mass in args.mass:
+        for disc2 in range(args.binEdges[0], args.binEdges[1], args.binEdges[2]):
 
-            for data in args.dataType:
+            for model in args.model:
 
-                year = args.year
-            
-                # combine 0l, 1l, 2l cards as "combo" card
-                if args.combo:
+                for mass in args.mass:
 
-                    comboStr = ""
-                    for channel in args.combo:
-                        comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}.txt ".format(year, model, mass, data, args.outpath, channel)
-                    comboStr += "> {4}/{0}_{1}_{2}_{3}_combo.txt".format(year, model, mass, data, args.outpath)
-                
-                    os.system("combineCards.py {0}".format(comboStr))
-                
-                else:
-                    Model = model + "_2t6j"
+                    for data in args.dataType:
+
+                        year = args.year
+                    
+                        # combine 0l, 1l, 2l cards as "combo" card
+                        if args.combo:
+
+                            comboStr = ""
+                            for channel in args.combo:
+                                comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, args.outpath, channel, disc1, disc2)
+                            comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, args.outpath, disc1, disc2)
+                            
+                            print("combineCards.py {}".format(comboStr))
+                            os.system("combineCards.py {0}".format(comboStr))
                         
+                        else:
+                            Model = model + "_2t6j"
+                                
 
-                    if not os.path.isdir(args.outpath):
-                        os.makedirs(args.outpath)
+                            if not os.path.isdir(args.outpath):
+                                os.makedirs(args.outpath)
 
-                    outpath = "{}/{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel)
+                            outpath = "{}/{}_{}_{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel, disc1, disc2)
 
-                    print("Writing data card to {}".format(outpath))
+                            print("Writing data card to {}".format(outpath))
 
-                    # determine if the injected signal model and mass should be the same
-                    # as the signal component used in the fit, or some other component
-                    injectedModel = Model
-                    injectedMass  = mass
+                            # determine if the injected signal model and mass should be the same
+                            # as the signal component used in the fit, or some other component
+                            injectedModel = Model
+                            injectedMass  = mass
 
-                    if args.injectedSignal != "SAME":
-                        injectedModel = args.model.split("_")[0] + "_2t6j"
+                            if args.injectedSignal != "SAME":
+                                injectedModel = args.model.split("_")[0] + "_2t6j"
 
-                        if(args.model.find("SYY") != -1):
-                            injectedModel = "Stealth" + injectedModel 
+                                if(args.model.find("SYY") != -1):
+                                    injectedModel = "Stealth" + injectedModel 
 
-                        injectedMass = args.injectedSignal.split('_')[1]
-    
-                    # Must make copy of dictionary to do repeated string replacements in for loop key
-                    tempObs = copy.copy(configfile.observed)
-                    tempSys = copy.copy(configfile.systematics)
-                    tempMinNjet = copy.copy(configfile.obs_start)
-                    tempMaxNjet = copy.copy(configfile.obs_end)
-                    tempSpecial = copy.copy(configfile.special)
+                                injectedMass = args.injectedSignal.split('_')[1]
+            
+                            # Must make copy of dictionary to do repeated string replacements in for loop key
+                            tempObs = copy.copy(configfile.observed)
+                            tempSys = copy.copy(configfile.systematics)
+                            tempMinNjet = copy.copy(configfile.obs_start)
+                            tempMaxNjet = copy.copy(configfile.obs_end)
+                            tempSpecial = copy.copy(configfile.special)
 
-                    # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                    dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial)
+                            # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
+                            dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2)
 
 if __name__ == "__main__":
     main()
