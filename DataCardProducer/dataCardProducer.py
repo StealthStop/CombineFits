@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2):
      
         self.path           = path
         self.observed       = observed
@@ -45,6 +45,8 @@ class dataCardMaker:
         self.NoMCcorr       = NoMCcorr
         self.min_nj         = min_nj
         self.max_nj         = max_nj
+        self.disc1          = str(disc1)
+        self.disc2          = str(disc2)
 
         self.RUN2SF = 1.0
         
@@ -66,8 +68,24 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
                                 .replace("$YEAR",    self.year) \
-                                .replace("$MODELS",   self.models)
+                                .replace("$MODELS",   self.models) \
+                                .replace("$DISC1",   self.disc1) \
+                                .replace("$DISC2",   self.disc2) 
         
+        # Weights need to be handled carefully for the bin edge scanning data cards
+        # Since we are filling those histograms with SetBinContent, the weight is incorrect
+        # A second histogram is added to the config which includes the average event weight and should be grabbed if available
+        if "histWeight" in hdict.keys():
+            weightHistName = hdict["histWeight"].replace("$CHANNEL", self.channel) \
+                                                .replace("$YEAR",    self.year) \
+                                                .replace("$MODELS",   self.models) \
+                                                .replace("$DISC1",   self.disc1) \
+                                                .replace("$DISC2",   self.disc2) 
+
+            hWeight = tfile.Get(weightHistName)
+
+            weight = hWeight.GetBinContent(5)
+
         # If loading a systematic, replace $SYST keyword with actual name e.g. TT_JECup
         # that is passed in the kwargs
         if "extra" in kwargs:
@@ -93,7 +111,10 @@ class dataCardMaker:
         for bin in range(0, nbins):
             val = SF * h.GetBinContent(bin+1)
             err = SF * h.GetBinError(bin+1)
-            wgt = SF * (h.GetSumOfWeights() / h.GetEntries())
+            if "histWeight" in hdict.keys():
+                wgt = weight
+            else:
+                wgt = SF * (h.GetSumOfWeights() / h.GetEntries())
             reg = regions[int(bin/self.njets)]
 
             # Round all event count values to whole number (do not round systematic values of course)
@@ -124,18 +145,23 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         upHistName = hdict["upHist"].replace("$CHANNEL", self.channel) \
                                     .replace("$YEAR",    self.year) \
-                                    .replace("$MODELS",   self.models)
+                                    .replace("$MODELS",   self.models) \
+                                    .replace("$DISC1",   self.disc1) \
+                                    .replace("$DISC2",   self.disc2) 
 
         downHistName = hdict["downHist"].replace("$CHANNEL", self.channel) \
                                         .replace("$YEAR",    self.year) \
-                                        .replace("$MODELS",   self.models)
-
+                                        .replace("$MODELS",   self.models) \
+                                        .replace("$DISC1",   self.disc1) \
+                                        .replace("$DISC2",   self.disc2) 
 
         # Also need to collect the nominal histogram for computing the 
         # systematic ratio 
         nomName = hdict["nomHist"].replace("$CHANNEL", self.channel) \
                                   .replace("$YEAR",    self.year) \
-                                  .replace("$MODELS",   self.models)
+                                  .replace("$MODELS",   self.models) \
+                                  .replace("$DISC1",   self.disc1) \
+                                  .replace("$DISC2",   self.disc2) 
 
         upRatio = copy.copy(tfile.Get(upHistName))
         downRatio = copy.copy(tfile.Get(downHistName))
@@ -167,8 +193,8 @@ class dataCardMaker:
             valUp = 10.0 if valUp > 10 else valUp
             valDown = 10.0 if valDown > 10 else valDown
 
-            valUp = 0.1 if valUp < 0.1 else valUp
-            valDown = 0.1 if valDown < 0.1 else valDown
+            valUp = 1.0 if valUp == 0.0 else valUp
+            valDown = 1.0 if valDown == 0.0 else valDown
 
             val = "{:.3f}/{:.3f}".format(valDown, valUp)
             err = "{}/{}".format(errDown, errUp)
@@ -191,7 +217,9 @@ class dataCardMaker:
         # and should be replaced with respective channel string e.g. 1l or 0l
         histName = hdict["hist"].replace("$CHANNEL", self.channel) \
                                 .replace("$MODELS",  self.models) \
-                                .replace("$YEAR",    self.year)
+                                .replace("$YEAR",    self.year) \
+                                .replace("$DISC1",   self.disc1) \
+                                .replace("$DISC2",   self.disc2) 
         
         h = tfile.Get(histName)
 
@@ -241,7 +269,8 @@ class dataCardMaker:
             tfile    = ROOT.TFile.Open(self.path+"/"+path   )
             tfileInj = ROOT.TFile.Open(self.path+"/"+pathInj)
 
-            newproc    = proc.replace("$MODEL", self.model) \
+            newproc    = proc.replace("$MODELS", self.model) \
+                             .replace("$MODEL", self.model) \
                              .replace("$MASS",  self.mass )
             newprocInj = "INJECT_" + proc.replace("$MODEL", self.injectedModel) \
                                          .replace("$MASS",  self.injectedMass )
@@ -274,6 +303,7 @@ class dataCardMaker:
                                                                                .replace("$MODEL", self.model))
 
             self.systematics[sy]["proc"] = self.systematics[sy]["proc"].replace("$MODEL", self.model) \
+                                                                       .replace("$MODEL", self.model) \
                                                                        .replace("$MASS", self.mass)
 
             if "nomHist" in self.systematics[sy].keys():
@@ -560,8 +590,14 @@ class dataCardMaker:
                           
                             #if sys_proc == self.systematics[sys]["proc"]:
                             if sys_proc in corr_procs:
-                                if type(self.systematics[sys]["binValues"][bin]) == str:
-                                    sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
+
+                                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                # NEEDS TO BE REMOVED AFTER RENTUPILIZATION
+                                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                if any(x in sys for x in ["isr", "fsr", "scl", "pdf"]) and ("Other" in sys_proc or "TTX" in sys_proc):
+                                    sys_str += "{} ".format("--")
+                                elif type(self.systematics[sys]["binValues"][bin]) == str:
+                                        sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:

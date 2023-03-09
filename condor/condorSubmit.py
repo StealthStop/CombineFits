@@ -166,6 +166,8 @@ def main():
     else:
         channels = [options.channel]
 
+    if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
+        os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
     for st in signalType:
         st = st.strip()
         stauxi1 = ""; stauxi2 = ""

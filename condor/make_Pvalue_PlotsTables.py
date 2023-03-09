@@ -181,7 +181,7 @@ class Plotter():
             if  model == "RPV": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj");
             
-            elif model == "SYY": 
+            elif model == "StealthSYY": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg");
             
             elif model == "SHH": 
@@ -312,11 +312,11 @@ class Plotter():
         line2 = ROOT.TF1("line", "1", Xmin, Xmax)
         line2.SetLineColor(ROOT.kBlack)
         line2.Draw("same")
-    
+   
         if approved:
-            c1.Print(self.outPath + "/" + runType + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
         else:
-            c1.Print(self.outPath + "/" + runType + "_" + tag + self.pdfName + "%s_prelim.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.pdf"%(self.asimov))
         del c1
 
 
