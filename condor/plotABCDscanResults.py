@@ -10,6 +10,7 @@ ROOT.gROOT.SetBatch(True)
 import matplotlib as mpl
 mpl.use('Agg')
 
+# Looks very similar to Arial/Helvetica
 import matplotlib.pyplot as plt
 plt.rc('font', family='Nimbus Sans')
 
@@ -21,176 +22,197 @@ import numpy as np
 # include significance and observed limit
 class FitResults():
 
-    def __init__(self, year, model, channel):
+    def __init__(self, xsecs, channel):
 
-        self.data    = {}
-        self.year    = year
-        self.model   = model
+        # A list of tuples, which can be converted
+        # to np.ndarray by calling numpyFriendly()
+        self.data    = []
+
         self.channel = channel
 
-        self.paramValues = {
-            "discs"     : [],
-        }
+        self.stopPair_xsec = xsecs
 
-    # All combine results are stored uniquely inside a dictionary
-    def makeKey(self, variable = None, **kwargs):
+        # Holds effective column headers and types for self.data
+        # to make referencing and getting data easy
+        self.paramNames = None
+        self.paramTypes = None
 
-        theKey = ""
+        # For converting operation in selection string to literal function
+        self.ops = [(">=", np.greater_equal), (">", np.greater), ("<=", np.less_equal), ("<", np.less)]
 
-        if "disc" in kwargs:
-            theKey += kwargs["disc"]
-            if kwargs["disc"] not in self.paramValues["discs"]: self.paramValues["discs"].append(kwargs["disc"])
+    # Get pointer to "limit" TTree in Combine output ROOT file
+    def getTree(self, filename):
 
-        if variable != None: theKey += variable
-        
-        return theKey
+        tfile = None; ttree = None 
+        try:
+            tfile = ROOT.TFile.Open(filename, "READ")
+        except:
+            print("Could not open TFile \"%s\""%(filename))
+            return
+
+        ttree = tfile.Get("limit")
+        if ttree == None:
+            print("No TTree \"limit\" found in file \"%s\""%(filename))
+
+        return tfile, ttree
 
     # Upon specifying mass point, year, model, channel, and disc values for a particular fit
     # open up the corresponding higgsCombine SignifExp (Asimov) ROOT file and read the significance value
-    # from the "limit" TTree
-    def scrapePvalue(self, path, mass, disc):
+    # Also open the corresponding higgsCombine AsymptoticLimits ROOT file and read the limits
+    def scrapeValues(self, path, year, model, mass, disc):
         
-        tagName    = "%s%s%spseudoData_%s_%s"%(self.year, self.model, mass, self.channel, disc)
+        # Go for the pvalues first
+        tagName  = "%s%s%spseudoDataS_%s_%s"%(year, model, mass, self.channel, disc)
+        filename = "%s/higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root"%(path, tagName, mass, model)
 
-        # -------------------------------------------------------------
-        # Get sigma and p-value from fit output significance ROOT files
-        # -------------------------------------------------------------
-        sigma        = -1; pvalue = 10; file_sig = -1
-        filename_sig = "%s/higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" %(path, tagName, mass, self.model)
-
-        try:
-            file_sig = ROOT.TFile.Open(filename_sig, "READ")
-
-            tree_sig = file_sig.Get("limit")
-            tree_sig.GetEntry(0)
-            sigma = tree_sig.limit
+        tfile, ttree = self.getTree(filename)
+        pvalue = -999.0; sigma = -999.0
+        if tfile != None and ttree != None:
+        
+            ttree.GetEntry(0)
+            sigma  = ttree.limit
             pvalue = 0.5 - ROOT.TMath.Erf(float(sigma)/ROOT.TMath.Sqrt(2.0))/2.0
 
-        except Exception as e:
-            print("Could not retrieve significance for fit \"%s\":"%(tagName))
-            print(e)
-            return
+            tfile.Close()
+
+        # Now go for the limits
+        tagName  = "%s%s%spseudoData_%s_%s_AsymLimit"%(year, model, mass, self.channel, disc)
+        filename = "%s/higgsCombine%s.AsymptoticLimits.mH%s.MODEL%s.root"%(path, tagName, mass, model)
         
-        self.data[self.makeKey(variable = "sign",   mass = mass, disc = disc)] = float(sigma)
-        self.data[self.makeKey(variable = "pvalue", mass = mass, disc = disc)] = float(pvalue)
+        tfile, ttree = self.getTree(filename)
+        limits_mean = -999.0; limits_obs = -999.0
+        if tfile != None and ttree != None:
 
-    # Upon specifying mass point, year, model, channel, and disc values for a particular fit
-    # open up the corresponding higgsCombine AsymptoticLimits ROOT file and read the limits
-    # from the "limit" TTree
-    def scrapeLimit(self, path, mass, disc):
+            # Limits and band values are just all in a row in the TTree...
+            ttree.GetEntry(2)
+            limits_mean = ttree.limit
 
-        # path for input root files   
-        label    = self.year + self.model + mass + "pseudoData_" + self.channel + "_" + disc + "_AsymLimit" 
-        fitInput = path + "/higgsCombine%s.AsymptoticLimits.mH%s.MODEL%s.root"%(label, mass, self.model)
-        
-        try:
-            # load input root files 
-            rootFile = ROOT.TFile.Open(fitInput, "READ")
+            ttree.GetEntry(5)
+            limits_obs    = ttree.limit
+            limits_obsErr = ttree.limitErr
 
-            # read tree and leaves from each root file
-            tree = rootFile.Get("limit")
-        except Exception as e:
-            print("Could not retrieve limits for fit \"%s\":"%(label))
-            print(e)
-            return
+            tfile.Close()
 
-        iEntry = 0
-        try:
-            tree.GetEntry(iEntry)
-        except Exception as e:
-            print("limit not present in root file")
-            return
-        
-        # Limits and band values are just all in a row in the TTree...
-        limits_95expected_below = tree.limit
-        iEntry += 1
-        tree.GetEntry(iEntry)
-        
-        limits_68expected_below = tree.limit
-        iEntry += 1
-        tree.GetEntry(iEntry)
+        if limits_mean != None:
+            limits_mean *= self.stopPair_xsec[mass]
+        if limits_obs != None:
+            limits_obs *= self.stopPair_xsec[mass]
 
-        limits_mean = tree.limit
+        self.save(sign = sigma, pvalue = pvalue, obsLimit = limits_obs, year = year, model = model, mass = mass, disc1 = float("0.%s"%(disc.split("_")[0])), disc2 = float("0.%s"%(disc.split("_")[1])))
 
-        iEntry += 1
-        tree.GetEntry(iEntry)
-        
-        limits_68expected_above = tree.limit
-        iEntry += 1
-        tree.GetEntry(iEntry)
-        
-        limits_95expected_above = tree.limit
-        iEntry += 1
-        tree.GetEntry(iEntry)
-        
-        limits_obs              = tree.limit
-        limits_obsErr           = tree.limitErr
+    def save(self, **kwargs):
 
-        rootFile.Close()
+        sortedKeys = sorted(kwargs.keys())
 
-        self.data[self.makeKey(variable = "obsLimit", mass = mass, disc = disc)] = limits_obs
-        self.data[self.makeKey(variable = "expLimit", mass = mass, disc = disc)] = limits_mean
+        self.data.append([kwargs[kw] for kw in sortedKeys])
+
+        if self.paramNames == None:
+            self.paramNames = sortedKeys 
+    
+        if self.paramTypes == None:
+            self.paramTypes = [type(kwargs[kw]) for kw in sortedKeys]
+
+    def get(self, var, afilter = None):
+
+        iVar = self.paramNames.index(var)
+        if "array" in afilter.__class__.__name__:
+            return self.data[:, iVar][afilter].astype(self.paramTypes[iVar])
+        else:
+            return self.data[:, iVar].astype(self.paramTypes[iVar])
+
+    # If the user defines a simple selection e.g. sign>5.27
+    # Make numpy array filter for selecting values out of self.data
+    def getSelectionFilter(self, selection):
+
+        selVar = None; selVal = None
+        for op in self.ops:
+            if op[0] in selection:
+                chunks = selection.split(op[0])
+                selVar = chunks[0]
+                selVal = float(chunks[-1])
+
+                return op[1](self.get(selVar), selVal)
 
     # Retrieve a certain variable of interested e.g. significance for all possible paramNames
-    def getByParam(self, paramName, var, **kwargs):
+    # Based on use cases, the kwargs dictionary will either have a single key "mass"
+    # or a single key "disc", with their respective, appropriate values
+    def getByParam(self, paramName, var, selection = None, removeOutliers = False, **kwargs):
 
-        params = []; variables = []
-        for p in self.paramValues[paramName]:
-            theKey = ""
-            if paramName == "names":    theKey = self.makeKey(variable = var, name    = p, **kwargs)
-            if paramName == "models":   theKey = self.makeKey(variable = var, model   = p, **kwargs)
-            if paramName == "masses":   theKey = self.makeKey(variable = var, mass    = p, **kwargs)
-            if paramName == "channels": theKey = self.makeKey(variable = var, channel = p, **kwargs)
-            if paramName == "discs":    theKey = self.makeKey(variable = var, disc    = p, **kwargs)
-            else: return [], []
+        paramName1 = None; paramName2 = None
+        # For special case of requesting "disc"
+        # We need to package disc1 and disc2
+        if paramName == "disc":
+            paramName1 = paramName + "1"
+            paramName2 = paramName + "2"
 
-            params.append(p)
-            variables.append(self.data[theKey])
+        allVarVals = self.get(var)
 
-        return params, variables
+        baseFilter = allVarVals!=-999.0
+
+        # Build up a filter based on all keywords passed
+        afilter = baseFilter
+        for kw in kwargs.keys():
+            afilter &= self.get(kw)==kwargs[kw]
+
+        if selection != None:
+            afilter &= self.getSelectionFilter(selection)
+
+        if removeOutliers:
+            mean   = np.mean(allVarVals[baseFilter])
+            stdd   = np.std(allVarVals[baseFilter])
+            afilter &= abs(allVarVals-mean)/stdd<2.0
+
+        # If requested "disc" param, returning two param lists (disc1 and disc2)
+        if paramName1 == None:
+            return self.get(paramName, afilter), self.get(var, afilter) 
+        else:
+            return self.get(paramName1, afilter), self.get(paramName2, afilter), self.get(var, afilter)
+
+    # Turn list of tuples in numpy ndarray on request
+    def numpyFriendly(self):
+        self.data = np.array(self.data)
+
+    def getParamList(self, paramName):
+        return np.unique(self.get(paramName))
 
 class Plotter():
 
-    def __init__(self, outPath, cmsLabel, year, model, channel):
+    def __init__(self, outPath, approved, channel):
     
         self.outputDir = outPath
-        self.cmsLabel  = cmsLabel
-        self.year      = year
+
+        self.cmsLabel = "Work in Progress"
+        if approved:
+            self.cmsLabel = ""
+
         self.channel   = channel
-        self.model     = model
 
-    def addCMSlabel(self, ax):
+    def addCMSlabel(self, ax, location = "inframe", **kwargs):
 
-        ax.text(0.0,  1.003, 'CMS',                     transform=ax.transAxes, fontsize=16, fontweight='bold',   va='bottom', ha='left')
-        ax.text(0.15, 1.010, '%s'%(self.cmsLabel),      transform=ax.transAxes, fontsize=11, fontstyle='italic',  va='bottom', ha='left')
-        ax.text(1.0,  1.010, '%s (13 TeV)'%(self.year), transform=ax.transAxes, fontsize=11, fontweight='normal', va='bottom', ha='right')
+        # Option for putting CMS along top of frame
+        # or the preferred standard of within the frame
+        if location == "top":
+            ax.text(0.0,  0.998, 'CMS',                transform=ax.transAxes, fontsize=18, fontweight='bold',  va='bottom', ha='left')
+            ax.text(0.14, 1.005, '%s'%(self.cmsLabel), transform=ax.transAxes, fontsize=11, fontstyle='italic', va='bottom', ha='left')
+        else:
+            ax.text(0.02, 0.980, 'CMS',                transform=ax.transAxes, fontsize=18, fontweight='bold',  va='top',    ha='left')
+            ax.text(0.02, 0.92,  '%s'%(self.cmsLabel), transform=ax.transAxes, fontsize=11, fontstyle='italic', va='top',    ha='left')
+
+        if "year" in kwargs:
+            ax.text(1.0,  1.007, '%s (13 TeV)'%(kwargs["year"]), transform=ax.transAxes, fontsize=11, fontweight='normal', va='bottom', ha='right')
     
         return ax
 
-    def plot_Var_vsDisc1Disc2(self, var, edges, bestVal, bestLoc, vmin, vmax, mass, doLog = False, variable = ""):
+    # Add custom text label to the plot (within top of frame)
+    # To display information about variable being plotted, SUSY model (mass), and channel
+    def addAuxLabel(self, ax, **kwargs):
 
-        fig = plt.figure(figsize=(6, 5)) 
-    
-        if doLog:
-            plt.scatter(edges[:,0], edges[:,1], c=var, marker="o", cmap="viridis", norm=mpl.colors.LogNorm(), vmin=vmin, vmax=vmax)
-        else:
-            plt.scatter(edges[:,0], edges[:,1], c=var, marker="o", cmap="viridis", vmin=vmin, vmax=vmax)
-            
-        plt.colorbar()
-        plt.xlim(0, 1)
-        plt.ylim(0, 1)
-        ax = plt.gca()
-        ax.set_xlabel("Disc. 1 Bin Edge", fontsize=14)
-        ax.set_ylabel("Disc. 2 Bin Edge", fontsize=14)
-
-        ax = self.addCMSlabel(ax)
-
-        # put model, channel, njet labels
-        md = ""
-        if self.model == "SYY":
-            md = "Stealth SYY"
-        else:
-            md = self.model
+        md = None 
+        if "model" in kwargs:
+            if kwargs["model"] == "StealthSYY":
+                md = "Stealth SYY"
+            else:
+                md = "RPV"
 
         ch = ""
         if self.channel == "0l":
@@ -200,36 +222,181 @@ class Plotter():
         elif self.channel == "2l":
             ch = "Fully-Leptonic"
 
-        textLabel = "%s"%(variable) + " | %s"%(md) + r" ($m_{\tilde{t}} = %s$ GeV)"%(mass) + " | %s"%(ch)
-        ax.text(0.02, 0.97, textLabel, transform=ax.transAxes, color="cadetblue",  fontsize=10,  fontweight='normal', va='center', ha='left')
+        textLabel = ""
+        if "var" in  kwargs: textLabel += "%s"%(kwargs["var"])
+        if md != None: textLabel += " | %s"%(md)
+        if "mass" in kwargs: textLabel += r" ($m_{\tilde{t}} = %s$ GeV)"%(kwargs["mass"])
+        textLabel += " | %s"%(ch)
+        ax.text(0.98, 0.97, textLabel, transform=ax.transAxes, color="cadetblue", fontsize=10, fontweight='normal', va='center', ha='right')
 
-        ax.text(bestLoc[0], bestLoc[1]+0.03, "(%.2f, %.2f)"%(bestLoc[0], bestLoc[1]), transform=ax.transAxes, color="black", fontsize=8, fontweight='normal', va='center', ha='center')
-        ax.text(bestLoc[0], bestLoc[1]-0.03, "%.2f"%(bestVal),                        transform=ax.transAxes, color="black", fontsize=8, fontweight='normal', va='center', ha='center')
+        return ax
 
-        fig.tight_layout()
+    def plot_Var_vsDisc1Disc2(self, var, disc1s, disc2s, vmin, vmax, mass, labelVals = False, doLog = False, variable = "", **kwargs):
+
+        plottingLimit = False
+        if "Limit" in variable:
+            plottingLimit = True
+
+        fig = plt.figure(figsize=(6, 5)) 
         fig.subplots_adjust(top=0.95, right=0.99)
+        fig.tight_layout()
 
-        fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s_%s.pdf"%(self.year, variable, self.model, self.channel), dpi=fig.dpi)
+        # Depending on number of points in scatter i.e. coarseness of grid search
+        # adjust the size of the markers accordingly to maintain same border separation
+        sf = 1.0
+        if len(var) > 81:
+            sf = (float(len(var)) / 81.0)**2.0
+
+        # For most part, limit plots use divergent color scheme and black text
+        # Significance plots use plasma color scheme with turquoise text
+        colMap = "plasma"
+        globalTextCol = "paleturquoise"
+        extraYlab = ""
+        if plottingLimit:
+            if any(t in mass.__class__.__name__ for t in ["list", "array"]):
+                colMap = "plasma_r"
+            else:
+                colMap = "bwr"
+                globalTextCol = "black"
+
+            extraYlab = r" on $\sigma B$ [pb]"
+
+        if doLog:
+            plt.scatter(disc1s, disc2s, s=750*sf, c=var, marker="s", cmap=colMap, norm=mpl.colors.LogNorm(), vmin=vmin, vmax=vmax)
+        else:
+            plt.scatter(disc1s, disc2s, s=750*sf, c=var, marker="s", cmap=colMap, vmin=vmin, vmax=vmax)
+            
+        plt.colorbar()
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+
+        ax = plt.gca()
+        ax.set_xlabel("Disc. 1 Bin Edge", fontsize=14)
+        ax.set_ylabel("Disc. 2 Bin Edge", fontsize=14)
+
+        ax = self.addCMSlabel(ax, location = "top", **kwargs)
+
+        extraLabel = ""
+        if not plottingLimit:
+            extraLabel = r"$\sigma$"
+
+        # If the input "mass" is a list, then we are plotting the specified var
+        # only for the best bin edge choice for each mass point
+        # Otherwise, we are plotting all choices for a given mass point
+        if any(t in mass.__class__.__name__ for t in ["list", "array"]):
+            ax = self.addAuxLabel(ax, var = variable + extraYlab, **kwargs)
+
+            # On-the-fly determining which mass points' best bin edge choice are common
+            # To label in the same bin on the plot
+            edges2mass = {}
+            for iMass in range(0, len(mass)):
+                edgesPair = (disc1s[iMass], disc2s[iMass])
+                if edgesPair in edges2mass:
+                    edges2mass[edgesPair].append((mass[iMass], var[iMass]))
+                else:
+                    edges2mass[edgesPair] = [(mass[iMass], var[iMass])]
+
+            for edge, massVarPair in edges2mass.items():
+    
+                massVarText = ""
+                for mvp in massVarPair:
+                    massVarText += "%s:%.2f%s"%(str(int(mvp[0])), float(mvp[1]), extraLabel)
+                    massVarText += "\n"
+                ax.text(edge[0]+0.001, edge[1]-0.001, "%s"%(massVarText[:-1]), transform=ax.transAxes, color="midnightblue", fontsize=6, fontweight='normal', va='center', ha='center')
+                ax.text(edge[0],       edge[1],       "%s"%(massVarText[:-1]), transform=ax.transAxes, color=globalTextCol,  fontsize=6, fontweight='normal', va='center', ha='center')
+
+            fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s_%s.pdf"%(kwargs["year"], variable, kwargs["model"], self.channel), dpi=fig.dpi)
+
+        else:
+            ax = self.addAuxLabel(ax, var = variable + extraYlab, mass = str(mass), **kwargs)
+
+            if labelVals:
+                sortForMax = True 
+                if plottingLimit:
+                    sortForMax = False
+                top5index = sorted(range(len(var)), key=lambda i: var[i], reverse=sortForMax)[:5]
+
+                # When labeling each bin, swap to special text colors
+                # depending on if plotting best choice or worst choice
+                textCol    = globalTextCol
+                fontWeight = "normal"
+                fontSize   = 6
+                for iVar in range(0, len(var)):
+                    extraLabelNew = extraLabel
+                    if iVar in top5index:
+                        if plottingLimit:
+                            textCol = "limegreen"
+                        else:
+                            textCol = "lime"
+
+                        extraLabelNew = extraLabel.replace(r"\sigma", r"\mathbf{\sigma}")
+                        fontWeight = "black"
+                        fontSize   = 8
+                    else:
+                        textCol = globalTextCol
+                        fontWeight = "normal"
+                        fontSize   = 6
+
+                    ax.text(disc1s[iVar]+0.001, disc2s[iVar]-0.001, "%.2f%s"%(var[iVar],extraLabelNew), transform=ax.transAxes, color="midnightblue", fontsize=fontSize, fontweight=fontWeight, va='center', ha='center')
+                    ax.text(disc1s[iVar],       disc2s[iVar],       "%.2f%s"%(var[iVar],extraLabelNew), transform=ax.transAxes, color=textCol,        fontsize=fontSize, fontweight=fontWeight, va='center', ha='center')
+
+            fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s%s_%s.pdf"%(kwargs["year"], variable, kwargs["model"], mass, self.channel), dpi=fig.dpi)
 
         plt.close(fig)
 
-def main():
+    def plot_Var_vsMass(self, var, mass, colScales, vmin, vmax, doLog = False, variable = "", **kwargs):
+
+        fig = plt.figure(figsize=(6, 5)) 
+        fig.subplots_adjust(top=0.95, right=0.99)
+
+        colMap = "plasma"
+        extraYlab = ""
+        if "Limit" in variable:
+            colMap = "bwr"
+            extraYlab = r" on $\sigma B$ [pb]"
+
+        for iScatter in range(0, len(var)):
+            if doLog:
+                plt.scatter(mass[iScatter], var[iScatter], c=var[iScatter], marker="o", cmap=colMap, norm=mpl.colors.LogNorm(), vmin=vmin*colScales[iScatter], vmax=vmax*colScales[iScatter])
+            else:
+                plt.scatter(mass[iScatter], var[iScatter], c=var[iScatter], marker="o", cmap=colMap, vmin=vmin*colScales[iScatter], vmax=vmax*colScales[iScatter])
+            
+        plt.xlim(250, 1450)
+        plt.ylim(vmin*colScales[-1], vmax*colScales[0])
+
+        ax = plt.gca()
+        if doLog:
+            ax.set_yscale("log")
+        ax.set_ylabel(variable + extraYlab,    fontsize=14)
+        ax.set_xlabel("Top Squark Mass [GeV]", fontsize=14)
+
+        ax = self.addCMSlabel(ax, **kwargs)
+        ax = self.addAuxLabel(ax, var = variable + extraYlab, **kwargs)
+
+        fig.tight_layout()
+        fig.savefig(self.outputDir+"/%s_%s_vs_Mass_%s_%s.pdf"%(kwargs["year"], variable, kwargs["model"], self.channel), dpi=fig.dpi)
+
+        plt.close(fig)
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser("usage: %prog [options]\n")
     parser.add_argument('--basedir',  dest='basedir',  type=str, required = True,                       help = "Path to output files"    )
     parser.add_argument('--outdir',   dest='outdir',   type=str, required = True,                       help = "Path to put output files")
     parser.add_argument('--approved', dest='approved',           default  = False, action='store_true', help = 'Is plot approved'        )
-    parser.add_argument('--model',    dest='model',    type=str, default  = "RPV",                      help = 'Which models to plot for')
-    parser.add_argument('--mass',     dest='mass',     type=str, default  = "550",                      help = 'Which mass to plot for'  )
-    parser.add_argument('--year',     dest='year',     type=str, default  = "Run2UL",                   help = 'Which years to plot'     )
     parser.add_argument('--channel',  dest='channel',  type=str, default  = "0l",                       help = 'Which channels to plot'  )
     args = parser.parse_args()
 
     path    = args.basedir
     outPath = args.outdir
-    model   = args.model
-    mass    = args.mass
-    year    = args.year
     channel = args.channel
+
+    # Top squark pair production xsections [pb]
+    stopPair_xsec = {"300"  : 10.00,    "350"  : 4.43,     "400"  : 2.15,    "450"  : 1.11,    "500"  : 0.609, 
+                     "550"  : 0.347,    "600"  : 0.205,    "650"  : 0.125,   "700"  : 0.0783,  "750"  : 0.0500, 
+                     "800"  : 0.0326,   "850"  : 0.0216,   "900"  : 0.0145,  "950"  : 0.00991, "1000" : 0.00683, 
+                     "1050" : 0.00476,  "1100" : 0.00335,  "1150" : 0.00238, "1200" : 0.00170, "1250" : 0.00122, 
+                     "1300" : 0.000887, "1350" : 0.000646, "1400" : 0.000473
+    }
 
     if not os.path.exists(outPath):
         os.makedirs(outPath)
@@ -239,16 +406,15 @@ def main():
     fitResults = glob.glob("%s/*"%(path))
 
     # Loop over all jobs and get the info needed
-    theScraper = FitResults(year, model, channel)
+    theScraper = FitResults(stopPair_xsec, channel)
     for result in fitResults:
 
-        # Split up each individual job folder to get edge vals
+        # Split up each individual job folder to get edge vals, mass, etc
         chunks = result.split("/")[-1].split("_")
 
-        # Easier to ask for forgiveness
-        # than it is to ask for permission
-        # Does the folder end in _XX_YY ?
-        # i.e. a legit job folder
+        # Easier to ask for forgiveness than it is to ask for permission
+        # Does the folder end in _XX_YY ? i.e. a legit job folder
+        # A legit job folder has a name like: "RPV_550_Run2UL_80_90"
         try:
             trial = float(chunks[-1])
             trial = float(chunks[-2])
@@ -256,36 +422,69 @@ def main():
             print("Skipping non-Combine-result \"%s\""%(result))
             continue
 
-        disc = chunks[-2] + "_" + chunks[-1]
+        disc  = chunks[-2] + "_" + chunks[-1]
+        mass  = chunks[1]
+        model = chunks[0]
+        year  = chunks[2]
 
-        theScraper.scrapePvalue(result, mass, disc)
-        theScraper.scrapeLimit(result,  mass, disc)
+        theScraper.scrapeValues(result, year, model, mass, disc)
 
-    cmsLabel = "Work in Progress"
-    if args.approved:
-        cmsLabel = ""
+    theScraper.numpyFriendly()
 
-    discs, signs   = theScraper.getByParam(paramName = "discs", var = "sign",     mass = mass)
-    discs, obsLims = theScraper.getByParam(paramName = "discs", var = "obsLimit", mass = mass)
+    masses = theScraper.getParamList(paramName = "mass")
+    years  = theScraper.getParamList(paramName = "year")
+    models = theScraper.getParamList(paramName = "model")
 
-    # Get the best significance (max) and best limit (min) points for marking on plot
-    maxSign = max(signs)
-    minLim  = min(obsLims)
+    thePlotter = Plotter(outPath, args.approved, channel)
 
-    iSign = signs.index(maxSign)
-    iLim  = obsLims.index(minLim)
+    # Adjust log and linear scales for axis ranges
+    # depending on the channel
+    limitScale = 1.3
+    signScale = 17 
+    if channel != "1l":
+        limitScale = 0.9 
+        signScale = 10
 
-    signEdge = discs[iSign]
-    limEdge  = discs[iLim]
+    for year in years:
+        for model in models:
+            allMasses_sign = []; allMasses_lim = []; allSigns = []; allObsLims = []; colScales = []
+            bestSigns = []; bestLimits = []
+            for mass in masses:
 
-    signEdge = (float("0.%s"%(signEdge.split("_")[0])), float("0.%s"%(signEdge.split("_")[1])))
-    limEdge = (float("0.%s"%(limEdge.split("_")[0])), float("0.%s"%(limEdge.split("_")[1])))
+                # Plot significances as function of bin edges
+                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "sign>0.0", mass = mass, model = model, year = year)
 
-    edges = np.array([(float("0.%s"%(disc.split("_")[0])), float("0.%s"%(disc.split("_")[-1]))) for disc in discs])
+                allMasses_sign.append([int(mass)]*len(disc1s))
+                allSigns.append(signs)
 
-    thePlotter = Plotter(outPath, cmsLabel, year, model, channel)
-    thePlotter.plot_Var_vsDisc1Disc2(signs,   edges, bestVal = maxSign, bestLoc = signEdge, vmin = 0.0,   vmax = 5.0,  mass = mass,               variable = "Significance")
-    thePlotter.plot_Var_vsDisc1Disc2(obsLims, edges, bestVal = minLim,  bestLoc = limEdge,  vmin = 10e-2, vmax = 10.0, mass = mass, doLog = True, variable = "Limit")
+                maxSign  = np.max(signs)
+                maxDisc1 = disc1s[np.argmax(signs)]
+                maxDisc2 = disc2s[np.argmax(signs)]
+                bestSigns.append([int(mass), maxDisc1, maxDisc2, maxSign])
 
-if __name__ == '__main__':
-    main()
+                thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, vmin = 0.0, vmax = signScale, mass = mass, labelVals = True, variable = "Significance", model = model, year = year)
+
+                # Plot limits as function of bin edges
+                disc1s, disc2s, obsLims = theScraper.getByParam(paramName = "disc", var = "obsLimit", selection = "obsLimit>0.0", mass = mass, model = model, year = year)
+
+                allMasses_lim.append([int(mass)]*len(disc1s))
+                allObsLims.append(obsLims)
+
+                minLimit = np.min(obsLims)
+                minDisc1 = disc1s[np.argmin(obsLims)]
+                minDisc2 = disc2s[np.argmin(obsLims)]
+                bestLimits.append([int(mass), minDisc1, minDisc2, minLimit])
+
+                colScales.append(stopPair_xsec[mass])
+
+                thePlotter.plot_Var_vsDisc1Disc2(obsLims, disc1s, disc2s, vmin = stopPair_xsec[mass]*10**(-limitScale), vmax = stopPair_xsec[mass]*10**limitScale, mass = mass, labelVals = True, doLog = True, variable = "Limit", model = model, year = year)
+
+            bestSigns  = np.array(bestSigns)
+            bestLimits = np.array(bestLimits)
+
+            # Plot all bin edge choices for all mass points together for significance and limits
+            thePlotter.plot_Var_vsMass(allSigns,   allMasses_sign, colScales = [1.0]*len(allSigns), vmin = -0.25,             vmax = signScale,                    variable = "Significances", model = model, year = year)
+            thePlotter.plot_Var_vsMass(allObsLims, allMasses_lim,  colScales = colScales,           vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limits",        model = model, year = year)
+
+            thePlotter.plot_Var_vsDisc1Disc2(bestSigns[:,-1],  bestSigns[:,1],  bestSigns[:,2],  vmin = 0.0,    vmax = signScale, mass = bestSigns[:,0],                variable = "Significance", model = model, year = year)
+            thePlotter.plot_Var_vsDisc1Disc2(bestLimits[:,-1], bestLimits[:,1], bestLimits[:,2], vmin = 0.5e-2, vmax = 0.5e1,     mass = bestLimits[:,0], doLog = True, variable = "Limit",        model = model, year = year)
