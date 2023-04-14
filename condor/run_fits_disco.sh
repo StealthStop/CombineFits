@@ -60,6 +60,9 @@ then
     inject=1
 fi
 
+# Make the datacard before we run combine
+python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_${channel}_scan --channel ${channel} --inpath inputsAll/ --outpath cards/ --singleBE ${binEdgeName}
+
 # Make a workspace ROOT file for Higgs Combine to process
 stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
 tagName=${year}${signalType}${mass}${dataType}_${channel}${binEdgeName}
@@ -84,7 +87,7 @@ then
     echo "Running Asymptotic fits"
     if [ $asimov == 1 ]
     then
-        combine -M AsymptoticLimits ${fitOptions} --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=${inject} -n ${tagName}_AsymLimit_Asimov > log_${tagName}_Asymp.txt
+        combine -M AsymptoticLimits ${fitOptions} --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=${inject} -n ${tagName}_AsymLimit_Asimov > log_${tagName}_Asymp_Asimov.txt
     else
         combine -M AsymptoticLimits ${fitOptions} --rMin $rMinLim --rMax $rMaxLim                                -n ${tagName}_AsymLimit > log_${tagName}_Asymp.txt
     fi    
@@ -145,10 +148,14 @@ then
 fi
 
 ls -l
+ls -l cards/
 
 mv *.root ${base_dir}
 mv log*.txt ${base_dir}
 mv *.pdf ${base_dir}
 mv *.json ${base_dir}
+mv cards/*.txt ${base_dir}
+rm -r cards/
 
 cd ${base_dir}
+ls -l
