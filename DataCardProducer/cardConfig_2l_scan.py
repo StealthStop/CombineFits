@@ -185,8 +185,6 @@ var_list  = ["JEC", "JER", "btg", "fsr", "isr", "lep", "pdf", "prf", "pu", "scl"
 var_proc  = ["TTX", "Other"]
 
 for var in var_list:
-    if var is "scl" or var is "isr" or var is "fsr":
-        continue
 
     for proc in var_proc:
         name = "BG_OTHER" if proc == "Other" else proc
