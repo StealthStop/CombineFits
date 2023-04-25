@@ -279,7 +279,8 @@ class FitResults():
         # From a selection like "(disc1>0.1)&(disc2>0.1)&(obsLimit>0.012935)"
         # Obtain the variable names "disc1", "disc2", and "obsLimit"
         pattern  = r"\b(?![0-9]+\b)[a-zA-Z0-9_]+\b" 
-        varNames = set(re.findall(pattern, selection))
+        varNames = list(set(re.findall(pattern, selection)))
+        varNames.sort(key = lambda x : len(x), reverse = True)
 
         # The needed variables to evaluate the selection, paired with their literal column of values
         nameVarPairs = [(varName, self.get(varName)) for varName in varNames]
@@ -662,9 +663,8 @@ class Plotter():
             elif "RPV" in kwargs["model"]:
                 plt.plot(self.SUS19004signsRPV[:,0], self.SUS19004signsRPV[:,1], c = "silver", marker = "o", linestyle = ":", label = "SUS-19-004 Expected Sensitivity (Semi-leptonic)")
            
-        plt.xlim(250, 1300)
-
         ax = plt.gca()
+        ax.set_xlim(250, 1300)
 
         legendLoc = "upper right"
         if "Limit" in variable:
@@ -673,10 +673,9 @@ class Plotter():
             elif "RPV" in kwargs["model"]:
                 plt.ylim(0.5*np.min(self.SUS19004limitsRPV[:,1]), 1.5*vmax)
         else:
+            ax.set_ylim(vmin, vmax)
+            ax.set_yticks([i*2 for i in range(vmin, vmax/2 + 1) if i >= 0])
             ax.invert_yaxis()
-            plt.ylim(vmax, vmin)
-            ticks = [tick for tick in plt.gca().get_yticks() if tick >= 0.0]
-            ax.set_yticks(ticks)
             ax.axhline(y = 0.0, color = "black", linestyle = "-", linewidth = 1.0)
             legendLoc = "lower right"
 
@@ -793,6 +792,14 @@ if __name__ == "__main__":
         limitScale = 0.9 
         signScaleMax = 7
 
+    obsSelection = []
+    for region in regions:
+        if region == "A":
+            continue
+        for njet in njets:
+            obsSelection.append("(Nobs_%s_Njets%s>=3.0)"%(region,njet))
+    obsSelection = "&".join(obsSelection)
+
     for year in years:
         for model in models:
 
@@ -801,12 +808,12 @@ if __name__ == "__main__":
                 for param in params:
 
                     # By construction, inputs all have "_" in their names
-                    if "_" not in param:
+                    if "_" not in param or "Corr" not in param:
                         continue
 
-                    disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, mass = masses[0], model = model, year = year)
+                    disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, mass = masses[0], model = model, year = year)
 
-                    thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(paramVals), labelVals = True, variable = param, model = model, year = year)
+                    thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 30.0, labelVals = True, variable = param, model = model, year = year)
 
             colScales = []
 
@@ -824,11 +831,11 @@ if __name__ == "__main__":
             labelsByBestMassSign = []; labelsByBestMassLimit = []
             for mass in masses:
 
-                disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100.0)", mass = mass, model = model, year = year)
+                disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100000000000.0)", mass = mass, model = model, year = year)
                 thePlotter.plot_Var_vsDisc1Disc2(signDiffs, disc1s, disc2s, binWidth = spacing, vmin = 0.0, vmax = max(signDiffs), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceDiff", model = model, year = year)
 
                 # Plot significances as function of bin edges
-                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "(disc1>0.1)&(disc2>0.1)&(sign>0.0)&(signDiff<2.0)", mass = mass, model = model, year = year)
+                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "(disc1>0.1)&(disc2>0.1)&(sign>0.0)&(signDiff<2.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_sign.append([mass]*len(disc1s))
                 allSigns.append(signs)
@@ -850,10 +857,10 @@ if __name__ == "__main__":
 
                 labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
 
-                thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = maxSign, mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
+                thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 18, mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
 
                 # Plot limits as function of bin edges
-                disc1s, disc2s, expLims = theScraper.getByParam(paramName = "disc", var = "expLimit", selection = "(disc1>0.1)&(disc2>0.1)&(expLimit>0.0)&(healthyLimit==1)", mass = mass, model = model, year = year)
+                disc1s, disc2s, expLims = theScraper.getByParam(paramName = "disc", var = "expLimit", selection = "(disc1>0.1)&(disc2>0.1)&(expLimit>0.0)&(healthyLimit==1)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_lim.append([mass]*len(disc1s))
                 allExpLims.append(expLims)
@@ -890,9 +897,9 @@ if __name__ == "__main__":
             bestOfTheBestGreens = ["#c7e9c0", "#74c476", "#238b45", "#006837"]
             bestOfTheBestLines  = ["-", "-", "-", "-"]
             bestOfTheBestWidths = [0.75, 1.5, 2.25, 2.75]
-            thePlotter.plot_bestVar_vsMass(signsByBestMassSign,   colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSign,  vmin = -3.0,              vmax = 15.0,                         variable = "Significance", auxText = "ByBestSign",  model = model, year = year)
+            thePlotter.plot_bestVar_vsMass(signsByBestMassSign,   colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSign,  vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ByBestSign",  model = model, year = year)
             thePlotter.plot_bestVar_vsMass(limitsByBestMassSign,  colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSign,  vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestSign",  model = model, year = year)
-            thePlotter.plot_bestVar_vsMass(signsByBestMassLimit,  colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimit, vmin = -3.0,              vmax = 15.0,                         variable = "Significance", auxText = "ByBestLimit", model = model, year = year)
+            thePlotter.plot_bestVar_vsMass(signsByBestMassLimit,  colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimit, vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ByBestLimit", model = model, year = year)
             thePlotter.plot_bestVar_vsMass(limitsByBestMassLimit, colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimit, vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestLimit", model = model, year = year)
 
             # Plot all bin edge choices for all mass points together for significance and limits
