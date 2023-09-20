@@ -59,7 +59,7 @@ class FitResults():
     # open up the corresponding higgsCombine SignifExp (Asimov) ROOT file and read the significance value
     # Also open the corresponding higgsCombine AsymptoticLimits ROOT file and read the limit
     # Likewise, parse the corresponding data card to get systematics and rates
-    def scrapeValues(self, combineResultPath, dataCardPath, year, model, mass, disc):
+    def scrapeValues(self, combineResultPath, dataCardPath, year, model, mass, disc1, disc2, disc):
         
         # Try the datacard first, if not there, then do not worry about anything else
         dataCardFile = None
@@ -174,8 +174,9 @@ class FitResults():
                     # For all systematics, convert to a percent from 1 e.g. 1.1 or 0.9 ==> 10%
                     # And for any up/down systematic that is reported with "/", take the largest
                     # E.g. 1.02/0.8 ==> 20%, rather than 2%
-                    npVals = [100.0 * abs(1.0-eval(val)) for val in savedLines[np][iBin].split("/")]
-                    usefulInfo[npName] = max(npVals)
+                    #npVals = [100.0 * abs(1.0-eval(val)) for val in savedLines[np][iBin].split("/")]
+                    #usefulInfo[npName] = max(npVals)
+                    usefulInfo[npName] = 10.0
 
         # Go for the significance first
         tagName  = "%s%s%dpseudoDataS_%s_%s"%(year, model, mass, self.channel, disc)
@@ -238,7 +239,7 @@ class FitResults():
         if limit_obs  != None:
             limit_obs  *= self.stopPair_xsec[mass]
 
-        self.save(sign = sigma, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float("0.%s"%(disc.split("_")[0])), disc2 = float("0.%s"%(disc.split("_")[1])), dataCardInfo = usefulInfo)
+        self.save(sign = sigma, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1), disc2 = float(disc2), dataCardInfo = usefulInfo)
 
     # Pass everything to be saved in numpy array for extraction later
     # A specific order of parameters is retained along with names and types
@@ -419,6 +420,8 @@ class Plotter():
             channel = r"Semi-Leptonic"
         elif self.channel == "2l":
             channel = r"Fully-Leptonic"
+        elif self.channel == "combo":
+            channel = r"0L + 1L + 2L"
         textLabel.append(channel)
 
         if "njets" in kwargs and kwargs["njets"] != None:
@@ -649,7 +652,8 @@ class Plotter():
 
         iMass = 0
         for iVar in range(0, len(vares)):
-            plt.plot(vares[iVar][:,0], vares[iVar][:,1], c = colors[iVar], marker = "o", linestyle = linestyles[iVar], linewidth = linewidths[iVar], label = labels[iVar])
+            if iVar == len(vares)-1:
+                plt.plot(vares[iVar][:,0], vares[iVar][:,1], c = colors[iVar], marker = "o", linestyle = linestyles[iVar], linewidth = linewidths[iVar], label = labels[iVar])
             iMass += 1
 
         if   "Limit" in variable:
@@ -737,29 +741,43 @@ if __name__ == "__main__":
     theScraper = FitResults(stopPair_xsec, channel)
     for combineFitResultPath in combineFitResults:
 
+        if "_90" in combineFitResultPath:
+            continue
+
         # Split up each individual job folder to get edge vals, mass, etc
         chunks = combineFitResultPath.split("/")[-1].split("_")
 
-        # Easier to ask for forgiveness than it is to ask for permission
-        # Does the folder end in _XX_YY ? i.e. a legit job folder
-        # A legit job folder has a name like: "RPV_550_Run2UL_80_90"
-        try:
-            trial = float(chunks[-1])
-            trial = float(chunks[-2])
-        except:
-            print("Skipping non-Combine-result \"%s\""%(combineFitResultPath))
+        if chunks[-1] != "MassExclusion" and chunks[-1] != "MaxSig":
             continue
+            # Easier to ask for forgiveness than it is to ask for permission
+            # Does the folder end in _XX_YY ? i.e. a legit job folder
+            # A legit job folder has a name like: "RPV_550_Run2UL_80_90"
+            try:
+                trial = float(chunks[-1])
+                trial = float(chunks[-2])
+            except:
+                print("Skipping non-Combine-result \"%s\""%(combineFitResultPath))
+                continue
+            disc1 = chunks[-2]
+            disc2 = chunks[-1]
+            disc  = disc1 + "_" + disc2
+        else:
+            if chunks[-1] == "MassExclusion":
+                disc1 = "0.4"
+                disc2 = "0.4"
+            else:
+                disc1 = "0.5"
+                disc2 = "0.5"
 
-        disc1 = chunks[-2]
-        disc2 = chunks[-1]
-        disc  = disc1 + "_" + disc2
+            disc = chunks[-1]
+
         mass  = int(chunks[1])
         model = chunks[0]
         year  = chunks[2]
 
-        dataCardPath = "%s/%s_%s_%d_pseudoData_%s_%s_%s.txt"%(dataCardsPath, year, model, mass, channel, disc1, disc2)
+        dataCardPath = "%s/%s_%s_%d_pseudoDataS_%s_%s.txt"%(dataCardsPath, year, model, mass, channel, disc)
 
-        theScraper.scrapeValues(combineFitResultPath, dataCardPath, year, model, mass, disc)
+        theScraper.scrapeValues(combineFitResultPath, dataCardPath, year, model, mass, disc1, disc2, disc)
 
     theScraper.numpyFriendly()
 
@@ -770,7 +788,8 @@ if __name__ == "__main__":
     # Determine granularity of grid scan for plotting purposes
     disc1s  = theScraper.getParamVals(paramName = "disc1")
     disc2s  = theScraper.getParamVals(paramName = "disc2")
-    spacing = min(disc1s[i+1]-disc1s[i] for i in range(len(disc1s)-1))
+    #spacing = min(disc1s[i+1]-disc1s[i] for i in range(len(disc1s)-1))
+    spacing = 0.02
 
     xInnerMargin = 0.09 * ((max(disc1s) + spacing/2.0) - (min(disc1s) - spacing/2.0))
     xMin = min(disc1s) - xInnerMargin
@@ -797,11 +816,27 @@ if __name__ == "__main__":
         if region == "A":
             continue
         for njet in njets:
-            obsSelection.append("(Nobs_%s_Njets%s>=3.0)"%(region,njet))
+            obsSelection.append("(Nobs_%s_Njets%s>=1.0)"%(region,njet))
     obsSelection = "&".join(obsSelection)
+    obsSelection = "(mass!=2)"
 
-    var_list = ["JECdown", "JECup", "JERdown", "JERup", "isrDown", "isrUp", "fsrDown", "fsrUp", "TuneCP5down", "TuneCP5up", "hdampDOWN", "hdampUP", "erdON"]
+    # Best choices at 100% xsection
+    bestLimitFullXS = {"RPV"        : {"0l" : (0.74,0.80),
+                                       "1l" : (0.80,0.72),
+                                       "2l" : (0.50,0.50)},
+                       "StealthSYY" : {"0l" : (0.54,0.56),
+                                       "1l" : (0.68,0.82),
+                                       "2l" : (0.70,0.84)}
+    }
 
+    bestSignFullXS = {"RPV"        : {"0l": (0.52,0.54),
+                                      "1l": (0.84,0.42),
+                                      "2l": (0.70,0.50)},
+                      "StealthSYY" : {"0l": (0.76,0.70),
+                                      "1l": (0.44,0.42),
+                                      "2l": (0.64,0.42)}
+    }
+    
     for year in years:
         for model in models:
 
@@ -836,15 +871,18 @@ if __name__ == "__main__":
             labelsByBestMassSign = []; labelsByBestMassLimit = []
             for mass in masses:
 
-                disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100000000000.0)", mass = mass, model = model, year = year)
-                thePlotter.plot_Var_vsDisc1Disc2(signDiffs, disc1s, disc2s, binWidth = spacing, vmin = 0.0, vmax = max(signDiffs), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceDiff", model = model, year = year)
+                #disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100000000000.0)", mass = mass, model = model, year = year)
+                #thePlotter.plot_Var_vsDisc1Disc2(signDiffs, disc1s, disc2s, binWidth = spacing, vmin = 0.0, vmax = max(signDiffs), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceDiff", model = model, year = year)
 
+                print(theScraper.data)
+                print(theScraper.paramNames)
                 # Plot significances as function of bin edges
-                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "(disc1>0.1)&(disc2>0.1)&(sign>0.0)&(signDiff<2000.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
+                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign_nonasimov", selection = "(disc1>-0.1)&(disc2>-0.1)&(sign>0.0)&(signDiff<10000000.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_sign.append([mass]*len(disc1s))
                 allSigns.append(signs)
 
+                print(signs)
                 maxSign = -999.0; maxDisc1 = -999.0; maxDisc2 = -999.0
                 try:
                     maxSign  = np.max(signs)
@@ -853,19 +891,22 @@ if __name__ == "__main__":
                 except:
                     pass
                 bestSigns.append([mass, maxDisc1, maxDisc2, maxSign])
+                maxDisc1 = 0.5
+                maxDisc2 = 0.5
 
-                massesByBestSign, signsByBestSign  = theScraper.getByParam(paramName = "mass", var = "sign",     selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
+                massesByBestSign, signsByBestSign  = theScraper.getByParam(paramName = "mass", var = "sign_nonasimov",     selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
                 signsByBestMassSign.append(np.vstack((massesByBestSign, signsByBestSign)).T)
 
                 massesByBestSign, limitsByBestSign = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
                 limitsByBestMassSign.append(np.vstack((massesByBestSign, limitsByBestSign)).T)
 
-                labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
+                labelsByBestMassSign.append(r"Sensitivity Optimized")
+                #labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
 
                 thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 18, mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
 
                 # Plot limits as function of bin edges
-                disc1s, disc2s, expLims = theScraper.getByParam(paramName = "disc", var = "expLimit", selection = "(disc1>0.1)&(disc2>0.1)&(expLimit>0.0)&(healthyLimit==1)&%s"%(obsSelection), mass = mass, model = model, year = year)
+                disc1s, disc2s, expLims = theScraper.getByParam(paramName = "disc", var = "expLimit", selection = "(disc1>-0.1)&(disc2>-0.1)&(expLimit>0.0)&(healthyLimit!=3)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_lim.append([mass]*len(disc1s))
                 allExpLims.append(expLims)
@@ -878,14 +919,17 @@ if __name__ == "__main__":
                 except:
                     pass
                 bestLimits.append([mass, minDisc1, minDisc2, minLimit])
+                maxDisc1 = 0.4
+                maxDisc2 = 0.4
 
-                massesByBestLimit, signsByBestLimit  = theScraper.getByParam(paramName = "mass", var = "sign",     selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
+                massesByBestLimit, signsByBestLimit  = theScraper.getByParam(paramName = "mass", var = "sign_nonasimov",     selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 signsByBestMassLimit.append(np.vstack((massesByBestLimit, signsByBestLimit)).T)
 
                 massesByBestLimit, limitsByBestLimit = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 limitsByBestMassLimit.append(np.vstack((massesByBestLimit, limitsByBestLimit)).T)
 
-                labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
+                labelsByBestMassLimit.append(r"Limit Optimized")
+                #labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
 
                 colScales.append(stopPair_xsec[mass])
 
@@ -893,7 +937,7 @@ if __name__ == "__main__":
 
                 # Plot "boolean" if limit fit had problems or not
                 disc1s, disc2s, healthy = theScraper.getByParam(paramName = "disc", var = "healthyLimit", selection = "(disc1>0.1)&(disc2>0.1)", mass = mass, model = model, year = year)
-                thePlotter.plot_Var_vsDisc1Disc2(healthy, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(healthy), mass = mass, labelVals = True, labelBest = False, variable = "HealthyLim", model = model, year = year)
+                #thePlotter.plot_Var_vsDisc1Disc2(healthy, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(healthy), mass = mass, labelVals = True, labelBest = False, variable = "HealthyLim", model = model, year = year)
 
             bestSigns  = np.array(bestSigns)
             bestLimits = np.array(bestLimits)
