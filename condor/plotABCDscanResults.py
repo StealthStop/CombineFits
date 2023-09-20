@@ -155,7 +155,7 @@ class FitResults():
                     # So move on in loop if certain combination is meaningless
                     if   "Corr"     in np and (region+njets not in np or process != "TT"):
                         continue
-                    elif "Corr" not in np and (process == "TT"  or process == "QCD"):
+                    elif "Corr" not in np and process == "QCD": #(process == "TT"  or process == "QCD"):
                         continue
 
                     # Naming things in a certain way for later on
@@ -209,7 +209,7 @@ class FitResults():
             sigmaDiff = abs(sigma - sigma_nonasimov)
 
         # Now go for the limit
-        filename = "%s/higgsCombine%s_AsymLimit.AsymptoticLimits.mH%d.MODEL%s.root"%(combineResultPath, tagName.replace("DataS", "Data"), mass, model)
+        filename = "%s/higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%d.MODEL%s.root"%(combineResultPath, tagName.replace("DataS", "Data"), mass, model)
         logName  = "%s/log_%s_Asymp.txt"%(combineResultPath, tagName.replace("DataS", "Data"))
 
         # If we are dumping many lines into the log file, something is going wrong---do not trust...
@@ -301,7 +301,7 @@ class FitResults():
     # Based on use cases, the kwargs dictionary will either have a single key "mass"
     # or a single key "disc", with their respective, appropriate values
     def getByParam(self, paramName, var, selection = None, **kwargs):
-
+        
         allVarVals = self.get(var)
 
         # Initialize perfectly transparent filter to element-wise AND with
@@ -436,7 +436,7 @@ class Plotter():
 
         return ax
 
-    def plot_Var_vsDisc1Disc2(self, var, disc1s, disc2s, vmin, vmax, binWidth = 0.1, xMin = 0.0, xMax = 1.0, yMin = 0.0, yMax = 1.0, mass = None, labelVals = False, labelBest = False, doLog = False, variable = "", **kwargs):
+    def plot_Var_vsDisc1Disc2(self, var, disc1s, disc2s, vmin, vmax, binWidth = 0.1, xMin = 0.36, xMax = 0.92, yMin = 0.36, yMax = 0.92, mass = None, labelVals = False, labelBest = False, doLog = False, variable = "", **kwargs):
     
         massIsList = any(t in mass.__class__.__name__ for t in ["list", "array"])
 
@@ -800,6 +800,8 @@ if __name__ == "__main__":
             obsSelection.append("(Nobs_%s_Njets%s>=3.0)"%(region,njet))
     obsSelection = "&".join(obsSelection)
 
+    var_list = ["JECdown", "JECup", "JERdown", "JERup", "isrDown", "isrUp", "fsrDown", "fsrUp", "TuneCP5down", "TuneCP5up", "hdampDOWN", "hdampUP", "erdON"]
+
     for year in years:
         for model in models:
 
@@ -808,9 +810,12 @@ if __name__ == "__main__":
                 for param in params:
 
                     # By construction, inputs all have "_" in their names
-                    if "_" not in param or "Corr" not in param:
+                    if any(x in param for x in var_list):
+                        pass
+                    elif "_" not in param or "Corr" not in param:
                         continue
 
+                    print(param)
                     disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, mass = masses[0], model = model, year = year)
 
                     thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 30.0, labelVals = True, variable = param, model = model, year = year)
@@ -835,7 +840,7 @@ if __name__ == "__main__":
                 thePlotter.plot_Var_vsDisc1Disc2(signDiffs, disc1s, disc2s, binWidth = spacing, vmin = 0.0, vmax = max(signDiffs), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceDiff", model = model, year = year)
 
                 # Plot significances as function of bin edges
-                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "(disc1>0.1)&(disc2>0.1)&(sign>0.0)&(signDiff<2.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
+                disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign", selection = "(disc1>0.1)&(disc2>0.1)&(sign>0.0)&(signDiff<2000.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_sign.append([mass]*len(disc1s))
                 allSigns.append(signs)
