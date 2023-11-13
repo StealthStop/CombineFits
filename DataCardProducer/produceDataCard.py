@@ -1,4 +1,5 @@
 import os
+import sys
 import copy
 import importlib
 import argparse
@@ -19,10 +20,10 @@ def main():
     parser.add_argument("--mass",            dest="mass",           nargs="+",           default=map(str, list(range(300, 1450, 50))), type=str, help="All mass points"                                 )    
     parser.add_argument("--combo",           dest="combo",          nargs="+",           default=[],                                   type=str, help="Which channels to include in combo datacard"     )    
     parser.add_argument("--injectedSignal",  dest="injectedSignal", action="store",      default="SAME",                               type=str, help="Name of signal and mass to inject for all cards" )
-    parser.add_argument("--minNjet",         dest="minNjet",        action="store",      default=7,                                    type=int, help="Min Njet bin to use"                             )
-    parser.add_argument("--maxNjet",         dest="maxNjet",        action="store",      default=12,                                   type=int, help="Max Njet bin to use"                             )
+    parser.add_argument("--minNjet",         dest="minNjet",        action="store",      default=5,                                    type=int, help="Min Njet bin to use"                             )
+    parser.add_argument("--maxNjet",         dest="maxNjet",        action="store",      default=14,                                   type=int, help="Max Njet bin to use"                             )
     parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use Closure Correction in ABCD calculation for TT")
-    parser.add_argument("--binEdges",        dest="binEdges",       nargs="+",           default=[10,100,10],                              type=int, help="Do not use Closure Correction in ABCD calculation for TT")
+    parser.add_argument("--binEdges",        dest="binEdges",       nargs="+",           default=None,                              type=int, help="Do not use Closure Correction in ABCD calculation for TT")
     parser.add_argument("--singleBE",        dest="singleBE",       action="store",      default=None,                                 type=str, help="Single bin edge combo to make cards for (e.g. 60_60)")
     args = parser.parse_args()   
  
@@ -38,9 +39,12 @@ def main():
     # If running with --combo flag, then we don't need to load
     # a config file, we are just going to combine cards that should already exist
     if not args.combo:
-        configfile = importlib.import_module(args.config)
+        path = "/".join(args.config.split("/")[:-1])
+        sys.path.append(path)
+        module = args.config.split("/")[-1]
+        configfile = importlib.import_module(module)
 
-    if args.singleBE is None:
+    if args.singleBE is None and args.binEdges is not None:
         # loop over to make the cards
         for disc1 in range(args.binEdges[0], args.binEdges[1], args.binEdges[2]):
 
@@ -78,16 +82,20 @@ def main():
 
                                 # determine if the injected signal model and mass should be the same
                                 # as the signal component used in the fit, or some other component
-                                injectedModel = Model
-                                injectedMass  = mass
+                                if "_" in args.injectedSignal:
+                                    injectedModel = args.injectedSignal.split("_")[0]
+                                    injectedMass = args.injectedSignal.split("_")[1]
+                                else:
+                                    injectedModel = Model
+                                    injectedMass  = mass
 
-                                if args.injectedSignal != "SAME":
-                                    injectedModel = args.model.split("_")[0] + "_2t6j"
+                                #if args.injectedSignal != "SAME":
+                                #    injectedModel = args.model.split("_")[0] + "_2t6j"
 
-                                    if(args.model.find("SYY") != -1):
-                                        injectedModel = "Stealth" + injectedModel 
+                                #    if(args.model.find("SYY") != -1):
+                                #        injectedModel = "Stealth" + injectedModel 
 
-                                    injectedMass = args.injectedSignal.split('_')[1]
+                                #    injectedMass = args.injectedSignal.split('_')[1]
                 
                                 # Must make copy of dictionary to do repeated string replacements in for loop key
                                 tempObs = copy.copy(configfile.observed)
@@ -97,8 +105,8 @@ def main():
                                 tempSpecial = copy.copy(configfile.special)
 
                                 # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2)
-    else:
+                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet)
+    elif args.singleBE is not None:
         if args.singleBE.split("_")[0] == "":
             disc1 = args.singleBE.split("_")[1]
             disc2 = args.singleBE.split("_")[2]
@@ -138,16 +146,23 @@ def main():
 
                         # determine if the injected signal model and mass should be the same
                         # as the signal component used in the fit, or some other component
-                        injectedModel = Model
-                        injectedMass  = mass
+                        if "_" in args.injectedSignal:
+                            injectedModel = args.injectedSignal.split("_")[0]
+                            injectedMass = args.injectedSignal.split("_")[1]
+                        else:
+                            injectedModel = Model
+                            injectedMass  = mass
 
-                        if args.injectedSignal != "SAME":
-                            injectedModel = args.model.split("_")[0] + "_2t6j"
+                        #injectedModel = Model
+                        #injectedMass  = mass
 
-                            if(args.model.find("SYY") != -1):
-                                injectedModel = "Stealth" + injectedModel 
+                        #if args.injectedSignal != "SAME":
+                        #    injectedModel = args.model.split("_")[0] + "_2t6j"
 
-                            injectedMass = args.injectedSignal.split('_')[1]
+                        #    if(args.model.find("SYY") != -1):
+                        #        injectedModel = "Stealth" + injectedModel 
+
+                        #    injectedMass = args.injectedSignal.split('_')[1]
         
                         # Must make copy of dictionary to do repeated string replacements in for loop key
                         tempObs = copy.copy(configfile.observed)
@@ -157,7 +172,68 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet)
+    else:
+        # loop over to make the cards
+        for model in args.model:
+
+            for mass in args.mass:
+
+                for data in args.dataType:
+
+                    year = args.year
+                
+                    # combine 0l, 1l, 2l cards as "combo" card
+                    if args.combo:
+
+                        comboStr = ""
+                        for channel in args.combo:
+                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}.txt ".format(year, model, mass, data, args.outpath, channel)
+                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo.txt".format(year, model, mass, data, args.outpath)
+                        
+                        print("combineCards.py {}".format(comboStr))
+                        os.system("combineCards.py {0}".format(comboStr))
+                    
+                    else:
+                        Model = model + "_2t6j"
+                            
+
+                        if not os.path.isdir(args.outpath):
+                            os.makedirs(args.outpath)
+
+                        outpath = "{}/{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel)
+
+                        print("Writing data card to {}".format(outpath))
+
+                        # determine if the injected signal model and mass should be the same
+                        # as the signal component used in the fit, or some other component
+                        if "_" in args.injectedSignal:
+                            injectedModel = args.injectedSignal.split("_")[0]
+                            injectedMass = args.injectedSignal.split("_")[1]
+                        else:
+                            injectedModel = Model
+                            injectedMass  = mass
+
+                        #injectedModel = Model
+                        #injectedMass  = mass
+
+                        #if args.injectedSignal != "SAME":
+                        #    injectedModel = args.model.split("_")[0] + "_2t6j"
+
+                        #    if(args.model.find("SYY") != -1):
+                        #        injectedModel = "Stealth" + injectedModel 
+
+                        #    injectedMass = args.injectedSignal.split('_')[1]
+        
+                        # Must make copy of dictionary to do repeated string replacements in for loop key
+                        tempObs = copy.copy(configfile.observed)
+                        tempSys = copy.copy(configfile.systematics)
+                        tempMinNjet = copy.copy(configfile.obs_start)
+                        tempMaxNjet = copy.copy(configfile.obs_end)
+                        tempSpecial = copy.copy(configfile.special)
+
+                        # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet)
 
 if __name__ == "__main__":
     main()

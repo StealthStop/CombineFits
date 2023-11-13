@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cardPath=$1
+shift
 signalType=$1
 shift
 mass=$1
@@ -21,10 +23,17 @@ shift
 asimov=$1
 shift
 binEdgeName=$1
+shift 
+makeCards=$1
+
+if [ $binEdgeName == 0 ]
+then
+    binEdgeName=""
+fi
 
 base_dir=`pwd`
-rMax="20"
-rMin="-20"
+rMax="10"
+rMin="-0.2"
 
 rMinLim="0"
 rMaxLim="2"
@@ -57,24 +66,36 @@ fi
 inject=0
 if [ ${dataType} == "pseudoDataS" ]
 then
-    inject=1
+    inject=1.0
 fi
 
 # Make the datacard before we run combine
-python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_${channel}_scan --channel ${channel} --inpath inputsAll/ --outpath cards/ --singleBE ${binEdgeName}
+if [ $makeCards == 1 ]
+then
+    if [ ${channel} == "combo" ]
+    then
+        python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_0l_${configSuffix} --channel 0l --inpath inputsAll/ --outpath cards/ 
+        python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_1l_${configSuffix} --channel 1l --inpath inputsAll/ --outpath cards/ 
+        python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_2l_${configSuffix} --channel 2l --inpath inputsAll/ --outpath cards/ 
+        python produceDataCard.py --model ${signalType} --mass ${mass} --combo 0l 1l 2l --inpath inputsAll/ --outpath cards/
+    else
+        python produceDataCard.py --model ${signalType} --mass ${mass} --config cardConfig_${channel}_scan --channel ${channel} --inpath inputsAll/ --outpath cards/ --singleBE ${binEdgeName}
+    fi
+fi
 
 # Make a workspace ROOT file for Higgs Combine to process
 stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
 tagName=${year}${signalType}${mass}${dataType}_${channel}${binEdgeName}
 ws=ws_${tagName}.root
 
-echo "text2workspace.py cards/${stubName}.txt -o ${ws} -m ${mass} --keyword-value MODEL=${signalType}\n"
-text2workspace.py cards/${stubName}.txt -o ${ws} -m ${mass} --keyword-value MODEL=${signalType}
+echo "text2workspace.py ${cardPath}/${stubName}.txt -o ${ws} -m ${mass} --keyword-value MODEL=${signalType}\n"
+text2workspace.py ${cardPath}/${stubName}.txt -o ${ws} -m ${mass} --keyword-value MODEL=${signalType}
 
 
 # Additional fit options for more robust fitting
 fallBack="--cminDefaultMinimizerStrategy 1 --cminFallbackAlgo Minuit2,Migrad,0:0.1 --cminFallbackAlgo Minuit2,Migrad,1:1.0 --cminFallbackAlgo Minuit2,Migrad,0:1.0 --X-rtd MINIMIZER_MaxCalls=999999999 --X-rtd MINIMIZER_analytic --X-rtd FAST_VERTICAL_MORPH"
 fitOptions="${ws} -m ${mass} --keyword-value MODEL=${signalType} ${fallBack}"
+fitOptionsNoFallBack="${ws} -m ${mass} --keyword-value MODEL=${signalType} --cminDefaultMinimizerStrategy 1"
 echo "Running with fit options: ${fitOptions}\n"
 
 # Run the asympotic fits for the limit plots and significance/p-value calculations for top panel of p-value plots
@@ -97,6 +118,7 @@ then
     if [ $asimov == 1 ]
     then
         combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
+        combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=0.2 -n ${tagName}_SignifExp_Asimov_0p2 > log_${tagName}_Sign_Asimov_0p2.txt
     else
         combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
     fi
@@ -110,9 +132,9 @@ then
     echo "Running FitDiagnostics"
     if [ $asimov == 1 ]
     then
-        combine -M FitDiagnostics ${fitOptions} --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --toysFrequentist --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
+        combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
     else
-        combine -M FitDiagnostics ${fitOptions} --rMin $rMin --rMax $rMax --robustFit=1 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
+        combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
     fi
 fi
 
@@ -131,13 +153,13 @@ then
     if [ $asimov == 1 ]
     then
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 -v -1 > log_${tagName}_step2_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 > log_${tagName}_step2_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}_Asimov.json > log_${tagName}_step3_Asimov.txt
         plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
     else
         # Generate impacts based on observation
         combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 4 -v -1 > log_${tagName}_step2.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 > log_${tagName}_step2.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}.json > log_${tagName}_step3.txt
         plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
     fi
