@@ -239,7 +239,7 @@ class FitResults():
         if limit_obs  != None:
             limit_obs  *= self.stopPair_xsec[mass]
 
-        self.save(sign = sigma, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1), disc2 = float(disc2), dataCardInfo = usefulInfo)
+        self.save(sign = sigma, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1)/100., disc2 = float(disc2)/100., dataCardInfo = usefulInfo)
 
     # Pass everything to be saved in numpy array for extraction later
     # A specific order of parameters is retained along with names and types
@@ -509,9 +509,9 @@ class Plotter():
         axBoxPointSize = axPointSize / axBoxes
 
         if doLog:
-            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolor = "none", cmap = colMap, norm = mpl.colors.LogNorm(), vmin = vmin, vmax = vmax)
+            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap, norm = mpl.colors.LogNorm())#, vmin = vmin, vmax = vmax)
         else:
-            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolor = "none", cmap = colMap,                              vmin = vmin, vmax = vmax)
+            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap,                            )#vmin = vmin, vmax = vmax)
 
         cbar = plt.colorbar(pad = cpad, fraction = cfraction)
         plt.xlim(xMin, xMax)
@@ -747,29 +747,29 @@ if __name__ == "__main__":
         # Split up each individual job folder to get edge vals, mass, etc
         chunks = combineFitResultPath.split("/")[-1].split("_")
 
-        if chunks[-1] != "MassExclusion" and chunks[-1] != "MaxSig":
+        #if chunks[-1] != "MassExclusion" and chunks[-1] != "MaxSig":
+        #    continue
+        # Easier to ask for forgiveness than it is to ask for permission
+        # Does the folder end in _XX_YY ? i.e. a legit job folder
+        # A legit job folder has a name like: "RPV_550_Run2UL_80_90"
+        try:
+            trial = float(chunks[-1])
+            trial = float(chunks[-2])
+        except:
+            print("Skipping non-Combine-result \"%s\""%(combineFitResultPath))
             continue
-            # Easier to ask for forgiveness than it is to ask for permission
-            # Does the folder end in _XX_YY ? i.e. a legit job folder
-            # A legit job folder has a name like: "RPV_550_Run2UL_80_90"
-            try:
-                trial = float(chunks[-1])
-                trial = float(chunks[-2])
-            except:
-                print("Skipping non-Combine-result \"%s\""%(combineFitResultPath))
-                continue
-            disc1 = chunks[-2]
-            disc2 = chunks[-1]
-            disc  = disc1 + "_" + disc2
-        else:
-            if chunks[-1] == "MassExclusion":
-                disc1 = "0.4"
-                disc2 = "0.4"
-            else:
-                disc1 = "0.5"
-                disc2 = "0.5"
+        disc1 = chunks[-2]
+        disc2 = chunks[-1]
+        disc  = disc1 + "_" + disc2
+        #else:
+        #    if chunks[-1] == "MassExclusion":
+        #        disc1 = "0.4"
+        #        disc2 = "0.4"
+        #    else:
+        #        disc1 = "0.5"
+        #        disc2 = "0.5"
 
-            disc = chunks[-1]
+        #    disc = chunks[-1]
 
         mass  = int(chunks[1])
         model = chunks[0]
@@ -816,7 +816,7 @@ if __name__ == "__main__":
         if region == "A":
             continue
         for njet in njets:
-            obsSelection.append("(Nobs_%s_Njets%s>=1.0)"%(region,njet))
+            obsSelection.append("(Nobs_%s_Njets%s>=3.0)"%(region,njet))
     obsSelection = "&".join(obsSelection)
     obsSelection = "(mass!=2)"
 
@@ -850,7 +850,6 @@ if __name__ == "__main__":
                     elif "_" not in param or "Corr" not in param:
                         continue
 
-                    print(param)
                     disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, mass = masses[0], model = model, year = year)
 
                     thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 30.0, labelVals = True, variable = param, model = model, year = year)
@@ -874,15 +873,12 @@ if __name__ == "__main__":
                 #disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100000000000.0)", mass = mass, model = model, year = year)
                 #thePlotter.plot_Var_vsDisc1Disc2(signDiffs, disc1s, disc2s, binWidth = spacing, vmin = 0.0, vmax = max(signDiffs), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceDiff", model = model, year = year)
 
-                print(theScraper.data)
-                print(theScraper.paramNames)
                 # Plot significances as function of bin edges
                 disc1s, disc2s, signs = theScraper.getByParam(paramName = "disc", var = "sign_nonasimov", selection = "(disc1>-0.1)&(disc2>-0.1)&(sign>0.0)&(signDiff<10000000.0)&%s"%(obsSelection), mass = mass, model = model, year = year)
 
                 allMasses_sign.append([mass]*len(disc1s))
                 allSigns.append(signs)
 
-                print(signs)
                 maxSign = -999.0; maxDisc1 = -999.0; maxDisc2 = -999.0
                 try:
                     maxSign  = np.max(signs)
@@ -937,7 +933,7 @@ if __name__ == "__main__":
 
                 # Plot "boolean" if limit fit had problems or not
                 disc1s, disc2s, healthy = theScraper.getByParam(paramName = "disc", var = "healthyLimit", selection = "(disc1>0.1)&(disc2>0.1)", mass = mass, model = model, year = year)
-                #thePlotter.plot_Var_vsDisc1Disc2(healthy, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(healthy), mass = mass, labelVals = True, labelBest = False, variable = "HealthyLim", model = model, year = year)
+                thePlotter.plot_Var_vsDisc1Disc2(healthy, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(healthy), mass = mass, labelVals = True, labelBest = False, variable = "HealthyLim", model = model, year = year)
 
             bestSigns  = np.array(bestSigns)
             bestLimits = np.array(bestLimits)

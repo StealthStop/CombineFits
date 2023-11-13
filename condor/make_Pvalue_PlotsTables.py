@@ -132,7 +132,7 @@ class Plotter():
 
         Xmin = xpoints[0]
         Xmax = xpoints[-1]
-        Ymin = 5.0e-37 # 5.0e-10
+        Ymin = 5.0e-10 # 5.0e-37 
 
         if runType != "pseudoDataS":
             Ymin = 5.0e-37 # 5.0e-10 
@@ -365,7 +365,7 @@ def makeSigTex(name, l):
 # -------------
 def main():
     parser = argparse.ArgumentParser("usage: %prog [options]\n")
-    parser.add_argument('--basedir',   dest='basedir',   type=str,            default = '.',                         help = "Path to output files"            )
+    parser.add_argument('--basedirs',  dest='basedirs',  type=str, nargs="+", default = ['.'],                       help = "Paths to output files"            )
     parser.add_argument('--outdir',    dest='outdir',    type=str,            default = '.',                         help = "Path to put output files"        )
     parser.add_argument('--pdfName',   dest='pdfName',   type=str,            default = '',                          help = "name to add at the end of pdf"   )
     parser.add_argument('--approved',  dest='approved',                       default = False, action='store_true',  help = 'Is plot approved'                )
@@ -376,6 +376,7 @@ def main():
     parser.add_argument('--years',     dest='years',     type=str, nargs="+", default = ["Run2UL"] ,                 help = 'Which years to plot'             )
     parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "2l", "combo"], help = 'Which channels to plot'          )
     parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,            help = 'End points of mass range to plot')
+    parser.add_argument('--graft',     dest='graft',     type=int,            default = 0,                           help = 'All masses below (inclusive) the graft value will use the first basedir, anything above will use second')
 
     args    = parser.parse_args()
     pdfName = "_"+args.pdfName if args.pdfName != '' else args.pdfName
@@ -385,11 +386,15 @@ def main():
     pre_tabular = """\\begin{tabular}{l l l l}
     Mass & Best fit signal strength & Observed Significance & p-value\\\\ \hline
     """    
-    path      = args.basedir
-    outPath   = args.basedir + "/" + "output-files/" + "plots_dataCards_TT_allTTvar/" + args.outdir
+    path      = args.basedirs[0]
+    if len(args.basedirs) == 1:
+        outPath   = args.basedirs[0] + "/" + "output-files/" + "plots_dataCards_TT_allTTvar/" + args.outdir
+    else:
+        outPath   = "./" + args.outdir
     models    = args.models
     dataTypes = args.dataTypes
     years     = args.years
+    graft     = args.graft
 
     if not os.path.exists(outPath):
         os.makedirs(outPath)
@@ -432,7 +437,14 @@ def main():
                         print "Year %s, Model %s, Mass %s, Channel %s"%(year, model, mass, channel)
                         
                         tagName    = "%s%s%s%s_%s"%(year, model, mass, runtype, channel)
-                        filename_r = "%s/output-files/%s_%s_%s/fitDiagnostics%s.root" % (path, model, mass, year, tagName)
+                        
+                        if int(mass) > graft and graft != 0:
+                            path = args.basedirs[1]
+                            print(mass, channel)
+                        else:
+                            path = args.basedirs[0]
+
+                        filename_r = "%s/output-files/%s_%s_%s/fitDiagnostics%s%s.root" % (path, model, mass, year, tagName, asimovStr)
        
                         # ------------------------------------------------------ 
                         # Get signal strength (r) from fit diagnostic ROOT files

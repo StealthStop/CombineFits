@@ -104,6 +104,7 @@ def main():
     parser.add_option ('--nJobs',          dest='numJobs',           type='int',    default = -1,      help="Can specify the number of jobs for toyS")
     parser.add_option ('-i',               dest='iterations',        type='int',    default =  1,      help="Can specify the number of iterations for toyS")
     parser.add_option ('--cards',          dest='cards',             type='string', default = 'cards', help="Folder containing data cards")
+    parser.add_option ('--makeCards',      dest='makeCards',   action='store_true', default = False,   help="Make cards when landing in condor area?")
     parser.add_option ('--edgeScan',       dest='edgeScan',          type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 1 and disc 2")
     parser.add_option ('--edgeScan1',      dest='edgeScan1',         type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 1")
     parser.add_option ('--edgeScan2',      dest='edgeScan2',         type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 2")
@@ -153,9 +154,16 @@ def main():
     fileParts.append("Should_Transfer_Files = YES\n")
     fileParts.append("WhenToTransferOutput = ON_EXIT\n")
     if "combo" not in options.channel:
-        fileParts.append("RequestMemory = 1024\n")
+        if doImpact:
+            fileParts.append("RequestMemory = 2048\n")
+        else:
+            fileParts.append("RequestMemory = 1024\n")
     else:
-        fileParts.append("RequestMemory = 2048\n")
+        if doImpact:
+            fileParts.append("RequestMemory = 4096\n")
+        else:
+            fileParts.append("RequestMemory = 2048\n")
+    #fileParts.append("RequestCpus = 4 \n")
     fileParts.append("x509userproxy = $ENV(X509_USER_PROXY)\n\n")
     fileParts.append("Transfer_Input_Files = {0}/CMSSW_10_2_13.tar.gz, {0}/exestuff.tar.gz\n".format(options.outPath))
 
@@ -184,22 +192,28 @@ def main():
             mass = mass.strip()
             for channel in channels:
                 for disc1Edge, disc2Edge in binEdgeList:
-                    binEdgeName = "_{}_{}".format(disc1Edge, disc2Edge) if disc1Edge else ""
+                    binEdgeName = "_{}_{}".format(disc1Edge, disc2Edge) if disc1Edge else "0"
                     for asimov in [0, 1]:
                         print("Making directory for {} {} {}: bin edges 0.{} 0.{}".format(mass, channel, st, disc1Edge, disc2Edge))
                         # Create the directory for cards and output files
-                        outDir = model+"_"+mass+"_"+options.year+binEdgeName
+                        outDir = model+"_"+mass+"_"+options.year
+                        if binEdgeName is not "0":
+                            outDir += binEdgeName
                         if not os.path.isdir("%s/output-files/%s" % (options.outPath, outDir)):
                             os.makedirs("%s/output-files/%s" % (options.outPath, outDir))
                         if not os.path.isdir("%s/output-files/%s"%(options.outPath,options.cards)):
-                            #print("Copying cards...")
-                            os.makedirs("%s/output-files/%s"%(options.outPath,options.cards))
-                            #os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
-                        #print("Card copy finished")
+                            if options.makeCards:
+                                print("Opting to make cards during job (see option --makeCards)")
+                                os.makedirs("%s/output-files/%s"%(options.outPath,options.cards))
+                            else:
+                                print("Copying cards...")
+                                os.makedirs("%s/output-files/%s"%(options.outPath,options.cards))
+                                os.system("cp -r %s/src/CombineFits/DataCardProducer/%s %s/output-files"%(environ["CMSSW_BASE"],options.cards,options.outPath))
+                                print("Card copy finished")
 
                         if not options.toy and not options.toyS:
 
-                            tagName = "%s%s%s%s_%s%s"%(options.year, model, mass, options.dataType, channel, binEdgeName)
+                            tagName = "%s%s%s%s_%s%s"%(options.year, model, mass, options.dataType, channel, binEdgeName if binEdgeName is not "0" else "")
 
                             outputFiles = [
                                 "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
@@ -220,17 +234,19 @@ def main():
                                 "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                                 "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
+                                "higgsCombine%s_SignifExp_Asimov_0p2.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
                                 "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
                                 "impacts_%s_Asimov.json"                                         % (tagName),
                                 "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
                                 "log_%s_Asymp_Asimov.txt"                                        % (tagName),
                                 "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
                                 "log_%s_Sign_Asimov.txt"                                         % (tagName),
+                                "log_%s_Sign_Asimov_0p2.txt"                                         % (tagName),
                                 "log_%s_step1_Asimov.txt"                                        % (tagName),
                                 "log_%s_step2_Asimov.txt"                                        % (tagName),
                                 "log_%s_step3_Asimov.txt"                                        % (tagName),
-                                "Run2UL_%s_%s_pseudoDataS_%s%s.txt"                              % (model, mass, channel, binEdgeName),
-                                "Run2UL_%s_%s_pseudoData_%s%s.txt"                               % (model, mass, channel, binEdgeName),
+                                "Run2UL_%s_%s_pseudoDataS_%s%s.txt"                              % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
+                                "Run2UL_%s_%s_pseudoData_%s%s.txt"                               % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
                             ]
                         
                             transfer = "transfer_output_remaps = \""
@@ -242,15 +258,20 @@ def main():
                                 if f != outputFiles[-1]:
                                     transfer += "; "
                             transfer += "\"\n"
+
+                            if options.makeCards:
+                                makeCards = 1
+                            else:
+                                makeCards = 0
                                 
                             fileParts.append(transfer)
-                            fileParts.append("Arguments = %s %s %s %s %i %i %i %i %s %i %s\n" % (model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName))
+                            fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards))
                             extraAsimov = ""
                             if asimov == 1:
                                 extraAsimov += "_Asimov"
-                            fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.stdout\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName))
-                            fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.stderr\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName))
-                            fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.log\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName))
+                            fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.stdout\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName if binEdgeName is not "0" else ""))
+                            fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.stderr\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName if binEdgeName is not "0" else ""))
+                            fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s%s%s%s.log\n"%(options.outPath, model, mass, options.dataType, channel, extra, extraAsimov, binEdgeName if binEdgeName is not "0" else ""))
                             fileParts.append("Queue\n\n")
 
                         else:
@@ -298,12 +319,15 @@ def main():
     fout.close()
 
     #Tar up area
-    filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/produceDataCard.py"] #[environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/%s"%(options.cards)]
-    filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer.py"]
-    filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_0l_scan.py"]
-    filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_1l_scan.py"]
-    filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_2l_scan.py"]
-    filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/inputsAll"]
+    if not options.makeCards:
+        filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/%s"%(options.cards)]
+    else:
+        filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/produceDataCard.py"] 
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_0l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_1l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_2l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/inputsAll"]
 
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
 
