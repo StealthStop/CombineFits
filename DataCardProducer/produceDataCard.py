@@ -5,6 +5,7 @@ import importlib
 import argparse
 
 from dataCardProducer import dataCardMaker 
+#from dataCardProducer_scan import dataCardMaker 
 
 def main():
 
@@ -25,6 +26,8 @@ def main():
     parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use Closure Correction in ABCD calculation for TT")
     parser.add_argument("--binEdges",        dest="binEdges",       nargs="+",           default=None,                              type=int, help="Do not use Closure Correction in ABCD calculation for TT")
     parser.add_argument("--singleBE",        dest="singleBE",       action="store",      default=None,                                 type=str, help="Single bin edge combo to make cards for (e.g. 60_60)")
+    parser.add_argument("--fixedCloseSys",   dest="fixedCloseSys",  action="store",      default=None,                                 type=str, help="Replace closure correction with flat value (for studies)")
+    parser.add_argument("--CloseSys",        dest="CloseSys",       action="store",      default=None,                                 type=str, help="Use first bin (None), all bins (all), or all bins outside of coverage by the first (allWorse)")
     args = parser.parse_args()   
  
     # ---------------------------------------------
@@ -35,6 +38,18 @@ def main():
     # ---------------------------------------------
 
     configfile = None
+
+    masses = args.mass
+
+    if args.dataType[0] == "Data":
+        print("Making cards for Data")
+        if "MaxSign" in args.config:
+            masses = list(range(300, 650, 50)) if args.model == "RPV" else list(range(300,700,50))
+            print(masses)
+        elif "MassExclusion" in args.config:
+            masses = list(range(700, 1450, 50)) if args.model == "RPV" else list(range(750,1450,50))
+            print(masses)
+            
 
     # If running with --combo flag, then we don't need to load
     # a config file, we are just going to combine cards that should already exist
@@ -52,7 +67,7 @@ def main():
 
                 for model in args.model:
 
-                    for mass in args.mass:
+                    for mass in masses:
 
                         for data in args.dataType:
 
@@ -116,7 +131,7 @@ def main():
         # loop over to make the cards
         for model in args.model:
 
-            for mass in args.mass:
+            for mass in masses:
 
                 for data in args.dataType:
 
@@ -172,24 +187,27 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.CloseSys)
     else:
         # loop over to make the cards
         for model in args.model:
 
-            for mass in args.mass:
+            for mass in masses:
 
                 for data in args.dataType:
 
                     year = args.year
                 
+                    fixedCloseSysStr = ""
+                    if args.fixedCloseSys is not None:
+                        fixedCloseSysStr = "_{}".format(args.fixedCloseSys)
                     # combine 0l, 1l, 2l cards as "combo" card
                     if args.combo:
 
                         comboStr = ""
                         for channel in args.combo:
-                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}.txt ".format(year, model, mass, data, args.outpath, channel)
-                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo.txt".format(year, model, mass, data, args.outpath)
+                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}{6}.txt ".format(year, model, mass, data, args.outpath, channel, fixedCloseSysStr)
+                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo{5}.txt".format(year, model, mass, data, args.outpath, fixedCloseSysStr)
                         
                         print("combineCards.py {}".format(comboStr))
                         os.system("combineCards.py {0}".format(comboStr))
@@ -201,7 +219,7 @@ def main():
                         if not os.path.isdir(args.outpath):
                             os.makedirs(args.outpath)
 
-                        outpath = "{}/{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel)
+                        outpath = "{}/{}_{}_{}_{}_{}{}.txt".format(args.outpath, year, model, mass, data, args.channel, fixedCloseSysStr)
 
                         print("Writing data card to {}".format(outpath))
 
@@ -233,7 +251,7 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet, args.fixedCloseSys, args.CloseSys)
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2, minNjetMask, maxNjetMask, fixedCloseSys=None, CloseSys=None):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2, minNjetMask, maxNjetMask, fixedCloseSys=None):
      
         self.path           = path
         self.observed       = observed
@@ -45,8 +45,6 @@ class dataCardMaker:
         self.NoMCcorr       = NoMCcorr
         self.min_nj         = min_nj
         self.max_nj         = max_nj
-        self.fixedCloseSys  = fixedCloseSys
-        self.CloseSys       = CloseSys
         if disc1 is not None and disc2 is not None:
             self.disc1          = str(disc1)
             self.disc2          = str(disc2)
@@ -128,26 +126,8 @@ class dataCardMaker:
                 continue
 
             if "extra" in kwargs and "CorrectedDataClosure" in kwargs["extra"]:
-                if self.CloseSys == None:
-                    val = h.GetBinContent(1)
-                    err = h.GetBinError(1)
-                elif self.CloseSys == "All":
-                    val = h.GetBinContent(bin+1)
-                    err = h.GetBinError(bin+1)
-                elif self.CloseSys == "AllWorse":
-                    base_val = h.GetBinContent(1)
-                    base_err = h.GetBinError(1)
-
-                    val = h.GetBinContent(bin+1)
-                    err = h.GetBinError(bin+1)
-                   
-                    diff = abs(base_val - val)
-                    err_sum = base_err + err
- 
-                    if diff <= err_sum:
-                        val = base_val
-                        err = base_err
-
+                val = h.GetBinContent(1)
+                err = h.GetBinError(1)
             else:
                 val = SF * h.GetBinContent(bin+1)
                 err = SF * h.GetBinError(bin+1)
@@ -190,9 +170,9 @@ class dataCardMaker:
 
             for i in range(1,6):
                 nEvents_A = round(h.GetBinContent(i))
-                nEvents_B = round(h.GetBinContent(i+njets))
-                nEvents_C = round(h.GetBinContent(i+njets*2))
-                nEvents_D = round(h.GetBinContent(i+njets*3))
+                nEvents_B = round(h.GetBinContent(i+self.njets))
+                nEvents_C = round(h.GetBinContent(i+self.njets*2))
+                nEvents_D = round(h.GetBinContent(i+self.njets*3))
 
                 nominal = (nEvents_A * nEvents_D) / (nEvents_B * nEvents_C)
 
@@ -209,6 +189,7 @@ class dataCardMaker:
 
         if nbins == 24:
             nbins = 20
+
 
         return binValues, binErrors, binNames, nbins, binWeights
 
@@ -340,7 +321,6 @@ class dataCardMaker:
         mask    = self.getBinMask()
 
         for bin in range(0, nbins):
-            if not mask[bin]: continue
             val = h.GetBinContent(bin+1)
             err = h.GetBinError(bin+1)
             reg = regions[int(bin/self.njets)] + str(self.njetStart + bin%(self.njets))
@@ -439,10 +419,11 @@ class dataCardMaker:
 
             if "nomHist" in self.systematics[sy].keys() or ("ClosureCorrection_" in sy and self.systematics[sy]["type"] is not "mcStat") or "TT_" in sy:
                 self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy])
-            elif self.systematics[sy]["type"] != "TF":
-                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins, _ = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
+            #elif self.systematics[sy]["type"] != "TF":
             else:
-                self.systematics["QCD_TF"]["binValues"], self.systematics["QCD_TF"]["binErrors"], self.systematics["QCD_TF"]["binNames"], self.tfNbins = self.calcBinValuesTF(tfile, self.systematics["QCD_TF"])
+                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins, _ = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
+            #else:
+            #    self.systematics["QCD_TF"]["binValues"], self.systematics["QCD_TF"]["binErrors"], self.systematics["QCD_TF"]["binNames"], self.tfNbins = self.calcBinValuesTF(tfile, self.systematics["QCD_TF"])
 
         # Depending on if running for pseudoData(S) or Data
         # make the values for the "observed" line in the datacard
@@ -462,20 +443,16 @@ class dataCardMaker:
                 # Check the type to _not_ inject signal into the pseudoData (no S !)
                 for ob in self.observed.keys():
                     if self.observed[ob]["type"] == "bkg" and self.observed[ob]["inj"]:
-                        if "QCD" in ob:# and "2l" not in self.channel:
-                            if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                                try:
-                                    tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[ob]["binNames"][n])
-                                except:
-                                    print("Skipping QCD TF for masked bin {}".format(self.observed[ob]["binNames"][n]))
-                            else:
-                                tf_idx = 0
-                            try:
-                                obs += self.observed[ob]["binValues"][n] * self.systematics["QCD_TF"]["binValues"][tf_idx]
-                            except:
-                                print("Skipping QCD TF for masked bin {}".format(self.observed[ob]["binNames"][n]))
-                        else:
-                            obs += self.observed[ob]["binValues"][n]
+                        #if "QCD" in ob:# and "2l" not in self.channel:
+                        #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                        #        tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[ob]["binNames"][n])
+                        #    else:
+                        #        tf_idx = 0
+                        #    obs += self.observed[ob]["binValues"][n] * self.systematics["QCD_TF"]["binValues"][tf_idx]
+                        #    print(self.observed[ob]["binValues"][n], self.systematics["QCD_TF"]["binValues"][tf_idx])
+                        #    print(self.observed[ob]["binValues"][n] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                        #else:
+                        obs += self.observed[ob]["binValues"][n]
                 self.observedPerBin.append(obs)
 
         # PSEUDODATAS
@@ -493,21 +470,14 @@ class dataCardMaker:
                         else:
                             obs += self.observed[proc]["binValues"][n]
                     elif self.observed[proc]["type"] == "bkg" and self.observed[proc]["inj"]:
-                        if "QCD" in proc:# and "2l" not in self.channel:
-                            if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                                try:
-                                    tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][n])
-                                except:
-                                    print("Skipping QCD TF for masked bin {}".format(self.observed[ob]["binNames"][n]))
-                            else:
-                                tf_idx = 0
-                            try:
-                                obs += self.observed[proc]["binValues"][n] * self.systematics["QCD_TF"]["binValues"][tf_idx]
-                            except:
-                                print("Skipping QCD TF for masked bin {}".format(self.observed[ob]["binNames"][n]))
-                                obs += 0
-                        else:
-                            obs += self.observed[proc]["binValues"][n]
+                        #if "QCD" in proc:# and "2l" not in self.channel:
+                        #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                        #        tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][n])
+                        #    else:
+                        #        tf_idx = 0
+                        #    obs += self.observed[proc]["binValues"][n] * self.systematics["QCD_TF"]["binValues"][tf_idx]
+                        #else:
+                        obs += self.observed[proc]["binValues"][n]
                 self.observedPerBin.append(obs)
 
         # DATA
@@ -625,16 +595,16 @@ class dataCardMaker:
                         # as TT is calculated via the ABCD method
                         if proc == "Data" or proc == "TT":
                             rate_str += "{} ".format(1)
-                        elif proc == "QCD":# and "2l" not in self.channel:
-                            if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                                tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][bin])
-                            else:
-                                tf_idx = 0
-                            #if str is type(self.observed[proc]["binValues"][bin]):
-                            #    rate_str += "{} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
-                            #else:
-                            rate_str += "{:.3f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
-                            
+                        #elif proc == "QCD":# and "2l" not in self.channel:
+                        #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                        #        tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][bin])
+                        #    else:
+                        #        tf_idx = 0
+                        #    #if str is type(self.observed[proc]["binValues"][bin]):
+                        #    #    rate_str += "{} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                        #    #else:
+                        #    rate_str += "{:.3f} ".format(self.observed[proc]["binValues"][bin] * self.systematics["QCD_TF"]["binValues"][tf_idx])
+                        #    
                         else:
                             rate_str += "{} ".format(self.observed[proc]["binValues"][bin])
 
@@ -764,10 +734,7 @@ class dataCardMaker:
                                                 if "RPV" in proc or "SYY" in proc:
                                                     sys_str += "{} ".format("--")
                                                 else:    
-                                                    if self.fixedCloseSys is not None:
-                                                        sys_str += "{:.3f} ".format(1. + math.sqrt((1.-(float(self.fixedCloseSys)-0.025))**2 + (1.-self.systematics[sys]['binValues'][abin])**2))
-                                                    else:
-                                                        sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][abin])
+                                                    sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][abin])
                                             #else:
                                             #    print("NEVER HERE")
                                             #    if ("RPV" in proc or "SYY" in proc) and ("SIG" in sys):
@@ -838,10 +805,7 @@ class dataCardMaker:
 
                             if sys_proc in corr_procs:# and "TT" is not self.systematics[sys]["proc"]:
 
-                                if "TT" == sys_proc and "fsr" in var and self.CloseSys == "All":
-                                    sys_str += "{} ".format("--")
-
-                                elif type(self.systematics[sys]["binValues"][bin]) == str:
+                                if type(self.systematics[sys]["binValues"][bin]) == str:
                                         if sys_proc + "_" + var in  self.systematics.keys():
                                             sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
                                         else:
@@ -864,14 +828,15 @@ class dataCardMaker:
                 for proc in self.observed.keys():
                     if "INJECT" in proc or "TT_MC" in proc:
                         continue
-                    elif proc is not "QCD":
+                    #elif proc is not "QCD":
+                    else:
                         sys_str += "{} ".format("--")
                         continue
-                    else:
-                        if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                            sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][int(bin/6)])
-                        else:
-                            sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][0])
+                    #else:
+                    #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                    #        sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][int(bin/6)])
+                    #    else:
+                    #        sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][0])
 
             if not self.special["NoSys"]:
                 file.write(sys_str)
@@ -916,12 +881,12 @@ class dataCardMaker:
                         if not mask[ibin+abin]:
                             continue
                         process_str = "{} ".format("\nCH" + self.channel + "_mcStat"+self.observed[process1]["binNames"][ibin+abin]+process1+"_"+self.year)
-                        if "QCD" in process1:# and "2l" not in self.channel:
-                            process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin]))
+                        #if "QCD" in process1:# and "2l" not in self.channel:
+                        #    process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin]))
                         #elif self.observed[process1]["type"] == "sig" and self.special["NoSigBCD"] and not "A" in self.observed[process1]["binNames"][ibin+abin]: 
                         #    process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin]))
-                        else:
-                            process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin] / self.observed[process1]["binWeights"][0]))
+                        #else:
+                        process_str += "{0:<7}".format("gmN {:.0f} ".format(self.observed[process1]["binValues"][ibin+abin] / self.observed[process1]["binWeights"][0]))
                         
                         for ibin2 in range(0, len(self.observedPerBin), self.njets):
                             for abin2 in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
@@ -930,18 +895,19 @@ class dataCardMaker:
                                     if not mask[abin2+ibin2] or not self.observed[process2]["fit"]:
                                         continue
                                     if process2 == process1 and abin2 == abin and ibin2 == ibin:
-                                        if "QCD" in process1:# and "2l" not in self.channel:
-                                            if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                                                tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[process1]["binNames"][abin+ibin])
-                                            else:
-                                                tf_idx = 0
-                                            process_str += "{:.8f} ".format(self.systematics["QCD_TF"]["binValues"][tf_idx])
-                                        elif self.observed[process1]["type"] == "sig" and self.special["NoSigBCD"] and not "A" in self.observed[process1]["binNames"][ibin+abin]: 
+                                        #if "QCD" in process1:# and "2l" not in self.channel:
+                                        #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                                        #        tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[process1]["binNames"][abin+ibin])
+                                        #    else:
+                                        #        tf_idx = 0
+                                        #    process_str += "{:.8f} ".format(self.systematics["QCD_TF"]["binValues"][tf_idx])
+                                        if self.observed[process1]["type"] == "sig" and self.special["NoSigBCD"] and not "A" in self.observed[process1]["binNames"][ibin+abin]: 
                                             process_str += "{:.8f} ".format(0.1 * self.observed[process1]["binWeights"][ibin+abin] / self.observed[process1]["binValues"][ibin+abin])
                                         else:
                                             process_str += "{:.8f} ".format(self.observed[process1]["binWeights"][0])
                                     else:
                                         process_str += "{} ".format("--")
+                        if "QCD" in process_str: continue
                         file.write(process_str)
                 
                     
@@ -962,14 +928,14 @@ class dataCardMaker:
                         if not self.observed[proc]["fit"]:
                             continue
                         if proc != bkgd and self.observed[proc]["type"] != "sig" and "pseudoData" not in self.dataType:
-                            if "QCD" in proc:# and "2l" not in self.channel:
-                                if len(self.systematics["QCD_TF"]["binNames"]) > 1:
-                                    tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][abin+ibin])
-                                else:
-                                    tf_idx = 0
-                                rate -= self.observed[proc]["binValues"][abin+ibin] * self.systematics["QCD_TF"]["binValues"][tf_idx]
-                            else:
-                                rate -= self.observed[proc]["binValues"][abin+ibin]
+                            #if "QCD" in proc:# and "2l" not in self.channel:
+                            #    if len(self.systematics["QCD_TF"]["binNames"]) > 1:
+                            #        tf_idx = self.systematics["QCD_TF"]["binNames"].index(self.observed[proc]["binNames"][abin+ibin])
+                            #    else:
+                            #        tf_idx = 0
+                            #    rate -= self.observed[proc]["binValues"][abin+ibin] * self.systematics["QCD_TF"]["binValues"][tf_idx]
+                            #else:
+                            rate -= self.observed[proc]["binValues"][abin+ibin]
 
                     # ----------------------------
                     # Write tt MC correction ratio
@@ -1024,6 +990,24 @@ class dataCardMaker:
             #        #file.write("{0}{1}_{5:<12} rateParam Y{6}_{1}_{5} {2} {3:<12} {4}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],"QCD",round(tf,4),"[{0},{1}]".format(round(tf-tfUnc, 4), round(tf+tfUnc,4)),self.channel,self.year[-2:])) 
             #        file.write("{0}{1}_{4:<12} param {2:<12} {3}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],round(tf,4),round(tfUnc, 4),self.channel,self.year[-2:])) 
 
+            temp_closure = "np_RawClosure lnN "
+            file.write("\n")
+
+            for ibin in range(0, len(self.observedPerBin), self.njets):
+                for abin in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
+                    if not mask[abin+ibin]:
+                        continue
+                    for proc in self.observed.keys():
+                        if proc not in ["TT", "QCD", "Other", "TTX", "RPV", "SYY"]: continue
+                        if "INJECT" in proc: continue
+                        if proc == "TT" and ibin == 0:
+                            temp_closure += "{} ".format(self.systematics["ClosureCorrection"]["binValues"][abin])
+                        else:
+                            temp_closure += "-- "
+                    temp_closure += "-- "
+
+            temp_closure += "\n"
+            file.write(temp_closure)
     
 
     # ----------------------------------------------------------------
@@ -1035,8 +1019,6 @@ class dataCardMaker:
         for k in range(4):
             for i in range(self.njetStart, self.njetEnd+1):
                 if i < self.njetStartMask or i > self.njetEndMask:
-                    mask.append(0)
-                elif "NoRegA" in self.special.keys() and self.special["NoRegA"] and k == 0:
                     mask.append(0)
                 else:
                     mask.append(1)

@@ -61,7 +61,6 @@ class LimitPlots():
             self.pad1.SetLeftMargin(self.LeftMargin)
             self.pad1.SetRightMargin(self.RightMargin)
             self.pad1.Draw()
-
             self.pad2 = ROOT.TPad("pad2", "", 0.0, 0.0, 1.0, 0.3)
             self.pad2.SetTopMargin(0)
             self.pad2.SetBottomMargin(self.BottomMargin / self.lowerSplit)
@@ -610,9 +609,9 @@ class LimitPlots():
         legend = None
         if self.noRatio:
             if combo:
-                legend = ROOT.TLegend(0.325, 0.60, 0.95, 0.85)
+                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
             else:
-                legend = ROOT.TLegend(0.325, 0.60, 0.95, 0.85)
+                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
             legend.SetNColumns(2)
             legend.SetFillColor(0)
             legend.SetFillStyle(0)
@@ -665,16 +664,17 @@ class LimitPlots():
                 f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
                 old = f.Get("Figure 6b").Get("Graph1D_y3")
-
-                legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                old.Draw("lp")
+                if not self.noRatio:
+                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
+                    old.Draw("lp")
             elif "RPV" in self.model:
                 f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
 
                 old = f.Get("Figure 6a").Get("Graph1D_y3")
 
-                legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                old.Draw("lp")
+                if not self.noRatio:
+                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
+                    old.Draw("lp")
             legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
             #legend.AddEntry(grObs,    "Observed limit", "lp")
 

@@ -134,8 +134,8 @@ class Plotter():
         Xmax = xpoints[-1]
         Ymin = 5.0e-10 # 5.0e-37 
 
-        if runType != "pseudoDataS":
-            Ymin = 5.0e-37 # 5.0e-10 
+        #if runType != "pseudoDataS":
+        #Ymin = 5.0e-37 # 5.0e-10 
         Ymax = 1
     
         numSigma = 4
@@ -146,10 +146,11 @@ class Plotter():
         c1.SetFillColor(0)
         c1.cd(1)
         ROOT.gPad.SetPad("p1", "p1", 0, 2.5 / 9.0, 1, 1, ROOT.kWhite, 0, 0)
-        ROOT.gPad.SetBottomMargin(0.01)
+        #ROOT.gPad.SetPad("p1", "p1", 0, 2.0 / 9.0, 1, 1, ROOT.kWhite, 0, 0)
+        #ROOT.gPad.SetBottomMargin(0.01)
         ROOT.gPad.SetLeftMargin(0.11)
         ROOT.gPad.SetRightMargin(0.04)
-        ROOT.gPad.SetTopMargin(0.06 * (8.0 / 6.5))
+        #ROOT.gPad.SetTopMargin(0.06 * (8.0 / 6.5))
         ROOT.gPad.SetLogy()
         ROOT.gPad.SetTicks(1,1)
     
@@ -169,7 +170,8 @@ class Plotter():
         h.GetYaxis().SetNdivisions(4,2,0)
         h.Draw()
 
-        legend = ROOT.TLegend(0.30, 0.03, 0.93, 0.29,"")
+        #legend = ROOT.TLegend(0.30, 0.03, 0.93, 0.29,"")
+        legend = ROOT.TLegend(0.30, 0.13, 0.93, 0.29,"")
         legend.SetNColumns(2)
         legend.SetTextSize(0.05)
         legend.SetBorderSize(0)
@@ -261,7 +263,8 @@ class Plotter():
         c1, aux = self.drawSignificanceLines(c1, Xmin, Xmax, numSigma)
 
         c1.cd(2)
-        ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 2.5 / 9.0, ROOT.kWhite, 0, 0)
+        #ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 2.5 / 9.0, ROOT.kWhite, 0, 0)
+        ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 0.1 / 9.0, ROOT.kWhite, 0, 0)
         ROOT.gPad.SetLeftMargin(0.11)
         ROOT.gPad.SetRightMargin(0.04)
         ROOT.gPad.SetTopMargin(0.01)
@@ -284,7 +287,7 @@ class Plotter():
         maxR = 1.0 
         hr.GetYaxis().SetRangeUser(-0.1, maxR*1.3)
         hr.GetYaxis().SetNdivisions(4, 2, 0)
-        hr.Draw()
+        #hr.Draw()
 
         channel = "1l"
         diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
@@ -302,16 +305,16 @@ class Plotter():
         r.SetLineColor(ROOT.kBlack)
         r.SetLineStyle(ROOT.kDashed)
         r.SetLineWidth(3)
-        r.Draw("PL same")
+        #r.Draw("PL same")
         c1.Update()
         
         line = ROOT.TF1("line", "1", Xmin, Xmax)
         line.SetLineColor(ROOT.kRed)
-        line.Draw("same")
+        #line.Draw("same")
         
         line2 = ROOT.TF1("line", "1", Xmin, Xmax)
         line2.SetLineColor(ROOT.kBlack)
-        line2.Draw("same")
+        #line2.Draw("same")
    
         if approved:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
@@ -377,6 +380,7 @@ def main():
     parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "2l", "combo"], help = 'Which channels to plot'          )
     parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,            help = 'End points of mass range to plot')
     parser.add_argument('--graft',     dest='graft',     type=int,            default = 0,                           help = 'All masses below (inclusive) the graft value will use the first basedir, anything above will use second')
+    parser.add_argument('--p2',     dest='p2',                                default = False, action='store_true',  help = 'Make plots with r=0.2 (must run specific fits)')
 
     args    = parser.parse_args()
     pdfName = "_"+args.pdfName if args.pdfName != '' else args.pdfName
@@ -416,6 +420,8 @@ def main():
         asimovStr = ""
         if args.asimov:
             asimovStr = "_Asimov"
+        if args.p2:
+            asimovStr += "_0p2"
 
         for model in models:
      

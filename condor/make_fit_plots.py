@@ -2,6 +2,7 @@ import ROOT
 import copy
 import time
 import os
+import glob
 from math import sqrt
 from ROOT import kRed, kBlue, kBlack, kCyan, kGreen
 from optparse import OptionParser
@@ -95,7 +96,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
     regs =["A", "B", "C", "D"] 
     if channel == "combo":
         regs =["A0", "B0", "C0", "D0", "A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"] 
-        njets = [8, 13]
+        njets = [8, 12]
 
     for reg in regs:
         prefit_sb[reg]   = []
@@ -352,11 +353,11 @@ def draw_ExtraInfo(canvas, iPad, packedInfo):
 
     channelStr = ""
     if "0l" in packedInfo:
-        channelStr = "Fully-Hadronic"
+        channelStr = "0L Channel"
     elif "1l" in packedInfo:
-        channelStr = "Semi-Leptonic"
+        channelStr = "1L Channel"
     elif "2l" in packedInfo:
-        channelStr = "Fully-Leptonic"
+        channelStr = "2L Channel"
 
     modelStr = ""
     if "SYY" in packedInfo:
@@ -612,20 +613,22 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
     #save_to_root(hlist_post_sig, outfile)
  
     for i in range(len(hlist_pre_b)):
-        hlist_post_b[i].SetFillColorAlpha(ROOT.kGray,0.5)
+        hlist_post_b[i].SetFillColorAlpha(ROOT.kGray,0.6)
         hlist_post_b[i].SetMarkerSize(0)
+        hlist_post_b[i].SetMarkerColor(ROOT.kGray)
         #hlist_post_b[i].SetFillColorAlpha(ROOT.kGray, 0.70)
         #hlist_post_b[i].SetFillStyle(3744)
-        hlist_post_b[i].SetLineColor(ROOT.kGray+5)
+        hlist_post_b[i].SetLineColor(ROOT.kBlue - 6)
 
         #hlist_post_sb_b[i].SetLineColor(bkgobscol)
         #hlist_post_sb_b[i].SetMarkerColor(bkgobscol)
 
         #hlist_post_sb[i].SetFillColorAlpha(fitcol, 0.30)
-        hlist_post_sb[i].SetFillColorAlpha(ROOT.kGray, 0.50)
+        hlist_post_sb[i].SetFillColorAlpha(ROOT.kGray, 0.60)
         #hlist_post_sb[i].SetFillStyle(3744)
-        hlist_post_b[i].SetMarkerSize(0)
-        hlist_post_sb[i].SetLineColor(ROOT.kMagenta)
+        hlist_post_sb[i].SetMarkerSize(0)
+        hlist_post_sb[i].SetMarkerColor(ROOT.kGray)
+        hlist_post_sb[i].SetLineColor(ROOT.kMagenta + 2)
 
         hlist_pre_sig[i].SetLineColor(sigpredcol)
         hlist_pre_sig[i].SetMarkerColor(sigpredcol)
@@ -718,21 +721,31 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
             # Draw again to be above stack plot
             hlist_post_b[i].Draw("E2 same")
+            hlist_post_b[i].SetFillStyle(0)
+            hlist_post_sb[i].SetMarkerColor(ROOT.kBlue - 6)
+            hlist_post_b[i].Draw("P same")
+            hlist_post_b[i].SetFillStyle(1001)
 
             #survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
         elif postfit_sb:
             hlist_post_b[i].Draw()
             if plotFinalPred:
                 hlist_post_sep_sb[i].Draw("hist")
-            hlist_post_b[i].Draw("E2 SAME")
+            #hlist_post_b[i].Draw("E2 SAME")
             hlist_post_sb[i].Draw("E2 SAME")
+            hlist_post_sb[i].SetFillStyle(0)
+            hlist_post_sb[i].SetMarkerColor(ROOT.kMagenta + 2)
+            hlist_post_sb[i].Draw("P SAME")
+            hlist_post_sb[i].SetFillStyle(1001)
             #if not plotb:
             #    survival.append(drawWithNoYerr(p1_list[i], hlist_post_sb[i], fitcol))
             #pass
         #if plotsigref:
         #    hlist_pre_sig[i].Draw("L SAME")
         if plotsig:
-            hlist_post_sig[i].Draw("E1 SAME")
+            #hlist_post_sig[i].Draw("E1 SAME")
+            hlist_pre_sig[i].Draw("L SAME")
+            
         #if plotb and plotsb:
         #    hlist_post_sb_b[i].Draw("L SAME")
         #    survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
@@ -757,17 +770,16 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 l.AddEntry(h, "{}".format(h.GetTitle()), "f")
 
             if postfit_sb:
-                l.AddEntry(hlist_post_sb[i], "Bkg+Sig Fit", "l")
-                l.AddEntry(hlist_post_b[i], "Bkg Fit.", "l")
+                l.AddEntry(hlist_post_sb[i], "Bkg+Sig Fit", "lf")
+                #l.AddEntry(hlist_post_b[i], "Bkg Fit.", "l")
             if postfit_bonly and not postfit_sb:
-                l.AddEntry(hlist_post_b[i], "Bkg Fit.", "l")
-                pass
+                l.AddEntry(hlist_post_b[i], "Bkg Fit.", "lf")
             if plotdata:
                 l.AddEntry(hlist_data[i], "PseudoData", "pe")
             if postfit_bonly and postfit_sb:
                 l.AddEntry(hlist_post_sb_b[i], "Bkg Obs.", "f")
             if plotsig:
-                l.AddEntry(hlist_post_sig[i], "Signal Obs.", "l")
+                l.AddEntry(hlist_post_sig[i], "Signal", "l")
    
             l.Draw("SAME")
 
@@ -776,6 +788,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #hlist_ratio[i].SetLineWidth(2)
         hlist_ratio[i].SetMarkerStyle(8)
         hlist_ratio[i].SetMarkerSize(1)
+        hlist_ratio[i].SetMarkerColor(ROOT.kBlack)
 
         hlist_ratio[i].GetYaxis().SetRangeUser(0.4, 1.6)
         hlist_ratio[i].GetXaxis().SetLabelSize(0.2)
@@ -801,8 +814,8 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             hlist_ratio[i].GetXaxis().SetBinLabel(bin, label)
             pull_unc_list[i].GetXaxis().SetBinLabel(bin, label)
 
-        hlist_ratio[i].Draw("X0")
-        pull_unc_list[i].Draw("E2 SAME")
+        pull_unc_list[i].Draw("E2")
+        hlist_ratio[i].Draw("X0 SAME")
         #hlist_ratio[i].Draw("AXIG SAME")
         #hlist_ratio[i].Draw("AXIS SAME")
 
@@ -817,7 +830,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 def getObs(card, njets, combo=False):
 
     if combo:
-        njets = [8,13]
+        njets = [8,12]
 
     with open(card, "r") as f:
 
@@ -861,6 +874,9 @@ def main():
 
     #dirTag = options.path.split("_")[-1]
     dirTag = "cards"
+    card    = "{}/output-files/cards*".format(options.path)
+
+    dirTag = glob.glob(card)[0].split("/")[-1]
 
     if not os.path.exists("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path)):
         os.makedirs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path))
@@ -916,7 +932,11 @@ def main():
 
                         print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, c, d))
                         card    = "{}/output-files/{}/{}_{}_{}_{}_{}{}.txt".format(options.path, dirTag, options.year, s, m, d, c, close)
-                        obs     = getObs(card, njets, c == "combo")
+                        try:
+                            obs     = getObs(card, njets, c == "combo")
+                        except:
+                            print("Skipping mass {} for {} fit plots".format(m, d))
+                            continue
                         path    = "{}/output-files/{}_{}_{}".format(options.path, s, m, options.year)
                         prefit  = "ws_{}{}{}{}_{}{}.root".format(options.year, s, m, d, c, close)
                         postfit = "higgsCombine{}{}{}{}_{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, c, m, s, close[1:])

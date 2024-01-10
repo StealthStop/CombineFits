@@ -125,16 +125,24 @@ class FitResults():
 
             # Now processing useful information extracted from the data card lines
             # For the observation line, only one entry for each Njets-ABCD analysis bin
+            usefulInfo["Nobs_A"] = 0.0 
+            usefulInfo["Nobs_B"] = 0.0 
+            usefulInfo["Nobs_C"] = 0.0 
+            usefulInfo["Nobs_D"] = 0.0 
             for iBin in range(0, len(savedLines["obsbin"])):
     
                 obs     = savedLines["obs"][iBin]
                 binName = savedLines["obsbin"][iBin]
 
                 # Bin name example: "YUL_B9_1l"
-                region = binName.split("_")[1][0]
+                if "Sig" in binName:
+                    region = binName.split("_Sig")[1][0]
+                else: 
+                    region = binName.split("_")[1][0]
                 njets  = binName.split("_")[1][1:]
 
                 usefulInfo["Nobs_" + region + "_Njets" + njets] = float(obs)
+                usefulInfo["Nobs_" + region] += float(obs)
 
             nps = [np for np in savedLines.keys() if "np_" in np]
             for iBin in range(0, len(savedLines["bin"])):
@@ -239,7 +247,26 @@ class FitResults():
         if limit_obs  != None:
             limit_obs  *= self.stopPair_xsec[mass]
 
-        self.save(sign = sigma, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1)/100., disc2 = float(disc2)/100., dataCardInfo = usefulInfo)
+        tot_sig = 0.0
+        tot_bkg = 0.0
+        for key in usefulInfo.keys():
+            if "rate_A" not in key:
+                continue
+            
+            if "RPV" in key or "SYY" in key:
+                tot_sig += float(usefulInfo[key])
+
+            else:
+                tot_bkg += float(usefulInfo[key])
+        if tot_sig == 0.0:
+            tot_sig = 1.0
+
+        if tot_bkg == 0.0:
+            tot_bkg = 1
+
+        sign_unc = sigma * math.sqrt( (math.sqrt(tot_sig)/tot_sig)**2 + (0.5 * tot_bkg**(.25)/math.sqrt(tot_bkg))**2 )
+
+        self.save(sign = sigma, sign_unc = sign_unc, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1)/100., disc2 = float(disc2)/100., dataCardInfo = usefulInfo)
 
     # Pass everything to be saved in numpy array for extraction later
     # A specific order of parameters is retained along with names and types
@@ -509,9 +536,9 @@ class Plotter():
         axBoxPointSize = axPointSize / axBoxes
 
         if doLog:
-            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap, norm = mpl.colors.LogNorm())#, vmin = vmin, vmax = vmax)
+            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap, norm = mpl.colors.LogNorm(), vmin = vmin, vmax = vmax)
         else:
-            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap,                            )#vmin = vmin, vmax = vmax)
+            plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap,                              vmin = vmin, vmax = vmax)
 
         cbar = plt.colorbar(pad = cpad, fraction = cfraction)
         plt.xlim(xMin, xMax)
@@ -652,8 +679,8 @@ class Plotter():
 
         iMass = 0
         for iVar in range(0, len(vares)):
-            if iVar == len(vares)-1:
-                plt.plot(vares[iVar][:,0], vares[iVar][:,1], c = colors[iVar], marker = "o", linestyle = linestyles[iVar], linewidth = linewidths[iVar], label = labels[iVar])
+            #if iVar == len(vares)-1:
+            plt.plot(vares[iVar][:,0], vares[iVar][:,1], c = colors[iVar], marker = "o", linestyle = linestyles[iVar], linewidth = linewidths[iVar], label = labels[iVar])
             iMass += 1
 
         if   "Limit" in variable:
@@ -813,8 +840,8 @@ if __name__ == "__main__":
 
     obsSelection = []
     for region in regions:
-        if region == "A":
-            continue
+        #if region == "A":
+        #    continue
         for njet in njets:
             obsSelection.append("(Nobs_%s_Njets%s>=3.0)"%(region,njet))
     obsSelection = "&".join(obsSelection)
@@ -845,9 +872,9 @@ if __name__ == "__main__":
                 for param in params:
 
                     # By construction, inputs all have "_" in their names
-                    if any(x in param for x in var_list):
-                        pass
-                    elif "_" not in param or "Corr" not in param:
+                    #if any(x in param for x in var_list):
+                    #    pass
+                    if "_" not in param or "Corr" not in param:
                         continue
 
                     disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, mass = masses[0], model = model, year = year)
@@ -885,10 +912,9 @@ if __name__ == "__main__":
                     maxDisc1 = disc1s[np.argmax(signs)]
                     maxDisc2 = disc2s[np.argmax(signs)]
                 except:
-                    pass
+                    maxDisc1 = 0.5
+                    maxDisc2 = 0.5
                 bestSigns.append([mass, maxDisc1, maxDisc2, maxSign])
-                maxDisc1 = 0.5
-                maxDisc2 = 0.5
 
                 massesByBestSign, signsByBestSign  = theScraper.getByParam(paramName = "mass", var = "sign_nonasimov",     selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
                 signsByBestMassSign.append(np.vstack((massesByBestSign, signsByBestSign)).T)
@@ -896,8 +922,8 @@ if __name__ == "__main__":
                 massesByBestSign, limitsByBestSign = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
                 limitsByBestMassSign.append(np.vstack((massesByBestSign, limitsByBestSign)).T)
 
-                labelsByBestMassSign.append(r"Sensitivity Optimized")
-                #labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
+                #labelsByBestMassSign.append(r"Sensitivity Optimized")
+                labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
 
                 thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 18, mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
 
@@ -924,8 +950,8 @@ if __name__ == "__main__":
                 massesByBestLimit, limitsByBestLimit = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 limitsByBestMassLimit.append(np.vstack((massesByBestLimit, limitsByBestLimit)).T)
 
-                labelsByBestMassLimit.append(r"Limit Optimized")
-                #labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
+                #labelsByBestMassLimit.append(r"Limit Optimized")
+                labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
 
                 colScales.append(stopPair_xsec[mass])
 
@@ -934,6 +960,9 @@ if __name__ == "__main__":
                 # Plot "boolean" if limit fit had problems or not
                 disc1s, disc2s, healthy = theScraper.getByParam(paramName = "disc", var = "healthyLimit", selection = "(disc1>0.1)&(disc2>0.1)", mass = mass, model = model, year = year)
                 thePlotter.plot_Var_vsDisc1Disc2(healthy, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(healthy), mass = mass, labelVals = True, labelBest = False, variable = "HealthyLim", model = model, year = year)
+
+                disc1s, disc2s, sign_unc = theScraper.getByParam(paramName = "disc", var = "sign_unc", selection = "(disc1>0.1)&(disc2>0.1)&(healthyLimit!=3)&%s"%(obsSelection), mass = mass, model = model, year = year)
+                thePlotter.plot_Var_vsDisc1Disc2(sign_unc, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = max(sign_unc), mass = mass, labelVals = True, labelBest = False, variable = "SignificanceUnc", model = model, year = year)
 
             bestSigns  = np.array(bestSigns)
             bestLimits = np.array(bestLimits)

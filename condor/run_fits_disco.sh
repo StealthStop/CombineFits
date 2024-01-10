@@ -84,7 +84,12 @@ then
 fi
 
 # Make a workspace ROOT file for Higgs Combine to process
-stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
+if [ $asimov == 1 ]
+then
+    stubName=${year}_${signalType}_${mass}_pseudoData_${channel}${binEdgeName}
+else
+    stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
+fi
 tagName=${year}${signalType}${mass}${dataType}_${channel}${binEdgeName}
 ws=ws_${tagName}.root
 
@@ -152,15 +157,15 @@ then
     # Generate impacts based on Asimov data set
     if [ $asimov == 1 ]
     then
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 > log_${tagName}_step2_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}_Asimov.json > log_${tagName}_step3_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}_Asimov.json --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
         plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
     else
         # Generate impacts based on observation
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 > log_${tagName}_step2.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}.json > log_${tagName}_step3.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step1.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step2.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}.json --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step3.txt
         plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
     fi
 

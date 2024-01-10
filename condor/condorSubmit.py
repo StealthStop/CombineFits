@@ -324,9 +324,10 @@ def main():
     else:
         filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/produceDataCard.py"] 
         filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_0l_scan.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_1l_scan.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_2l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_0l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_1l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_2l_scan.py"]
         filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/inputsAll"]
 
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)
