@@ -22,7 +22,7 @@
 
 command=$1
 DATE=("1.27.2022")
-CARDS=("cardsInjectNominal_1_16_24_MaxSign_Min3_Data" "cardsInjectNominal_1_16_24_MassExclusion_Min3_Data")
+CARDS=("cardsInjectNominal_MaxSign_Data" "cardsInjectNominal_MassExclusion_Data")
 #CARDS=("cardsInjectRPV400" "cardsInjectNominal")
 YEARS=("Run2UL")
 MODELS=("StealthSYY")
