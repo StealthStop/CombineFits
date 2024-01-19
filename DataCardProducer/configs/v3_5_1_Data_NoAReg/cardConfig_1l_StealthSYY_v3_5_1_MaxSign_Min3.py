@@ -154,7 +154,7 @@ systematics = {
     # QCD TF (transfer factor)
     "QCD_TF" : {
         "path"  : sys_path,
-        "hist"  : "$YEAR_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD",
+        "hist"  : "$YEAR_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD_perNjets",
         "distr" : "lnN",
         "proc"  : "QCD",
         "type"  : "TF",
@@ -235,9 +235,9 @@ for var in var_list_QCD:
 
     systematics["{}_{}".format("QCD", var)] = {
         "path"      : sys_path,
-        "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, up),
-        "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, down),
-        "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD".format(var),
+        "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD_perNjets".format(var, up),
+        "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD_perNjets".format(var, down),
+        "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD_perNjets".format(var),
         "distr"     : "lnN",
         "proc"      : "QCD",
         "type"      : "sys",

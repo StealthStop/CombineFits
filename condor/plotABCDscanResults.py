@@ -149,7 +149,10 @@ class FitResults():
 
                 process = savedLines["process"][iBin].replace("_2t6j_", "")
                 binName = savedLines["bin"][iBin]
-                region  = binName.split("_")[1][0]
+                if "SigA" in binName:
+                    region  = "A"
+                else:
+                    region  = binName.split("_")[1][0]
                 njets   = binName.split("_")[1][1:]
                 rate    = savedLines["rate"][iBin]
 
@@ -161,9 +164,11 @@ class FitResults():
 
                     # Blindly looping over all Njet ABCD process combinations
                     # So move on in loop if certain combination is meaningless
-                    if   "Corr"     in np and (region+njets not in np or process != "TT"):
-                        continue
-                    elif "Corr" not in np and process == "QCD": #(process == "TT"  or process == "QCD"):
+                    #if   "Corr"     in np and (region+njets not in np or process != "TT"):
+                    #    continue
+                    #elif "Corr" not in np and process == "QCD": #(process == "TT"  or process == "QCD"):
+                    #    continue
+                    if any(p in np for p in ["TTX", "QCD", "Other"]):
                         continue
 
                     # Naming things in a certain way for later on
@@ -177,14 +182,24 @@ class FitResults():
                         regionStub  = ""
 
                     npNameStub = np.split("_")[1].replace(region + njets, "")
-                    npName     = processStub + npNameStub + regionStub + "_Njets" + njets
+
+                    if "Corr" in np:
+                        npName     = npNameStub
+                    else:
+                        npName     = processStub + npNameStub + regionStub + "_Njets" + njets
 
                     # For all systematics, convert to a percent from 1 e.g. 1.1 or 0.9 ==> 10%
                     # And for any up/down systematic that is reported with "/", take the largest
                     # E.g. 1.02/0.8 ==> 20%, rather than 2%
-                    #npVals = [100.0 * abs(1.0-eval(val)) for val in savedLines[np][iBin].split("/")]
-                    #usefulInfo[npName] = max(npVals)
-                    usefulInfo[npName] = 10.0
+                    npVals = [100.0 * abs(1.0-eval(val)) for val in savedLines[np][iBin].split("/")]
+                    if "Corr" in np:
+                        if npVals[0] != 100000.0:
+                            usefulInfo[npName] = max(npVals)
+                        else:
+                            pass
+                    else:
+                        usefulInfo[npName] = max(npVals)
+                    #usefulInfo[npName] = 10.0
 
         # Go for the significance first
         tagName  = "%s%s%dpseudoDataS_%s_%s"%(year, model, mass, self.channel, disc)
@@ -258,15 +273,18 @@ class FitResults():
 
             else:
                 tot_bkg += float(usefulInfo[key])
+
         if tot_sig == 0.0:
             tot_sig = 1.0
 
         if tot_bkg == 0.0:
             tot_bkg = 1
 
+
+        srb = tot_sig / math.sqrt(tot_bkg)
         sign_unc = sigma * math.sqrt( (math.sqrt(tot_sig)/tot_sig)**2 + (0.5 * tot_bkg**(.25)/math.sqrt(tot_bkg))**2 )
 
-        self.save(sign = sigma, sign_unc = sign_unc, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1)/100., disc2 = float(disc2)/100., dataCardInfo = usefulInfo)
+        self.save(sign = sigma, sign_unc = sign_unc, sign_nonasimov = sigma_nonasimov, signDiff = sigmaDiff, healthyLimit = healthyLimit, expLimit = limit_mean, obsLimit = limit_obs, year = year, model = model, mass = int(mass), disc1 = float(disc1)/100., disc2 = float(disc2)/100., dataCardInfo = usefulInfo, srb=srb, tot_bkg = tot_bkg, tot_sig = tot_sig)
 
     # Pass everything to be saved in numpy array for extraction later
     # A specific order of parameters is retained along with names and types
@@ -419,7 +437,7 @@ class Plotter():
         # Variable label drawn separately if specified
         textLabel = []; varLabel = ""
         if "var" in kwargs and kwargs["var"] != None:
-            if "_" in kwargs["var"] and "$" not in kwargs["var"]:
+            if "_" in kwargs["var"] and "$" not in kwargs["var"] and "tot" not in kwargs["var"]:
                 varLabel = kwargs["var"].rpartition("_")[0]
             else:
                 varLabel = kwargs["var"]
@@ -477,7 +495,7 @@ class Plotter():
         labelSuffix   = ""
         labelPrefix   = ""
         globalTextCol = "darkturquoise"
-        plottingLimit = False; plottingRate = False; plottingSign = False; plottingNP = False; njets = None
+        plottingLimit = False; plottingRate = False; plottingSign = False; plottingNP = False; njets = None; plottingTotal = False
         if "Limit" in variable:
             plottingLimit = True
 
@@ -492,6 +510,9 @@ class Plotter():
 
         elif "Sign" in variable:
             plottingSign = True
+
+        elif "tot" in variable:
+            plottingTotal = True
 
         elif "rate" in variable or "_" in variable:
             njets = variable.split("_Njets")[-1]
@@ -510,6 +531,7 @@ class Plotter():
                     colMap = "Oranges"
                 else:
                     colMap = "PuRd"
+                
 
         # Based on margins and space for colorbar and predetermined figure height
         # Optimize figure width so that plot _frame_ is square
@@ -534,6 +556,11 @@ class Plotter():
         axRange        = xMax - xMin
         axBoxes        = axRange / binWidth
         axBoxPointSize = axPointSize / axBoxes
+
+        #if plottingTotal:
+        #    var *= 100
+        #    vmin *= 100
+        #    vmax *= 100
 
         if doLog:
             plt.scatter(disc1s, disc2s, s = axBoxPointSize**2.0, c = var, marker = "s", edgecolors = "none", cmap = colMap, norm = mpl.colors.LogNorm(), vmin = vmin, vmax = vmax)
@@ -574,8 +601,9 @@ class Plotter():
                 for mvp in massVarPair:
                     massVarText += "%s:%.1f"%(str(int(mvp[0])), float(mvp[1]))
                     massVarText += "\n"
-                ax.text(edge[0]+axRange/1e3, edge[1]-axRange/2e3, "%s"%(massVarText[:-1]), color = "midnightblue", fontsize = 7, fontweight = "normal", va = "center", ha = "center")
-                ax.text(edge[0],             edge[1],             "%s"%(massVarText[:-1]), color = globalTextCol,  fontsize = 7, fontweight = "normal", va = "center", ha = "center")
+                if not plottingTotal:
+                    ax.text(edge[0]+axRange/1e3, edge[1]-axRange/2e3, "%s"%(massVarText[:-1]), color = "midnightblue", fontsize = 7, fontweight = "normal", va = "center", ha = "center")
+                    ax.text(edge[0],             edge[1],             "%s"%(massVarText[:-1]), color = globalTextCol,  fontsize = 7, fontweight = "normal", va = "center", ha = "center")
 
             fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s_%s.pdf"%(kwargs["year"], variable, kwargs["model"], self.channel), dpi = fig.dpi)
 
@@ -617,10 +645,11 @@ class Plotter():
                         payloadStr = "%.2f"%(var[iVar])
                     else:
                         payloadStr = "%d"%(var[iVar])
-                    ax.text(disc1s[iVar]+axRange/2e3, disc2s[iVar]-axRange/2e3, payloadStr, color = "midnightblue", fontsize = fontSize, fontweight = fontWeight, va = "center", ha = "center")
-                    ax.text(disc1s[iVar],             disc2s[iVar],             payloadStr, color = textCol,        fontsize = fontSize, fontweight = fontWeight, va = "center", ha = "center")
+                    if not plottingTotal:
+                        ax.text(disc1s[iVar]+axRange/2e3, disc2s[iVar]-axRange/2e3, payloadStr, color = "midnightblue", fontsize = fontSize, fontweight = fontWeight, va = "center", ha = "center")
+                        ax.text(disc1s[iVar],             disc2s[iVar],             payloadStr, color = textCol,        fontsize = fontSize, fontweight = fontWeight, va = "center", ha = "center")
 
-            if not plottingRate and not plottingNP:
+            if not plottingRate and not plottingNP and mass is not None:
                 fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s%d_%s.pdf"%(kwargs["year"], variable, kwargs["model"], mass, self.channel), dpi = fig.dpi)
             else:
                 fig.savefig(self.outputDir+"/%s_%s_vs_Disc1Disc2_%s_%s.pdf"%(kwargs["year"], variable, kwargs["model"], self.channel), dpi = fig.dpi)
@@ -870,16 +899,25 @@ if __name__ == "__main__":
             # Plot all fit inputs from data card (takes a bit longer to run...)
             if plotFitInputs:
                 for param in params:
+                    for mass in masses:
 
-                    # By construction, inputs all have "_" in their names
-                    #if any(x in param for x in var_list):
-                    #    pass
-                    if "_" not in param or "Corr" not in param:
-                        continue
+                        # By construction, inputs all have "_" in their names
+                        #if any(x in param for x in var_list):
+                        #    pass
+                        #if "_" not in param or "Corr" not in param:
+                        #    continue
+                        if "model" in param or "year" in param or len(param.split("_")) > 2:
+                            continue
 
-                    disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, mass = masses[0], model = model, year = year)
+                        disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, model = model, year = year, mass=mass)
 
-                    thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 30.0, labelVals = True, variable = param, model = model, year = year)
+                        if "Corr" in param:
+                            paramVals = [x if x <= 99.0 else -1.0 for x in paramVals]
+
+                        if "tot_bkg" in param:
+                            print(paramVals)
+
+                        thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = min(paramVals), vmax = max(paramVals), labelVals = True, variable = param, model = model, year = year, mass = mass)
 
             colScales = []
 
@@ -895,6 +933,10 @@ if __name__ == "__main__":
             signsByBestMassSign  = []; signsByBestMassLimit  = []
             limitsByBestMassSign = []; limitsByBestMassLimit = []
             labelsByBestMassSign = []; labelsByBestMassLimit = []
+            signsByBestMassSignOld = []; 
+            labelsByBestMassSignOld = []; 
+            limitsByBestMassLimitOld = [];
+            labelsByBestMassLimitOld = []; 
             for mass in masses:
 
                 #disc1s, disc2s, signDiffs = theScraper.getByParam(paramName = "disc", var = "signDiff", selection = "(disc1>0.1)&(disc2>0.1)&(signDiff<100000000000.0)", mass = mass, model = model, year = year)
@@ -922,10 +964,17 @@ if __name__ == "__main__":
                 massesByBestSign, limitsByBestSign = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(maxDisc1, maxDisc2), model = model, year = year)
                 limitsByBestMassSign.append(np.vstack((massesByBestSign, limitsByBestSign)).T)
 
+                # Get the old best as well
+                disc1Old = bestSignFullXS[model][channel][0]
+                disc2Old = bestSignFullXS[model][channel][1]
+                massesByBestSignOld, signsByBestSignOld  = theScraper.getByParam(paramName = "mass", var = "sign_nonasimov",     selection = "(disc1==%f)&(disc2==%f)"%(disc1Old, disc2Old), model = model, year = year)
+                signsByBestMassSignOld.append(np.vstack((massesByBestSignOld, signsByBestSignOld)).T)
+
                 #labelsByBestMassSign.append(r"Sensitivity Optimized")
                 labelsByBestMassSign.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, maxDisc1, maxDisc2))
+                labelsByBestMassSignOld.append(r"Sign. Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f) | OLD"%(mass, disc1Old, disc2Old))
 
-                thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = 0.0, vmax = 18, mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
+                thePlotter.plot_Var_vsDisc1Disc2(signs, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = min(signs), vmax = max(signs), mass = mass, labelVals = True, labelBest = True, variable = "Significance", model = model, year = year)
 
                 # Plot limits as function of bin edges
                 disc1s, disc2s, expLims = theScraper.getByParam(paramName = "disc", var = "expLimit", selection = "(disc1>-0.1)&(disc2>-0.1)&(expLimit>0.0)&(healthyLimit!=3)&%s"%(obsSelection), mass = mass, model = model, year = year)
@@ -950,8 +999,16 @@ if __name__ == "__main__":
                 massesByBestLimit, limitsByBestLimit = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 limitsByBestMassLimit.append(np.vstack((massesByBestLimit, limitsByBestLimit)).T)
 
+                # Get the old best as well
+                disc1Old = bestSignFullXS[model][channel][0]
+                disc2Old = bestSignFullXS[model][channel][1]
+                massesByBestLimitOld, limitsByBestLimitOld = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(disc1Old, disc2Old), model = model, year = year)
+                limitsByBestMassLimitOld.append(np.vstack((massesByBestLimitOld, limitsByBestLimitOld)).T)
+                
+
                 #labelsByBestMassLimit.append(r"Limit Optimized")
                 labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
+                labelsByBestMassLimitOld.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f) | OLD"%(mass, disc1Old, disc2Old))
 
                 colScales.append(stopPair_xsec[mass])
 
@@ -975,6 +1032,22 @@ if __name__ == "__main__":
             thePlotter.plot_bestVar_vsMass(limitsByBestMassSign,  colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSign,  vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestSign",  model = model, year = year)
             thePlotter.plot_bestVar_vsMass(signsByBestMassLimit,  colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimit, vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ByBestLimit", model = model, year = year)
             thePlotter.plot_bestVar_vsMass(limitsByBestMassLimit, colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimit, vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestLimit", model = model, year = year)
+
+            thePlotter.plot_bestVar_vsMass(signsByBestMassSignOld,   colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSignOld,  vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ByBestSignOld",  model = model, year = year)
+            thePlotter.plot_bestVar_vsMass(limitsByBestMassLimitOld, colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimitOld, vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestLimitOld", model = model, year = year)
+
+            comparisonLabelsLimits = [labelsByBestMassLimitOld[2], labelsByBestMassLimit[2]]
+            comparisonLabelsSigns = [labelsByBestMassSignOld[0], labelsByBestMassSign[0]]
+
+            comparisonBestLimits = [limitsByBestMassLimitOld[2], limitsByBestMassLimit[2]]
+            comparisonBestSigns = [signsByBestMassSignOld[0], signsByBestMassSign[0]]
+
+            thePlotter.plot_bestVar_vsMass(signsByBestMassSignOld,   colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassSignOld,  vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ByBestSignOld",  model = model, year = year)
+            thePlotter.plot_bestVar_vsMass(limitsByBestMassLimitOld, colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = labelsByBestMassLimitOld, vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ByBestLimitOld", model = model, year = year)
+
+            thePlotter.plot_bestVar_vsMass(comparisonBestSigns,   colors = bestOfTheBestBlues,  linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = comparisonLabelsSigns,  vmin = -3,              vmax = 18,                         variable = "Significance", auxText = "ComparisonOldVsNew",  model = model, year = year)
+            thePlotter.plot_bestVar_vsMass(comparisonBestLimits, colors = bestOfTheBestGreens, linestyles = bestOfTheBestLines, linewidths = bestOfTheBestWidths, labels = comparisonLabelsLimits, vmin = 10**(-limitScale), vmax = 10**limitScale, doLog = True, variable = "Limit",        auxText = "ComparisonOldVsNew", model = model, year = year)
+            
 
             # Plot all bin edge choices for all mass points together for significance and limits
             thePlotter.plot_Var_vsMass(allSigns,   allMasses_sign, colScales = [1.0]*len(allSigns), vmin = -0.25,             vmax = signScaleMax,                 variable = "Significances", model = model, year = year)

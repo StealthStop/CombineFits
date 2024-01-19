@@ -23,6 +23,7 @@ parser.add_option("--plotsig",       action="store_true",           dest="plotsi
 parser.add_option("--plotdata",       action="store_true",           dest="plotdata",   default=False,                help="Plot distributions observed in data"                                               )
 parser.add_option("--plotFinalPred",  action="store_true",           dest="plotFinalPred",   default=True,           help="Plot stacked background distribtuion showing final prediction (bonly fit, no signal inj.)"                                               )
 parser.add_option("--all",            action="store_true",           dest="all",        default=False,                help="Make all pre and post fit distributions (for 0l and 1l, pseudoData/S, RPV and SYY)")
+parser.add_option("--maskRegA",       action="store_true",           dest="maskRegA",   default=False,                help="When plotting data, this flag will mask the A region distribution")
 
 (options, args) = parser.parse_args()
 
@@ -66,7 +67,7 @@ bkgobscol   = ROOT.TColor.GetColor("#5cb4e8")
 # -------------------
 # get fit information
 # -------------------
-def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
+def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
 
     try:
         f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
@@ -99,6 +100,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets):
         njets = [8, 12]
 
     for reg in regs:
+        if maskRegA and reg == "A": continue
         prefit_sb[reg]   = []
         prefit_b[reg]    = []
         prefit_sig[reg]  = []
@@ -283,13 +285,14 @@ def makeHistStack(reg, bin_info, tag, njets, combo=False):
 # -----------
 # make canvas
 # -----------
-def makeCanvasAndPads(combo=False):
+def makeCanvasAndPads(combo=False, maskRegA=False):
     tag = "TEST" 
 
     c1                          = ROOT.TCanvas( "c1_%s"%(tag), "c1_%s"%(tag), 0, 0, 4800, 1920 )
-    
-    p1_A1                       = ROOT.TPad( "p1_D1_%s"%(tag), "p1_D1_%s"%(tag), 0, 0.30, pad1Size, 1.0 )
-    p2_A1                       = ROOT.TPad( "p2_D1_%s"%(tag), "p2_D1_%s"%(tag), 0,    0, pad1Size, 0.30 )
+   
+    if not maskRegA: 
+        p1_A1                       = ROOT.TPad( "p1_D1_%s"%(tag), "p1_D1_%s"%(tag), 0, 0.30, pad1Size, 1.0 )
+        p2_A1                       = ROOT.TPad( "p2_D1_%s"%(tag), "p2_D1_%s"%(tag), 0,    0, pad1Size, 0.30 )
     
     p1_B2                       = ROOT.TPad( "p1_D2_%s"%(tag), "p1_D2_%s"%(tag), pad1Size, 0.30, pad1Size + pad2Size, 1.0 )
     p2_B2                       = ROOT.TPad( "p2_D2_%s"%(tag), "p2_D2_%s"%(tag), pad1Size,    0, pad1Size + pad2Size, 0.30 )
@@ -300,7 +303,10 @@ def makeCanvasAndPads(combo=False):
     p1_D4                       = ROOT.TPad( "p1_D4_%s"%(tag), "p1_D4_%s"%(tag), pad1Size + 2*pad2Size, 0.30, 1.0, 1.0 )
     p2_D4                       = ROOT.TPad( "p2_D4_%s"%(tag), "p2_D4_%s"%(tag), pad1Size + 2*pad2Size,    0, 1.0, 0.30 )
 
-    return c1, [p1_A1, p1_B2, p1_C3, p1_D4], [p2_A1, p2_B2, p2_C3, p2_D4]
+    if not maskRegA: 
+        return c1, [p1_A1, p1_B2, p1_C3, p1_D4], [p2_A1, p2_B2, p2_C3, p2_D4]
+    else:
+        return c1, [p1_B2, p1_C3, p1_D4], [p2_B2, p2_C3, p2_D4]
 
 # ---------------------
 # format canvas and pad
@@ -509,7 +515,7 @@ def drawWithNoYerr(c, h, color):
 # --------------
 # make fit plots
 # --------------
-def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, fitName, outfile, obs, njets, path, plotFinalPred=True):
+def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, fitName, outfile, obs, njets, path, plotFinalPred=True, maskRegA=False):
 
     nLegItems = 0
     if postfit_bonly:
@@ -523,7 +529,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
     if pre_path.find("perfectClose") != -1:
         close += "_perfectClose"
-    pre_b, post_b, post_sb, post_sb_b, post_sig, pre_sig, data, prefit_sep_b, postfit_sep_sb = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets)
+    pre_b, post_b, post_sb, post_sb_b, post_sig, pre_sig, data, prefit_sep_b, postfit_sep_sb = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA)
 
     hlist_data = []
     hlist_pre_b = []
@@ -671,7 +677,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_ratio.append(h_temp)
         pull_unc_list.append(h_temp2)
 
-    c1, p1_list, p2_list = makeCanvasAndPads(channel == "combo")
+    c1, p1_list, p2_list = makeCanvasAndPads(channel == "combo", maskRegA = maskRegA)
 
     c1, p1_list, p2_list = formatCanvasAndPads(c1, p1_list, p2_list)
     
@@ -819,53 +825,65 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #hlist_ratio[i].Draw("AXIG SAME")
         #hlist_ratio[i].Draw("AXIS SAME")
 
-        draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-        draw_ExtraInfo(p1_list[i], i, channel+signal)
+        if maskRegA: 
+            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
+            draw_ExtraInfo(p1_list[i], i+1, channel+signal)
+        else:
+            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
+            draw_ExtraInfo(p1_list[i], i, channel+signal)
  
     for ext in ["pdf"]:
         c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + "_" + fitName + ".%s"%(ext))
 
     
 
-def getObs(card, njets, combo=False):
+def getObs(card, njets, combo=False, maskRegA=False):
 
     if combo:
         njets = [8,12]
 
-    with open(card, "r") as f:
+    try:
+        f = open(card, "r")
 
-        lines = f.readlines()
+    except: 
+        print("Could not open card {}".format(card))
+        return None
+    lines = f.readlines()
 
-        data_temp = []
+    data_temp = []
 
-        for l in lines:
+    for l in lines:
 
-            if l.find("observation") != -1:
+        if l.find("observation") != -1:
 
-                data_temp = l.split(" ")[1:-1] 
-    
-        if "" in data_temp:
-            data_temp = list(filter(lambda a: a is not "", data_temp))
+            data_temp = l.split(" ")[1:-1] 
 
+    if "" in data_temp:
+        data_temp = list(filter(lambda a: a is not "", data_temp))
+
+    if maskRegA:
+        ABCD = ["B", "C", "D"] 
+    else:
         ABCD = ["A", "B", "C", "D"] 
+        
+    if combo:
+        ABCD = ["A0", "B0", "C0", "D0", "A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"] 
+    data = OrderedDict()
+
+    for reg in ABCD:
+        data[reg] = []
+
+    for i,reg in enumerate(ABCD):
+
+        k = 0
         if combo:
-            ABCD = ["A0", "B0", "C0", "D0", "A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"] 
-        data = OrderedDict()
+            k = int(reg[1:])
 
-        for reg in ABCD:
-            data[reg] = []
+        for j in range(0,njets[1]-njets[0] + 1):
 
-        for i,reg in enumerate(ABCD):
+            data[reg].append( ( njets[0]-k+j, float(data_temp[i*(njets[1]-njets[0]+1)+j]), sqrt(float(data_temp[i*(njets[1]-njets[0]+1)+j])) ) )
 
-            k = 0
-            if combo:
-                k = int(reg[1:])
-
-            for j in range(0,njets[1]-njets[0] + 1):
-
-                data[reg].append( ( njets[0]-k+j, float(data_temp[i*(njets[1]-njets[0]+1)+j]), sqrt(float(data_temp[i*(njets[1]-njets[0]+1)+j])) ) )
-
-        return data
+    return data
 
 # -------------
 # main function
@@ -898,7 +916,8 @@ def main():
         #masses    = [m for m in range(300, 1450, 50)]
         #masses    = [350, 550, 850, 1150]
         masses    = [400, 600, 800]
-        dataTypes = ["pseudoData", "pseudoDataS"]
+        #dataTypes = ["pseudoData", "pseudoDataS"]
+        dataTypes = ["Data"]
         channels  = ["0l", "1l", "2l"]
         #channels  = ["combo"]
 
@@ -932,11 +951,12 @@ def main():
 
                         print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, c, d))
                         card    = "{}/output-files/{}/{}_{}_{}_{}_{}{}.txt".format(options.path, dirTag, options.year, s, m, d, c, close)
-                        try:
-                            obs     = getObs(card, njets, c == "combo")
-                        except:
-                            print("Skipping mass {} for {} fit plots".format(m, d))
-                            continue
+                        #try:
+                        obs     = getObs(card, njets, c == "combo", maskRegA=options.maskRegA)
+                        if obs == None: continue
+                        #except Exception as e:
+                        #    print("Skipping mass {} for {} fit plots".format(m, d))
+                        #    continue
                         path    = "{}/output-files/{}_{}_{}".format(options.path, s, m, options.year)
                         prefit  = "ws_{}{}{}{}_{}{}.root".format(options.year, s, m, d, c, close)
                         postfit = "higgsCombine{}{}{}{}_{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, c, m, s, close[1:])
@@ -961,12 +981,15 @@ def main():
                             if "SYY" in s and m < 700: continue
                             if "RPV" in s and m < 650: continue
                         if d == "pseudoData":
-                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True, True,  "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True, True,  "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
                             #make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True,  False,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True, "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, options.plotFinalPred)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True, "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, options.plotFinalPred, maskRegA=options.maskRegA)
                         elif d == "pseudoDataS":
-                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True,  True,  "{}_bonly".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True,  True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True,  True,  "{}_bonly".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True,  True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+                        elif d == "Data":
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, True, False, True,  True,  "{}_bonly".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+                            make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True,  True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
                         #except Exception as e:
                         #    print(e)
                         #    print("Skipping fit plot for {} {} {} {}".format(s, m, d, c))
@@ -977,7 +1000,8 @@ def main():
     else:
         signals   = ["StealthSYY"]
         masses    = [350, 550, 850, 1150]
-        dataTypes = ["pseudoData", "pseudoDataS"]
+        #dataTypes = ["pseudoData", "pseudoDataS"]
+        dataTypes = ["Data"]
         channels  = [options.channel]
        
         close     = ""
@@ -999,7 +1023,7 @@ def main():
 
                         print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, s, m, c, d))
                         card    = "{}_{}_{}_{}_{}{}.txt".format(options.year, s, m, d, c, close)
-                        obs     = getObs(card, njets)
+                        obs     = getObs(card, njets, maskRegA=options.maskRegA)
                         path    = "{}/output-files/{}_{}_{}".format(options.path, s, m, options.year)
                         prefit  = "ws_{}{}{}{}_{}{}.root".format(options.year, s, m, d, c, close)
                         postfit = "higgsCombine{}{}{}{}{}_{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, s, m, d, c, close[1:], m, s)
@@ -1012,8 +1036,8 @@ def main():
                         
                         name = "{}_{}_{}_{}_{}{}".format(options.year, s, m, d, c, close)
 
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, False, True, False, "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, True,  True, True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, False, True, False, "{}_bonly".format(d), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+                        make_fit_plots(signal, options.year, pre_path, fitDiag_path, c, True, True,  True, True,  "{}_sb".format(d),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
         
     
                 

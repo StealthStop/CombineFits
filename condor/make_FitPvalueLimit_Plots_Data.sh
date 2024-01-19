@@ -22,7 +22,7 @@
 
 command=$1
 DATE=("1.27.2022")
-CARDS=("cardsInjectNominal_1_16_24_MaxSign_Min3_NoAReg" "cardsInjectNominal_1_16_24_MassExclusion_Min3_NoAReg")
+CARDS=("cardsInjectNominal_1_16_24_MaxSign_Min3_Data" "cardsInjectNominal_1_16_24_MassExclusion_Min3_Data")
 #CARDS=("cardsInjectRPV400" "cardsInjectNominal")
 YEARS=("Run2UL")
 MODELS=("StealthSYY")
@@ -30,7 +30,8 @@ MASSES=("400" "600" "800")
 CHANNELS=("0l" "1l" "2l" "combo")
 #CHANNELS=("combo")
 #CHANNELS=("1l")
-DATATYPES=("pseudoData" "pseudoDataS")
+#DATATYPES=("pseudoData" "pseudoDataS")
+DATATYPES=("Data")
 
 for YEAR in ${YEARS[@]}; do
     
@@ -40,6 +41,16 @@ for YEAR in ${YEARS[@]}; do
             # --------------
             # make fit plots
             # --------------
+            if [[ $command == "fitMaskA" ]]; then
+                echo "making fit plots -------------------------------------------"
+                python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS[0]} --all --postfit_b --plotdata --plotsig --maskRegA
+                python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS[0]} --all --postfit_sb --plotdata --plotsig --maskRegA
+                python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS[1]} --all --postfit_b --plotdata --plotsig --maskRegA
+                python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS[1]} --all --postfit_sb --plotdata --plotsig --maskRegA
+                #python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS} -s ${MODEL} -m 550 --channel 0l 1l -d ${DATATYPE} --plotb --plotdata
+                #python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS} -s ${MODEL} -m 550 --channel 0l 1l -d ${DATATYPE} --plotsb --plotdata
+            fi
+
             if [[ $command == "fit" ]] || [[ $command == "all" ]]; then
                 echo "making fit plots -------------------------------------------"
                 python make_fit_plots.py --path Fit_${YEAR}_with_${CARDS[0]} --all --postfit_b --plotdata --plotsig
@@ -56,11 +67,11 @@ for YEAR in ${YEARS[@]}; do
                     if [[ $command == "limit" ]] || [[ $command == "all" ]]; then 
                         echo "making limit plots -------------------------------------------"
                         #python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} 
-                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model RPV --channel combo --dataType pseudoData --wip --graft 600 --noRatio
-                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model StealthSYY --channel combo --dataType pseudoData --wip --graft 650 --noRatio
+                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model RPV --channel combo --dataType Data --wip --graft 600 --noRatio
+                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model StealthSYY --channel combo --dataType Data --wip --graft 650 --noRatio
 
-                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model RPV --channel combo --dataType pseudoData --wip --graft 600 --asimov --noRatio
-                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model StealthSYY --channel combo --dataType pseudoData --wip --graft 650 --asimov --noRatio
+                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model RPV --channel combo --dataType Data --wip --graft 600 --asimov --noRatio
+                        python make_Limit_Plots.py --inputDirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year ${YEAR} --model StealthSYY --channel combo --dataType Data --wip --graft 650 --asimov --noRatio
                         #python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip
                         #python make_Limit_Plots.py --inputDir 'Fit_'"${YEAR}"'_with_'"${CARDS}" --year ${YEAR} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --asimov --wip
                     fi
@@ -72,10 +83,10 @@ for YEAR in ${YEARS[@]}; do
                         echo "making pvalue plots -------------------------------------------"
                         #python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARDS} --outdir pvalue_plots --models ${MODEL} --channels ${CHANNEL} --pdf=pvalue_with_${CARDS} --dataTypes ${DATATYPE}
                         #python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARDS} --outdir pvalue_plots --models ${MODEL} --channels ${CHANNEL} --pdf=pvalue_with_${CARDS} --dataTypes ${DATATYPE} --asimov
-                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models StealthSYY --wip --graft 650
-                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models RPV --wip --graft 600
-                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models StealthSYY --wip --graft 650 --asimov
-                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models RPV --wip --graft 600 --asimov
+                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models StealthSYY --wip --graft 650 --dataType Data
+                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models RPV --wip --graft 600 --dataType Data
+                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models StealthSYY --wip --graft 650 --asimov --dataType Data
+                        python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models RPV --wip --graft 600 --asimov --dataType Data
                         #python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models StealthSYY --wip --graft 650 --asimov --p2 --dataTypes pseudoData
                         #python make_Pvalue_PlotsTables.py --basedirs Fit_${YEAR}_with_${CARDS[0]} Fit_${YEAR}_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --models RPV --wip --graft 600 --asimov --p2 --dataTypes pseudoData
                         #python make_Pvalue_PlotsTables.py --basedir Fit_${YEAR}_with_${CARDS} --outdir pvalue_plots --models ${MODEL} --channels 0l 1l 2l combo --pdf=pvalue_with_${CARDS} --dataTypes ${DATATYPE} --wip

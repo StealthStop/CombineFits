@@ -806,10 +806,10 @@ class dataCardMaker:
                             if sys_proc in corr_procs:# and "TT" is not self.systematics[sys]["proc"]:
 
                                 if type(self.systematics[sys]["binValues"][bin]) == str:
-                                        if sys_proc + "_" + var in  self.systematics.keys():
-                                            sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
-                                        else:
-                                            sys_str += "{} ".format("--")
+                                    if sys_proc + "_" + var in self.systematics.keys() and bin + 1 <= len(self.systematics[sys_proc + "_" + var]["binValues"]):
+                                        sys_str += "{} ".format(self.systematics[sys_proc + "_" + var]["binValues"][bin])
+                                    else:
+                                        sys_str += "{} ".format("--")
                                 else:
                                     sys_str += "{:.3f} ".format(self.systematics[sys]["binValues"][bin])
                             else:
@@ -990,25 +990,6 @@ class dataCardMaker:
             #        #file.write("{0}{1}_{5:<12} rateParam Y{6}_{1}_{5} {2} {3:<12} {4}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],"QCD",round(tf,4),"[{0},{1}]".format(round(tf-tfUnc, 4), round(tf+tfUnc,4)),self.channel,self.year[-2:])) 
             #        file.write("{0}{1}_{4:<12} param {2:<12} {3}\n".format(moreparams[4],self.systematics["QCD_TF"]["binNames"][ibin],round(tf,4),round(tfUnc, 4),self.channel,self.year[-2:])) 
 
-            temp_closure = "np_RawClosure lnN "
-            file.write("\n")
-
-            for ibin in range(0, len(self.observedPerBin), self.njets):
-                for abin in range(self.njetStart - self.njetStart, self.njetEnd - self.njetStart + 1):
-                    if not mask[abin+ibin]:
-                        continue
-                    for proc in self.observed.keys():
-                        if proc not in ["TT", "QCD", "Other", "TTX", "RPV", "SYY"]: continue
-                        if "INJECT" in proc: continue
-                        if proc == "TT" and ibin == 0:
-                            temp_closure += "{} ".format(self.systematics["ClosureCorrection"]["binValues"][abin])
-                        else:
-                            temp_closure += "-- "
-                    temp_closure += "-- "
-
-            temp_closure += "\n"
-            file.write(temp_closure)
-    
 
     # ----------------------------------------------------------------
     # Make a bin mask based on Njets range specified on command line

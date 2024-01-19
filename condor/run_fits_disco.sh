@@ -86,7 +86,7 @@ fi
 # Make a workspace ROOT file for Higgs Combine to process
 if [ $asimov == 1 ]
 then
-    stubName=${year}_${signalType}_${mass}_pseudoData_${channel}${binEdgeName}
+    stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
 else
     stubName=${year}_${signalType}_${mass}_${dataType}_${channel}${binEdgeName}
 fi

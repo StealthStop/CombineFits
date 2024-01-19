@@ -20,6 +20,18 @@ obs_start = 6
 obs_end   = 10
 
 observed = OrderedDict()
+observed["Data"] = {
+        "path"      : "$YEAR_Data.root",
+        "sys"       : 1.0,
+        "hist"      : obs_hist, 
+        "type"      : "data", 
+        "fit"       : False,
+        "inj"       : True, # Choice of signal injection into pseudoDataS is handled by command line option
+        "mcStat"    : False,
+        "processID" : -1,
+        "start"     : obs_start,
+        "end"       : obs_end,
+    }
 observed["$MODEL_$MASS"] = {
         "path"      : "$YEAR_$MODEL_mStop-$MASS.root",
         "sys"       : 1.0,
@@ -155,7 +167,7 @@ systematics = {
     # QCD TF (transfer factor)
     "QCD_TF" : {
         "path"  : sys_path,
-        "hist"  : "$YEAR_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD",
+        "hist"  : "$YEAR_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD_perNjets",
         "distr" : "lnN",
         "proc"  : "QCD",
         "type"  : "TF",
@@ -229,9 +241,9 @@ for var in var_list_QCD:
 
     systematics["{}_{}".format("QCD", var)] = {
         "path"      : sys_path,
-        "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, up),
-        "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, down),
-        "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD".format(var),
+        "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD_perNjets".format(var, up),
+        "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD_perNjets".format(var, down),
+        "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD_perNjets".format(var),
         "distr"     : "lnN",
         "proc"      : "QCD",
         "type"      : "sys",
@@ -239,19 +251,19 @@ for var in var_list_QCD:
         "end"       : sys_end, 
     }
 
-var = "nim"
-
-systematics["{}_{}".format("QCD", var)] = {
-    "path"      : sys_path,
-    "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, up),
-    "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, down),
-    "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD".format(var),
-    "distr"     : "lnN",
-    "proc"      : "QCD",
-    "type"      : "sys",
-    "start"     : sys_start, 
-    "end"       : sys_end, 
-}
+#var = "nim"
+#
+#systematics["{}_{}".format("QCD", var)] = {
+#    "path"      : sys_path,
+#    "upHist"    : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, up),
+#    "downHist"  : "Run2UL_TF_$MODELS_$CHANNEL_{0}{1}Over$MODELS_$CHANNEL_QCDCR_{0}{1}ABCD".format(var, down),
+#    "nomHist"   : "Run2UL_TF_$MODELS_$CHANNELOver$MODELS_$CHANNEL_QCDCRABCD".format(var),
+#    "distr"     : "lnN",
+#    "proc"      : "QCD",
+#    "type"      : "sys",
+#    "start"     : sys_start, 
+#    "end"       : sys_end, 
+#}
 
 
 # Up/Down Variations on signal
