@@ -8,3 +8,4 @@ Keras_*
 *condor/condor_submit.txt
 *.pyc
 DataCardProducer/*
+docker_stderror
