@@ -13,7 +13,7 @@
 # ------------------------------------------------------------------------
 
 DATE=`date +"%d.%m.%Y"`
-CARDS=("cardsInjectNominal_MaxSign_Data_NoAReg" "cardsInjectNominal_MassExclusion_Data_NoAReg")
+CARDS=("cardsInjectNominal_MaxSign_Data" "cardsInjectNominal_MassExclusion_Data")
 #CARDS=("cardsInjectRPV400" "cardsInjectNominal")
 MODELS=("RPV" "StealthSYY")
 MASSES=("400" "600" "800")
@@ -22,7 +22,7 @@ DATATYPES=("Data")
 
 GETIMPACTS=0
 GETFITS=0
-GETPVALS=0
+GETPVALUES=0
 GETLIMITS=0
 GETALL=0
 MASKA=0
@@ -181,7 +181,7 @@ for DATATYPE in ${DATATYPES[@]}; do
             # -----------------------------------
             # Make pvalue plots/tables on request
             # -----------------------------------
-            if [[ ${GETPVALS} == 1 ]] || [[ ${GETALL} == 1 ]]; then
+            if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                 echo "Making pvalue plots -------------------------------------------"
                 python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
                 python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
