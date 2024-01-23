@@ -47,7 +47,7 @@ def main():
             masses = list(range(300, 650, 50)) if args.model == "RPV" else list(range(300,700,50))
             print(masses)
         elif "MassExclusion" in args.config:
-            masses = list(range(700, 1450, 50)) if args.model == "RPV" else list(range(750,1450,50))
+            masses = list(range(650, 1450, 50)) if args.model == "RPV" else list(range(700,1450,50))
             print(masses)
             
 
