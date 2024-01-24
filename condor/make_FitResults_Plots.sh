@@ -14,7 +14,6 @@
 
 DATE=`date +"%d.%m.%Y"`
 CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
-#CARDS=("cardsInjectRPV400" "cards")
 MODELS=("RPV" "StealthSYY")
 MASSES=("400" "600" "800")
 CHANNELS=("0l" "1l" "2l" "combo")
@@ -150,14 +149,16 @@ for DATATYPE in ${DATATYPES[@]}; do
                 # -------------------------
                 if [[ ${GETFITS} == 1 ]]; then
                     MASKARG=""
+                    TAG=""
                     if [[ ${MASKA} == 1 ]]; then
                         MASKARG="--maskRegA"
+                        TAG="_NoAReg"
                     fi
     
                     echo "Making the fit plots -------------------------------------------"
                     for CARD in ${CARDS[@]}; do
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_b --plotdata --plotsig ${MASKARG}
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_sb --plotdata --plotsig ${MASKARG}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_b --plotdata --plotsig ${MASKARG}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_sb --plotdata --plotsig ${MASKARG}
                     done
                 fi
             done
