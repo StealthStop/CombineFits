@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#CARDS=("cardsInjectNominal_MaxSign_Data" "cardsInjectNominal_MassExclusion_Data")
-CARDS=("cardsInjectNominal_MassExclusion_Data")
+#CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
+CARDS=("cards_MaxSign_Data")
 MODELS=("RPV" "SYY")
 CHANNELS=("1l" "0l" "2l" "combo")
 DATATYPES=("Data")
@@ -100,7 +100,7 @@ for CHANNEL in ${CHANNELS[@]}; do
                 elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Max"* ]]; then
                     MASSRANGE="300-600"
                 elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Mass"* ]]; then
-                    MASSRANGE="650-700"
+                    MASSRANGE="650-1400"
                 else
                     echo "Could not determine mass range !"
                 fi
@@ -113,13 +113,13 @@ for CHANNEL in ${CHANNELS[@]}; do
                     echo "Fit Diagnostics -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARDS}"
                     python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -F --cards=${CARDS} --output=Fit_Run2UL_with_${CARDS}
                 fi
-                if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
-                    echo "MultiDim Fits -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARDS}"
-                    python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -M --cards=${CARDS} --output=Fit_Run2UL_with_${CARDS}
-                fi
                 if [[ ${DOIMPACTS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
                     echo "Impacts -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARDS}"
                     python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -I --cards=${CARDS} --output=Fit_Run2UL_with_${CARDS}
+                fi
+                if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
+                    echo "MultiDim Fits -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARDS}"
+                    python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -M --cards=${CARDS} --output=Fit_Run2UL_with_${CARDS}
                 fi
             done
         done
