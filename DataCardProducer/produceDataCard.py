@@ -41,16 +41,6 @@ def main():
 
     masses = args.mass
 
-    if args.dataType[0] == "Data":
-        print("Making cards for Data")
-        if "MaxSign" in args.config:
-            masses = list(range(300, 650, 50)) if args.model == "RPV" else list(range(300,700,50))
-            print(masses)
-        elif "MassExclusion" in args.config:
-            masses = list(range(650, 1450, 50)) if args.model == "RPV" else list(range(700,1450,50))
-            print(masses)
-            
-
     # If running with --combo flag, then we don't need to load
     # a config file, we are just going to combine cards that should already exist
     if not args.combo:
