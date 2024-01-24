@@ -13,8 +13,8 @@
 # ------------------------------------------------------------------------
 
 DATE=`date +"%d.%m.%Y"`
-CARDS=("cardsInjectNominal_MaxSign_Data" "cardsInjectNominal_MassExclusion_Data")
-#CARDS=("cardsInjectRPV400" "cardsInjectNominal")
+CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
+#CARDS=("cardsInjectRPV400" "cards")
 MODELS=("RPV" "StealthSYY")
 MASSES=("400" "600" "800")
 CHANNELS=("0l" "1l" "2l" "combo")
