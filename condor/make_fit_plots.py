@@ -12,7 +12,7 @@ parser = OptionParser()
 parser.add_option("-s", "--signal",   action="store", type="string", dest="signal",     default="StealthSYY",         help="Signal process name"                                                               )
 parser.add_option("-y", "--year",     action="store", type="string", dest="year",       default="Run2UL",             help="Year for data used"                                                                )
 parser.add_option("-m", "--mass",     action="store", type="string", dest="mass",       default="350",                help="Mass of stop in GeV"                                                               )
-parser.add_option("-d", "--dataType", action="store", type="string", dest="dataType",   default="pseudoData",         help="Mass of stop in GeV"                                                               )
+parser.add_option("-d", "--dataType", action="store", type="string", dest="dataType",   default="pseudoData",         help="type of data being fit"                                                               )
 parser.add_option("--channel",        action="store", type="string", dest="channel",    default="0l",                 help="Suffix to specify number of final state leptons (0l, 1l, or combo)"                )
 parser.add_option("-p", "--path",     action="store", type="string", dest="path",       default="../condor/Fit_2016", help="Path to Fit Diagnostics input condor directory"                                    )
 parser.add_option("--setClosure",     action="store_true",           dest="setClosure", default=False,                help="Use fit files with perfect closure asserted"                                       )
@@ -746,8 +746,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #if plotsigref:
         #    hlist_pre_sig[i].Draw("L SAME")
         if plotsig:
-            #hlist_post_sig[i].Draw("E1 SAME")
-            hlist_pre_sig[i].Draw("L SAME")
+            if postfit_sb:
+                hlist_post_sig[i].Draw("E1 SAME")
+            else:
+                hlist_pre_sig[i].Draw("L SAME")
             
         #if plotb and plotsb:
         #    hlist_post_sb_b[i].Draw("L SAME")
@@ -778,11 +780,17 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             if postfit_bonly and not postfit_sb:
                 l.AddEntry(hlist_post_b[i], "Bkg Fit.", "lf")
             if plotdata:
-                l.AddEntry(hlist_data[i], "PseudoData", "pe")
+                if "pseudoData" in fitName:
+                    l.AddEntry(hlist_data[i], "PseudoData", "pe")
+                else:
+                    l.AddEntry(hlist_data[i], "Data", "pe")
             if postfit_bonly and postfit_sb:
                 l.AddEntry(hlist_post_sb_b[i], "Bkg Obs.", "f")
             if plotsig:
-                l.AddEntry(hlist_post_sig[i], "Signal", "l")
+                if postfit_sb:
+                    l.AddEntry(hlist_post_sig[i], "Signal", "l")
+                else:
+                    l.AddEntry(hlist_pre_sig[i], "Signal", "l")
    
             l.Draw("SAME")
 
