@@ -4,6 +4,7 @@ CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
 MODELS=("RPV" "SYY")
 CHANNELS=("1l" "0l" "2l" "combo")
 DATATYPES=("Data")
+USERMASSRANGE=""
 
 DOIMPACTS=0
 DOASYMPLIMS=0
@@ -73,6 +74,11 @@ do
             DOHIGHMASSES=1
             shift
             ;;
+        --massRange)
+            USERMASSRANGE="$2"
+            shift
+            shift
+            ;;
         --allMasses)
             DOALLMASSES=1
             shift
@@ -121,16 +127,20 @@ for CHANNEL in ${CHANNELS[@]}; do
 
                 # Determine the nominal mass range to submit jobs for based on model and set of data cards
                 MASSRANGE=""
-                if [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Max"* ]]; then
-                    MASSRANGE="300-650"
-                elif [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Mass"* ]]; then
-                    MASSRANGE="700-1400"
-                elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Max"* ]]; then
-                    MASSRANGE="300-600"
-                elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Mass"* ]]; then
-                    MASSRANGE="650-1400"
+                if [[ "${USERMASSRANGE}" == *"-"* ]]; then
+                    MASSRANGE=${USERMASSRANGE}
                 else
-                    echo "Could not determine mass range !"
+                    if [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Max"* ]]; then
+                        MASSRANGE="300-650"
+                    elif [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Mass"* ]]; then
+                        MASSRANGE="700-1400"
+                    elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Max"* ]]; then
+                        MASSRANGE="300-600"
+                    elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Mass"* ]]; then
+                        MASSRANGE="650-1400"
+                    else
+                        echo "Could not determine mass range !"
+                    fi
                 fi
 
                 if [[ ${DOASYMPLIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
