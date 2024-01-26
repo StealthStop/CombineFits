@@ -157,16 +157,18 @@ then
     # Generate impacts based on Asimov data set
     if [ $asimov == 1 ]
     then
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --expectSignal=${inject} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}_Asimov.json --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject}             --robustFit 1 -o impacts_${tagName}_Asimov.json --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
         plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
+        plotImpacts.py --blind -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov_blind
     else
         # Generate impacts based on observation
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step2.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMin} --rMax ${rMax}             --robustFit 1 -o impacts_${tagName}.json --exclude 'rgx{mcStat[A-D]*}' > log_${tagName}_step3.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doInitialFit --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass}             --rMin -10.0 --rMax 10.0 --robustFit 1 -o impacts_${tagName}.json --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3.txt
         plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
+        plotImpacts.py --blind -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_blind
     fi
 
     rm higgsCombine_paramFit_Test_*root

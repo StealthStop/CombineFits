@@ -289,7 +289,6 @@ class Plotter():
         hr.GetYaxis().SetNdivisions(4, 2, 0)
         #hr.Draw()
 
-        channel = "1l"
         diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
         
         rvalue  = array('d', diagnostics["rList"])
@@ -446,7 +445,6 @@ def main():
                         
                         if int(mass) > graft and graft != 0:
                             path = args.basedirs[1]
-                            print(mass, channel)
                         else:
                             path = args.basedirs[0]
 
