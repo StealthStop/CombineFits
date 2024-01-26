@@ -862,7 +862,7 @@ class dataCardMaker:
                     continue
 
                 for proc in self.observed.keys():
-                    if "INJECT" in proc or "TT_MC" in proc:
+                    if "INJECT" in proc or "TT_MC" in proc or "Data" in proc:
                         continue
                     elif proc is not "QCD":
                         sys_str += "{} ".format("--")
