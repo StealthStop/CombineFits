@@ -906,7 +906,7 @@ if __name__ == "__main__":
                         #    pass
                         #if "_" not in param or "Corr" not in param:
                         #    continue
-                        if "model" in param or "year" in param or len(param.split("_")) > 2:
+                        if "model" in param or "year" in param:
                             continue
 
                         disc1s, disc2s, paramVals = theScraper.getByParam(paramName = "disc", var = param, selection = obsSelection, model = model, year = year, mass=mass)
@@ -914,8 +914,8 @@ if __name__ == "__main__":
                         if "Corr" in param:
                             paramVals = [x if x <= 99.0 else -1.0 for x in paramVals]
 
-                        if "tot_bkg" in param:
-                            print(paramVals)
+                        #if "tot_bkg" in param:
+                        #    print(paramVals)
 
                         thePlotter.plot_Var_vsDisc1Disc2(paramVals, disc1s, disc2s, binWidth = spacing, xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, vmin = min(paramVals), vmax = max(paramVals), labelVals = True, variable = param, model = model, year = year, mass = mass)
 
@@ -996,19 +996,27 @@ if __name__ == "__main__":
                 massesByBestLimit, signsByBestLimit  = theScraper.getByParam(paramName = "mass", var = "sign_nonasimov",     selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 signsByBestMassLimit.append(np.vstack((massesByBestLimit, signsByBestLimit)).T)
 
+
+                if "SYY" in model:
+                    if channel == "0l":
+                        minDisc1 = 0.50
+                        minDisc2 = 0.72
+                    if channel == "2l":
+                        minDisc1 = 0.50
+                        minDisc2 = 0.50
                 massesByBestLimit, limitsByBestLimit = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(minDisc1, minDisc2), model = model, year = year)
                 limitsByBestMassLimit.append(np.vstack((massesByBestLimit, limitsByBestLimit)).T)
 
                 # Get the old best as well
-                disc1Old = bestSignFullXS[model][channel][0]
-                disc2Old = bestSignFullXS[model][channel][1]
-                massesByBestLimitOld, limitsByBestLimitOld = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(disc1Old, disc2Old), model = model, year = year)
+                disc1Old_ = bestLimitFullXS[model][channel][0]
+                disc2Old_ = bestLimitFullXS[model][channel][1]
+                massesByBestLimitOld, limitsByBestLimitOld = theScraper.getByParam(paramName = "mass", var = "expLimit", selection = "(disc1==%f)&(disc2==%f)"%(disc1Old_, disc2Old_), model = model, year = year)
                 limitsByBestMassLimitOld.append(np.vstack((massesByBestLimitOld, limitsByBestLimitOld)).T)
                 
 
                 #labelsByBestMassLimit.append(r"Limit Optimized")
                 labelsByBestMassLimit.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f)"%(mass, minDisc1, minDisc2))
-                labelsByBestMassLimitOld.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f) | OLD"%(mass, disc1Old, disc2Old))
+                labelsByBestMassLimitOld.append(r"Limit Opt. for $m_{\tilde{t}}=%d$ GeV | (%.2f, %.2f) | OLD"%(mass, disc1Old_, disc2Old_))
 
                 colScales.append(stopPair_xsec[mass])
 
