@@ -17,13 +17,10 @@ parser.add_option("--channel",        action="store", type="string", dest="chann
 parser.add_option("-p", "--path",     action="store", type="string", dest="path",       default="../condor/Fit_2016", help="Path to Fit Diagnostics input condor directory"                                    )
 parser.add_option("--setClosure",     action="store_true",           dest="setClosure", default=False,                help="Use fit files with perfect closure asserted"                                       )
 parser.add_option("-n", "--njets",    action="store", type="string", dest="njets",      default="7-12",               help="Range of Njets bins to plot (separated by a dash)"                                 )
-parser.add_option("--postfit_bonly",          action="store_true",           dest="postfit_bonly",      default=False,                help="Plot background only fit"                                                          )
-parser.add_option("--postfit_sb",         action="store_true",           dest="postfit_sb",     default=False,                help="Plot signal plus background fit"                                                   )
-parser.add_option("--plotsig",       action="store_true",           dest="plotsig",   default=False,                help="Plot distributions of signal from fit"                                               )
-parser.add_option("--plotdata",       action="store_true",           dest="plotdata",   default=False,                help="Plot distributions observed in data"                                               )
-parser.add_option("--plotFinalPred",  action="store_true",           dest="plotFinalPred",   default=True,           help="Plot stacked background distribtuion showing final prediction (bonly fit, no signal inj.)"                                               )
 parser.add_option("--all",            action="store_true",           dest="all",        default=False,                help="Make all pre and post fit distributions (for 0l and 1l, pseudoData/S, RPV and SYY)")
 parser.add_option("--maskRegA",       action="store_true",           dest="maskRegA",   default=False,                help="When plotting data, this flag will mask the A region distribution")
+parser.add_option('--asimov',         action="store_true",           dest='asimov',     default=False,                help = 'Is plot w/wo asimov style'       )
+parser.add_option('--expSig',         action="store", type="string", dest='expSig',     default = "None",             help = 'Make plots with r=x (must run specific fits)')
 
 (options, args) = parser.parse_args()
 
@@ -512,7 +509,7 @@ def drawWithNoYerr(c, h, color):
 # --------------
 # make fit plots
 # --------------
-def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, fitName, outfile, obs, njets, path, plotFinalPred=True, maskRegA=False):
+def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, asimovStr, fitName, outfile, obs, njets, path, plotFinalPred=True, maskRegA=False):
 
     nLegItems = 0
     if postfit_bonly:
@@ -788,9 +785,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 l.AddEntry(hlist_post_sb_b[i], "Bkg Obs.", "f")
             if plotsig:
                 if postfit_sb:
-                    l.AddEntry(hlist_post_sig[i], "Signal", "l")
+                    l.AddEntry(hlist_post_sig[i], "Signal (Fit)", "l")
                 else:
-                    l.AddEntry(hlist_pre_sig[i], "Signal", "l")
+                    l.AddEntry(hlist_pre_sig[i], "Signal (r=1)", "l")
    
             l.Draw("SAME")
 
@@ -838,7 +835,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             draw_ExtraInfo(p1_list[i], i, channel+signal)
  
     for ext in ["pdf"]:
-        c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + "_" + fitName + ".%s"%(ext))
+        c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + asimovStr + "_" + fitName + ".%s"%(ext))
 
     
 
@@ -929,6 +926,12 @@ def main():
 
     sigStr += " m_{ #tilde{t}} = %d GeV"%(mass)
 
+    asimovStr = ""
+    if options.asimov:
+        asimovStr = "_Asimov"
+        if options.expSig != "None":
+            asimovStr += "_%s"%(options.expSig)
+
     if channel == "2l":
         njets = [6, 10]
     elif channel == "1l":
@@ -942,8 +945,8 @@ def main():
 
     path    = "{}/output-files/{}_{}_{}".format(options.path, signal, mass, options.year)
     prefit  = "ws_{}{}{}{}_{}{}.root".format(options.year, signal, mass, dataType, channel, close)
-    postfit = "higgsCombine{}{}{}{}_{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, signal, mass, dataType, channel, mass, signal, close[1:])
-    fitDiag = "fitDiagnostics{}{}{}{}_{}{}.root".format(options.year, signal, mass, dataType, channel, close[1:])
+    postfit = "higgsCombine{}{}{}{}_{}{}{}.FitDiagnostics.mH{}.MODEL{}.root".format(options.year, signal, mass, dataType, channel, mass, signal, close[1:], asimovStr)
+    fitDiag = "fitDiagnostics{}{}{}{}_{}{}{}.root".format(options.year, signal, mass, dataType, channel, close[1:], asimovStr)
     
     pre_path     = "{}/{}".format(path, prefit)
     post_path    = "{}/{}".format(path, postfit) 
@@ -969,15 +972,15 @@ def main():
     if obs == None: return
 
     if dataType == "pseudoData":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True, True, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True, True, asimovStr, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
         #make_fit_plots(signalName, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True,  False,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True, True, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, options.plotFinalPred, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True, True,  asimovStr, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, options.plotFinalPred, maskRegA=options.maskRegA)
     elif dataType == "pseudoDataS":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
     elif dataType == "Data":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
 
 if __name__ == '__main__':
     main()
