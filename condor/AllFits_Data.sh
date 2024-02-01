@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
+CARDS=("cards_MaxSign" "cards_MassExclusion")
 MODELS=("RPV" "SYY")
 CHANNELS=("1l" "0l" "2l" "combo")
 DATATYPES=("Data")
@@ -15,6 +15,7 @@ DOLOWMASSES=0
 DOHIGHMASSES=0
 DOALLMASSES=0
 DRYRUN=0
+MASKA=0
 
 while [[ $# -gt 0 ]]
 do
@@ -83,6 +84,10 @@ do
             DOALLMASSES=1
             shift
             ;;
+        --maskA)
+            MASKA=1
+            shift
+            ;;
         --dryRun)
             DRYRUN=1
             shift
@@ -101,6 +106,7 @@ do
             echo "    --lowMasses                 : run low mass optimization fits"
             echo "    --highMasses                : run high mass optimization fits"
             echo "    --allMasses                 : run high mass optimization fits"
+            echo "    --maskA                     : run fits with A reg excluded"
             echo "    --all                       : run four aforementioned types of fits"
             echo "    --dryRun                    : do not run condor submit"
             exit 0
@@ -112,12 +118,14 @@ do
     esac
 done
 
+MASKASTR=""
+if [[ "${MASKA}" == 1 ]]; then
+    MASKASTR="_NoAReg"
+fi
+
 for CHANNEL in ${CHANNELS[@]}; do
-
     for MODEL in ${MODELS[@]}; do
-
         for DATATYPE in ${DATATYPES[@]}; do
-
             for CARD in ${CARDS[@]}; do
 
                 # Do only low or high mass optimization fits depending on user
@@ -143,30 +151,29 @@ for CHANNEL in ${CHANNELS[@]}; do
                     fi
                 fi
 
+                FITFLAGS=()
                 if [[ ${DOASYMPLIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
-                    echo "Asymptotic Fits -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARD}"
-                    if [[ ${DRYRUN} == 0 ]]; then
-                        python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -A --cards=${CARD} --output=Fit_Run2UL_with_${CARD}
-                    fi
+                    FITFLAGS+=("-A")
                 fi
                 if [[ ${DOFITDIAGS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
-                    echo "Fit Diagnostics -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARD}"
-                    if [[ ${DRYRUN} == 0 ]]; then
-                        python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -F --cards=${CARD} --output=Fit_Run2UL_with_${CARD}
-                    fi
+                    FITFLAGS+=("-F")
                 fi
                 if [[ ${DOIMPACTS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
-                    echo "Impacts -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARD}"
-                    if [[ ${DRYRUN} == 0 ]]; then
-                        python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -I --cards=${CARD} --output=Fit_Run2UL_with_${CARD}
-                    fi
+                    FITFLAGS+=("-I")
                 fi
                 if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
-                    echo "MultiDim Fits -> MODEL: ${MODEL}, CHANNEL: ${CHANNEL}, DATATYPE: ${DATATYPE}, MASSRANGE: ${MASSRANGE}, CARDS: ${CARD}"
-                    if [[ ${DRYRUN} == 0 ]]; then
-                        python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL -M --cards=${CARD} --output=Fit_Run2UL_with_${CARD}
-                    fi
+                    FITFLAGS+=("-M")
                 fi
+
+                for FITFLAG in ${FITFLAGS[@]}; do
+                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}"
+                    echo -e "\n"
+                    echo ${COMMAND}
+                    if [[ ${DRYRUN} == 0 ]]; then
+                        sleep 1
+                        eval ${COMMAND} 
+                    fi
+                done
             done
         done
     done
