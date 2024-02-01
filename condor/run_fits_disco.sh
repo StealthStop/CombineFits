@@ -33,7 +33,7 @@ fi
 
 base_dir=`pwd`
 rMax="10"
-rMin="-0.2"
+rMin="-10"
 
 rMinLim="0"
 rMaxLim="2"
@@ -124,6 +124,10 @@ then
     then
         combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
         combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=0.2 -n ${tagName}_SignifExp_Asimov_0p2 > log_${tagName}_Sign_Asimov_0p2.txt
+        if [ ${dataType} == "Data" ]
+        then
+            combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax -t -1 --expectSignal=1.0 -n ${tagName}_SignifExp_Asimov_1p0 > log_${tagName}_Sign_Asimov_1p0.txt
+        fi          
     else
         combine -M Significance ${fitOptions} --rMin $rMin --rMax $rMax                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
     fi
@@ -138,6 +142,11 @@ then
     if [ $asimov == 1 ]
     then
         combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
+        combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov_0p2 -t -1 --expectSignal=0.2 > log_${tagName}_FitDiag_Asimov_0p2.txt
+        if [ ${dataType} == "Data" ]
+        then
+            combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov_1p0 -t -1 --expectSignal=1.0 > log_${tagName}_FitDiag_Asimov_1p0.txt
+        fi
     else
         combine -M FitDiagnostics ${fitOptionsNoFallBack} --rMin $rMin --rMax $rMax --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
     fi
@@ -147,7 +156,7 @@ fi
 if [ $doMulti == 1 ] 
 then
     echo "Running MultiDimFit"
-    combine -M MultiDimFit ${fitOptions} --verbose 0 --rMin -0.2 --rMax 5.0 --algo=grid --points=260 -n ${tagName}SCAN_r_wSig > /dev/null
+    combine -M MultiDimFit ${fitOptions} --verbose 0 --rMin -5.0 --rMax 5.0 --algo=grid --points=260 -n ${tagName}SCAN_r_wSig > /dev/null
 fi
 
 # Run fits for making impact plots (using the CombineHarvester repo)
@@ -157,16 +166,16 @@ then
     # Generate impacts based on Asimov data set
     if [ $asimov == 1 ]
     then
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doInitialFit --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject}             --robustFit 1 -o impacts_${tagName}_Asimov.json --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doInitialFit --exclude -v 2 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject} ${fallBack} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin -10.0 --rMax 10.0 --expectSignal=${inject}             --robustFit 1 -o impacts_${tagName}_Asimov.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
         plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
         plotImpacts.py --blind -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov_blind
     else
         # Generate impacts based on observation
-        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doInitialFit --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doFits --parallel 8 -v -1 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass}             --rMin -10.0 --rMax 10.0 --robustFit 1 -o impacts_${tagName}.json --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} --rMin -10.0 --rMax 10.0 --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2.txt
+        combineTool.py -M Impacts -d ${ws} -m ${mass}             --rMin -10.0 --rMax 10.0 --robustFit 1 -o impacts_${tagName}.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3.txt
         plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
         plotImpacts.py --blind -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_blind
     fi
