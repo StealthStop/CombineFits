@@ -45,7 +45,7 @@ observed["TT"] = {
         "end"       : obs_end,
     }
 observed["QCD"] = {
-        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.44_0.42.root",
+        "path"      : "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.68_0.48.root",
         "sys"       : 1.0, 
         "hist"      : "Run2UL_Data_only_QCD_$MODELS_$CHANNEL_QCDCR", 
         "type"      : "bkg", 
@@ -109,7 +109,7 @@ observed["TT_MC"] = {
 #     "njets" : Total number of Njets bins for each A, B, C, D region (6)
 # }
 
-sys_path  = "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.44_0.42.root" # including TT and QCD
+sys_path  = "$YEAR_TT_QCD_Syst_$MODELS_$CHANNEL_0.68_0.48.root" # including TT and QCD
 sys_hist  = "$YEAR_MCcorr_Ratio_MC_$SYST"
 sys_type  = "sys"
 sys_start = 7
