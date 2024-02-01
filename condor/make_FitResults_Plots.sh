@@ -12,10 +12,9 @@
 #   -- Bkg+Sig  fit / (bkg and sig components for fit) / using pseudoDataS 
 # ------------------------------------------------------------------------
 
-DATE=`date +"%d.%m.%Y"`
-CARDS=("cards_MaxSign_Data" "cards_MassExclusion_Data")
+CARDS=("cards_MaxSign" "cards_MassExclusion")
 MODELS=("RPV" "StealthSYY")
-MASSES=("400" "600" "800")
+MASSES=("400" "800")
 CHANNELS=("0l" "1l" "2l" "combo")
 DATATYPES=("Data")
 
@@ -112,6 +111,13 @@ do
     esac
 done
 
+MASKARG=""
+TAG=""
+if [[ ${MASKA} == 1 ]]; then
+    MASKARG="--maskRegA"
+    TAG="_NoAReg"
+fi
+
 # ------------------------------------------------------
 # Begin main looping over options to get different plots
 # ------------------------------------------------------
@@ -132,13 +138,13 @@ for DATATYPE in ${DATATYPES[@]}; do
                 if [[ ${GETIMPACTS} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                     echo "Copying over impact plots -----------------------------------"
                     if [[ ${MASS} -le 600 ]]; then
-                        mkdir Fit_Run2UL_with_${CARDS[0]}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
-                        cd Fit_Run2UL_with_${CARDS[0]}/output-files/${MODEL}_${MASS}_Run2UL/
+                        mkdir Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
+                        cd Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}/output-files/${MODEL}_${MASS}_Run2UL/
                         scp -r impacts_Run2UL${MODEL}${MASS}_${CHANNEL}_${DATATYPE}*.pdf ../plots_dataCards_TT_allTTvar/impact_plots/
                         cd ../../../
                     else
-                        mkdir Fit_Run2UL_with_${CARDS[1]}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
-                        cd Fit_Run2UL_with_${CARDS[1]}/output-files/${MODEL}_${MASS}_Run2UL/
+                        mkdir Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}/output-files/plots_dataCards_TT_allTTvar/impact_plots/
+                        cd Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}/output-files/${MODEL}_${MASS}_Run2UL/
                         scp -r impacts_Run2UL${MODEL}${MASS}_${CHANNEL}_${DATATYPE}*.pdf ../plots_dataCards_TT_allTTvar/impact_plots/
                         cd ../../../
                     fi
@@ -148,17 +154,12 @@ for DATATYPE in ${DATATYPES[@]}; do
                 # Make fit plots on request
                 # -------------------------
                 if [[ ${GETFITS} == 1 ]]; then
-                    MASKARG=""
-                    TAG=""
-                    if [[ ${MASKA} == 1 ]]; then
-                        MASKARG="--maskRegA"
-                        TAG="_NoAReg"
-                    fi
-    
                     echo "Making the fit plots -------------------------------------------"
                     for CARD in ${CARDS[@]}; do
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_b --plotdata --plotsig ${MASKARG}
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} --postfit_sb --plotdata --plotsig ${MASKARG}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 0p2
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 1p0 
                     done
                 fi
             done
@@ -175,8 +176,8 @@ for DATATYPE in ${DATATYPES[@]}; do
             fi
             if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
                 echo "Making limit plots -------------------------------------------"
-                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
-                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outputDir GraftedLimitPlots_${CARDS[0]} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --asimov --noRatio
+                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
+                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --asimov --noRatio
             fi
     
             # -----------------------------------
@@ -184,8 +185,10 @@ for DATATYPE in ${DATATYPES[@]}; do
             # -----------------------------------
             if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                 echo "Making pvalue plots -------------------------------------------"
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]} Fit_Run2UL_with_${CARDS[1]} --outdir GraftedPvaluePlots_${CARDS[0]} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
+                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
+                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 1p0
+                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 0p2
             fi
         done
     done
