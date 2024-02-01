@@ -598,7 +598,7 @@ class LimitPlots():
         grObs.SetMarkerStyle(20)
         grObs.SetLineColor(ROOT.kBlack)
         grObs.SetMarkerColor(ROOT.kBlack)
-        #grObs.Draw("lp")
+        if not asimov: grObs.Draw("lp")
         grTheory.SetLineColor(2)
         grTheory.SetLineWidth(2)
         grTheoryErr.SetLineColor(2)
@@ -676,7 +676,7 @@ class LimitPlots():
                     legend.AddEntry(old, "SUS-19-004 Limit", "l")
                     old.Draw("lp")
             legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
-            #legend.AddEntry(grObs,    "Observed limit", "lp")
+            if not asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
 
         #grMean.Draw("lp")
 

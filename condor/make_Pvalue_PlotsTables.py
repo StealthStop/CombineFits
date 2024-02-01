@@ -263,8 +263,8 @@ class Plotter():
         c1, aux = self.drawSignificanceLines(c1, Xmin, Xmax, numSigma)
 
         c1.cd(2)
-        #ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 2.5 / 9.0, ROOT.kWhite, 0, 0)
-        ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 0.1 / 9.0, ROOT.kWhite, 0, 0)
+        ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 2.5 / 9.0, ROOT.kWhite, 0, 0)
+        #ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 0.1 / 9.0, ROOT.kWhite, 0, 0)
         ROOT.gPad.SetLeftMargin(0.11)
         ROOT.gPad.SetRightMargin(0.04)
         ROOT.gPad.SetTopMargin(0.01)
@@ -285,9 +285,9 @@ class Plotter():
         hr.GetYaxis().SetTitleOffset(0.3)
         hr.SetLineWidth(0)
         maxR = 1.0 
-        hr.GetYaxis().SetRangeUser(-0.1, maxR*1.3)
+        hr.GetYaxis().SetRangeUser(-1.3, 1.3)
         hr.GetYaxis().SetNdivisions(4, 2, 0)
-        #hr.Draw()
+        hr.Draw()
 
         diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
         
@@ -304,16 +304,16 @@ class Plotter():
         r.SetLineColor(ROOT.kBlack)
         r.SetLineStyle(ROOT.kDashed)
         r.SetLineWidth(3)
-        #r.Draw("PL same")
+        r.Draw("PL same")
         c1.Update()
         
         line = ROOT.TF1("line", "1", Xmin, Xmax)
         line.SetLineColor(ROOT.kRed)
-        #line.Draw("same")
+        line.Draw("same")
         
         line2 = ROOT.TF1("line", "1", Xmin, Xmax)
         line2.SetLineColor(ROOT.kBlack)
-        #line2.Draw("same")
+        line2.Draw("same")
    
         if approved:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
@@ -379,7 +379,7 @@ def main():
     parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "2l", "combo"], help = 'Which channels to plot'          )
     parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,            help = 'End points of mass range to plot')
     parser.add_argument('--graft',     dest='graft',     type=int,            default = 0,                           help = 'All masses below (inclusive) the graft value will use the first basedir, anything above will use second')
-    parser.add_argument('--p2',     dest='p2',                                default = False, action='store_true',  help = 'Make plots with r=0.2 (must run specific fits)')
+    parser.add_argument('--expSig',    dest='expSig',    type=str,            default = "None",                       help = 'Make plots with r=x (must run specific fits)')
 
     args    = parser.parse_args()
     pdfName = "_"+args.pdfName if args.pdfName != '' else args.pdfName
@@ -419,8 +419,8 @@ def main():
         asimovStr = ""
         if args.asimov:
             asimovStr = "_Asimov"
-        if args.p2:
-            asimovStr += "_0p2"
+            if args.expSig != "None":
+                asimovStr += "_%s"%(args.expSig)
 
         for model in models:
      
