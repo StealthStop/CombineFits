@@ -547,8 +547,8 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal", njets, channel == "combo") )
         hlist_pre_sig.append(makeHist(reg, pre_sig, "_pre_signal", njets, channel == "combo") )
 
-        temp_stack_b = ROOT.THStack("b_stack", "")
-        temp_stack_sb = ROOT.THStack("sb_stack", "")
+        temp_stack_b = ROOT.THStack("b_stack", ";;Number of Events")
+        temp_stack_sb = ROOT.THStack("sb_stack", ";;Number of Events")
 
         sep_post_hist_list = []
 
@@ -569,6 +569,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 else:
                     h.Fill(bins[i][0], bins[i][1])
                 h.SetBinError(i, bins[i][2])
+                h.GetYaxis().SetTitle("Number of Events")
+                h.GetYaxis().SetTitleOffset(0.55)
+                h.GetYaxis().SetTitleSize(0.175 * padRatio)
+                h.GetYaxis().SetLabelSize(0.145 * padRatio)
 
             sep_post_hist_list.append(h)
 
@@ -594,6 +598,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 else:
                     h.Fill(bins[i][0], bins[i][1])
                 h.SetBinError(i, bins[i][2])
+                h.GetYaxis().SetTitle("Number of Events")
+                h.GetYaxis().SetTitleOffset(0.55)
+                h.GetYaxis().SetTitleSize(0.175 * padRatio)
+                h.GetYaxis().SetLabelSize(0.145 * padRatio)
 
             h.SetLineColor(j+40) 
             h.SetFillColor(j+40) 
@@ -681,8 +689,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         
         if i == 0:
 
-            for hist in [hlist_post_sig[i], hlist_pre_sig[i], hlist_post_sb[i], hlist_post_b[i]]:
+            for hist in [hlist_post_sig[i], hlist_pre_sig[i], hlist_post_sb[i], hlist_post_b[i], hlist_data[i]]:
                 hist.GetYaxis().SetTitle("Number of Events")
+                hist.GetYaxis().SetTitleOffset(0.55)
                 hist.GetYaxis().SetTitleSize(0.175 * padRatio)
                 hist.GetYaxis().SetLabelSize(0.145 * padRatio)
 
@@ -718,6 +727,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             hlist_post_b[i].Draw()
             if plotFinalPred:
                 hlist_post_sep_b[i].Draw("hist")
+                hlist_post_sep_b[i].GetHistogram().GetYaxis().SetTitleOffset(1.30)
+                hlist_post_sep_b[i].GetHistogram().GetYaxis().SetLabelSize(0.145 * padRatio)
+                hlist_post_sep_b[i].GetHistogram().GetYaxis().SetTitleSize(0.175 * padRatio)
 
             # Draw again to be above stack plot
             hlist_post_b[i].Draw("E2 same")
@@ -731,6 +743,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             hlist_post_b[i].Draw()
             if plotFinalPred:
                 hlist_post_sep_sb[i].Draw("hist")
+                hlist_post_sep_sb[i].GetHistogram().GetYaxis().SetTitleOffset(1.30)
+                hlist_post_sep_sb[i].GetHistogram().GetYaxis().SetLabelSize(0.145 * padRatio)
+                hlist_post_sep_sb[i].GetHistogram().GetYaxis().SetTitleSize(0.175 * padRatio)
             #hlist_post_b[i].Draw("E2 SAME")
             hlist_post_sb[i].Draw("E2 SAME")
             hlist_post_sb[i].SetFillStyle(0)
@@ -757,8 +772,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         if plotdata:
             hlist_data[i].Draw("E1 X0 SAME")
 
-        c1.RedrawAxis()
-        c1.Update()
+        #ROOT.gPad.Modified()
+        #ROOT.gPad.Update()
+        #c1.RedrawAxis()
+        #c1.Update()
 
         if i == 0:
             l = None
@@ -798,13 +815,13 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_ratio[i].SetMarkerSize(1)
         hlist_ratio[i].SetMarkerColor(ROOT.kBlack)
 
-        hlist_ratio[i].GetYaxis().SetRangeUser(0.4, 1.6)
+        hlist_ratio[i].GetYaxis().SetRangeUser(0.75, 1.25)
         hlist_ratio[i].GetXaxis().SetLabelSize(0.2)
         hlist_ratio[i].GetXaxis().SetTitleSize(0.145)        
         hlist_ratio[i].GetXaxis().SetLabelOffset(0.027)
         hlist_ratio[i].GetYaxis().SetNdivisions(4, 2, 0)
 
-        pull_unc_list[i].GetYaxis().SetRangeUser(0.4, 1.6)
+        pull_unc_list[i].GetYaxis().SetRangeUser(0.75, 1.25)
         pull_unc_list[i].GetXaxis().SetLabelSize(0.23)
         pull_unc_list[i].GetXaxis().SetTitleSize(0.145 * pad1Size/pad4Size)        
         pull_unc_list[i].GetXaxis().SetLabelOffset(0.020)
