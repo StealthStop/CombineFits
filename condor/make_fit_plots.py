@@ -347,7 +347,7 @@ def save_to_root(hlist, outfile):
 
     out.Close()
 
-def draw_ExtraInfo(canvas, iPad, packedInfo):
+def draw_ExtraInfo(canvas, iPad, packedInfo, sigStr):
 
     canvas.cd()
 
@@ -410,6 +410,9 @@ def draw_ExtraInfo(canvas, iPad, packedInfo):
     if channelStr != "" and iPad == 3:
         text.SetTextAlign(13)
         text.DrawLatex(0.75 * extraL, 0.8, channelStr)
+    if sigStr != "" and iPad == 3:
+        text.SetTextAlign(33)
+        text.DrawLatex(1.0 - marginR - 0.2 * marginR - extraR, 0.72, sigStr[4:])
 
 # -----------------
 # draw lumi and CMS
@@ -779,7 +782,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
         if i == 0:
             l = None
-            l = ROOT.TLegend(0.25, 0.79 - nLegItems*0.075, 0.88, 0.81)
+            l = ROOT.TLegend(0.25, 0.70 - nLegItems*0.075, 1.0, 0.81)
             l.SetNColumns(2)
             l.SetTextSize(0.05)
             l.SetBorderSize(0)
@@ -846,10 +849,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
         if maskRegA: 
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i+1, channel+signal)
+            draw_ExtraInfo(p1_list[i], i+1, channel+signal, sigStr)
         else:
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i, channel+signal)
+            draw_ExtraInfo(p1_list[i], i, channel+signal, sigStr)
  
     for ext in ["pdf"]:
         c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + asimovStr + "_" + fitName + ".%s"%(ext))
