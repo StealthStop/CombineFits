@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2, minNjetMask, maxNjetMask, fixedCloseSys=None, CloseSys=None):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, fixedCloseSys=None, CloseSys=None):
      
         self.path           = path
         self.observed       = observed
@@ -47,6 +47,7 @@ class dataCardMaker:
         self.max_nj         = max_nj
         self.fixedCloseSys  = fixedCloseSys
         self.CloseSys       = CloseSys
+        self.scaleSyst      = scaleSyst
         if disc1 is not None and disc2 is not None:
             self.disc1          = str(disc1)
             self.disc2          = str(disc2)
@@ -170,8 +171,8 @@ class dataCardMaker:
                 #else:
                 binValues.append(roundedVal)
             else:
-                if self.special["DoubleSys"]:
-                    double_val = 2*(val-1)+1
+                if self.scaleSyst != None:
+                    double_val = self.scaleSyst*(val-1)+1
                     if double_val < 0.0:
                         double_val = 0.1
                     binValues.append(double_val)
@@ -284,9 +285,9 @@ class dataCardMaker:
             #    print("Currently doubling lepton systematic! CAUTION!!")
             #    val = "{:.3f}/{:.3f}".format(2*(valDown-1)+1, 2*(valUp-1)+1)
             #else:
-            if self.special["DoubleSys"]:
-                double_valDown = 2*(valDown-1)+1
-                double_valUp = 2*(valUp-1)+1
+            if self.scaleSyst != None:
+                double_valDown = self.scaleSyst*(valDown-1)+1
+                double_valUp = self.scaleSyst*(valUp-1)+1
                 if double_valDown < 0.0:
                     double_valDown = 0.1
                 if double_valUp < 0.0:
@@ -346,8 +347,8 @@ class dataCardMaker:
             reg = regions[int(bin/self.njets)] + str(self.njetStart + bin%(self.njets))
 
             binValues.append(val)
-            if self.special["DoubleSys"]:
-                binErrors.append(2*err)
+            if self.scaleSyst != None:
+                binErrors.append(self.scaleSyst*err)
             else:
                 binErrors.append(err)
             binNames.append(reg)
@@ -660,7 +661,7 @@ class dataCardMaker:
                         lumi_str += "-- "
                     else:
                         lumi_str += "{} ".format(self.lumiSyst)
-            if not self.special["NoSys"]:
+            if self.scaleSyst != 0.0:
                 file.write(lumi_str)
 
             # -----------------------------------------------------------
@@ -688,7 +689,7 @@ class dataCardMaker:
                             process_str += "{} ".format(self.observed[process1]["sys"])
                         else:
                             process_str += "{} ".format("--")
-                if not self.special["NoSys"]:
+                if self.scaleSyst != 0.0:
                     file.write(process_str)
 
             # --------------------------------------------------------
@@ -782,7 +783,7 @@ class dataCardMaker:
                             if "CorrectedData" in sys:
                                 sys_str += "-- -- -- -- "
                         
-                            if not self.special["NoSys"]:
+                            if self.scaleSyst != 0.0:
                                 file.write(sys_str)
                 else:
                     var = sys.split("_")[1]
@@ -851,7 +852,7 @@ class dataCardMaker:
                             else:
                                 sys_str += "{} ".format("--")
 
-                    if not self.special["NoSys"]:
+                    if self.scaleSyst != 0.0:
                         file.write(sys_str)
 
             sys_str = "{0:<8}".format("\n"+"np_QCD_TF_" + self.channel + '\t')
@@ -873,7 +874,7 @@ class dataCardMaker:
                         else:
                             sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][0])
 
-            if not self.special["NoSys"]:
+            if self.scaleSyst != 0.0:
                 file.write(sys_str)
 
             #sys_str = "{0:<8}".format("\n"+"np_QCD_Shape_" + self.channel + '\t')
@@ -895,7 +896,7 @@ class dataCardMaker:
             #            else:
             #                sys_str += "{:.3f} ".format(self.systematics["QCD_Shape"]["binValues"][0])
 
-            #if not self.special["NoSys"]:
+            #if self.scaleSyst != 0.0:
             #    file.write(sys_str)
                         
 
@@ -989,15 +990,15 @@ class dataCardMaker:
                                 file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
 
                     else: 
-                        file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0,{}]".format(10*rate),self.channel,self.year[-2:])) 
+                        file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0.,{}]".format(10*rate),self.channel,self.year[-2:])) 
 
                 # TTbar MC stat uncertainty applied to the alpha parameters
                 for ibin in range(0, len(self.observedPerBin), self.njets):
                     if not mask[abin+ibin]:
                         continue
                     if ibin == 0:
-                        if self.special["DoubleSys"]:
-                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],(round(self.systematics["ClosureCorrection"]["binValues"][abin],4)-1)/2.+1))
+                        if self.scaleSyst != None and self.scaleSyst != 0.0:
+                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],(round(self.systematics["ClosureCorrection"]["binValues"][abin],4)-1)/self.scaleSyst+1))
                         else:
                             file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
                 file.write("\n")

@@ -28,6 +28,8 @@ def main():
     parser.add_argument("--singleBE",        dest="singleBE",       action="store",      default=None,                                 type=str, help="Single bin edge combo to make cards for (e.g. 60_60)")
     parser.add_argument("--fixedCloseSys",   dest="fixedCloseSys",  action="store",      default=None,                                 type=str, help="Replace closure correction with flat value (for studies)")
     parser.add_argument("--CloseSys",        dest="CloseSys",       action="store",      default=None,                                 type=str, help="Use first bin (None), all bins (all), or all bins outside of coverage by the first (allWorse)")
+    parser.add_argument("--scaleSyst",       dest="scaleSyst",      action="store",      default=None,                                 type=float, help="Scale systs by some number, 0 will turn off systs")
+
     args = parser.parse_args()   
  
     # ---------------------------------------------
@@ -110,7 +112,7 @@ def main():
                                 tempSpecial = copy.copy(configfile.special)
 
                                 # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet)
+                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.scaleSyst, args.minNjet, args.maxNjet)
     elif args.singleBE is not None:
         if args.singleBE.split("_")[0] == "":
             disc1 = args.singleBE.split("_")[1]
@@ -177,7 +179,7 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.CloseSys)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.scaleSyst, None, args.CloseSys)
     else:
         # loop over to make the cards
         for model in args.model:
@@ -241,7 +243,7 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet, args.fixedCloseSys, args.CloseSys)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet, args.scaleSyst, args.fixedCloseSys, args.CloseSys)
 
 if __name__ == "__main__":
     main()
