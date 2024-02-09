@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, fixedCloseSys=None, CloseSys=None):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, injectIntoData, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, fixedCloseSys=None, CloseSys=None):
      
         self.path           = path
         self.observed       = observed
@@ -42,6 +42,7 @@ class dataCardMaker:
         self.injectedModel  = injectedModel
         self.injectedModels = "SYY" if "SYY" in model else "RPV"
         self.injectedMass   = injectedMass
+        self.injectIntoData = injectIntoData
         self.NoMCcorr       = NoMCcorr
         self.min_nj         = min_nj
         self.max_nj         = max_nj
@@ -515,6 +516,11 @@ class dataCardMaker:
         elif self.dataType == "Data":
             for n in range(self.obsNbins):
                 self.observedPerBin.append(self.observed["Data"]["binValues"][n])
+
+                for proc in self.observed.keys():
+                    if self.observed[proc]["type"] == "sig" and self.observed[proc]["inj"] and self.injectIntoData > 0.0:
+                        self.observedPerBin[-1] += self.injectIntoData * self.observed[proc]["binValues"][n]
+                 
 
     # ---------------------------------
     # For writing out txt file datacard

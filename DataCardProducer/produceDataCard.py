@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--mass",            dest="mass",           nargs="+",           default=map(str, list(range(300, 1450, 50))), type=str, help="All mass points"                                 )    
     parser.add_argument("--combo",           dest="combo",          nargs="+",           default=[],                                   type=str, help="Which channels to include in combo datacard"     )    
     parser.add_argument("--injectedSignal",  dest="injectedSignal", action="store",      default="SAME",                               type=str, help="Name of signal and mass to inject for all cards" )
+    parser.add_argument("--injectIntoData",  dest="injectIntoData", action="store",      default=0.0,                                  type=float, help="inject signal with signal strength specified" )
     parser.add_argument("--minNjet",         dest="minNjet",        action="store",      default=5,                                    type=int, help="Min Njet bin to use"                             )
     parser.add_argument("--maxNjet",         dest="maxNjet",        action="store",      default=14,                                   type=int, help="Max Njet bin to use"                             )
     parser.add_argument("--NoMCcorr",        dest="NoMCcorr",       action="store_true", default=False,                                help="Do not use Closure Correction in ABCD calculation for TT")
@@ -42,6 +43,10 @@ def main():
     configfile = None
 
     masses = args.mass
+
+    outdir = args.outpath
+    if args.injectIntoData > 0.0:
+        outdir += "_sigInjectedAt%s"%(str(args.injectIntoData).replace(".","p"))
 
     # If running with --combo flag, then we don't need to load
     # a config file, we are just going to combine cards that should already exist
@@ -70,8 +75,8 @@ def main():
 
                                 comboStr = ""
                                 for channel in args.combo:
-                                    comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, args.outpath, channel, disc1, disc2)
-                                comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, args.outpath, disc1, disc2)
+                                    comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, outdir, channel, disc1, disc2)
+                                comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, outdir, disc1, disc2)
                                 
                                 print("combineCards.py {}".format(comboStr))
                                 os.system("combineCards.py {0}".format(comboStr))
@@ -80,10 +85,10 @@ def main():
                                 Model = model + "_2t6j"
                                     
 
-                                if not os.path.isdir(args.outpath):
-                                    os.makedirs(args.outpath)
+                                if not os.path.isdir(outdir):
+                                    os.makedirs(outdir)
 
-                                outpath = "{}/{}_{}_{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel, disc1, disc2)
+                                outpath = "{}/{}_{}_{}_{}_{}_{}_{}.txt".format(outdir, year, model, mass, data, args.channel, disc1, disc2)
 
                                 print("Writing data card to {}".format(outpath))
 
@@ -112,7 +117,7 @@ def main():
                                 tempSpecial = copy.copy(configfile.special)
 
                                 # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.scaleSyst, args.minNjet, args.maxNjet)
+                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), args.injectIntoData, tempSpecial, disc1, disc2, args.scaleSyst, args.minNjet, args.maxNjet)
     elif args.singleBE is not None:
         if args.singleBE.split("_")[0] == "":
             disc1 = args.singleBE.split("_")[1]
@@ -134,8 +139,8 @@ def main():
 
                         comboStr = ""
                         for channel in args.combo:
-                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, args.outpath, channel, disc1, disc2)
-                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, args.outpath, disc1, disc2)
+                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}_{6}_{7}.txt ".format(year, model, mass, data, outdir, channel, disc1, disc2)
+                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo_{5}_{6}.txt".format(year, model, mass, data, outdir, disc1, disc2)
                         
                         print("combineCards.py {}".format(comboStr))
                         os.system("combineCards.py {0}".format(comboStr))
@@ -144,10 +149,10 @@ def main():
                         Model = model + "_2t6j"
                             
 
-                        if not os.path.isdir(args.outpath):
-                            os.makedirs(args.outpath)
+                        if not os.path.isdir(outdir):
+                            os.makedirs(outdir)
 
-                        outpath = "{}/{}_{}_{}_{}_{}_{}_{}.txt".format(args.outpath, year, model, mass, data, args.channel, disc1, disc2)
+                        outpath = "{}/{}_{}_{}_{}_{}_{}_{}.txt".format(outdir, year, model, mass, data, args.channel, disc1, disc2)
 
                         print("Writing data card to {}".format(outpath))
 
@@ -179,7 +184,7 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.scaleSyst, None, args.CloseSys)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), args.injectIntoData, tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.scaleSyst, None, args.CloseSys)
     else:
         # loop over to make the cards
         for model in args.model:
@@ -198,8 +203,8 @@ def main():
 
                         comboStr = ""
                         for channel in args.combo:
-                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}{6}.txt ".format(year, model, mass, data, args.outpath, channel, fixedCloseSysStr)
-                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo{5}.txt".format(year, model, mass, data, args.outpath, fixedCloseSysStr)
+                            comboStr += "CH{5}={4}/{0}_{1}_{2}_{3}_{5}{6}.txt ".format(year, model, mass, data, outdir, channel, fixedCloseSysStr)
+                        comboStr += "> {4}/{0}_{1}_{2}_{3}_combo{5}.txt".format(year, model, mass, data, outdir, fixedCloseSysStr)
                         
                         print("combineCards.py {}".format(comboStr))
                         os.system("combineCards.py {0}".format(comboStr))
@@ -208,10 +213,10 @@ def main():
                         Model = model + "_2t6j"
                             
 
-                        if not os.path.isdir(args.outpath):
-                            os.makedirs(args.outpath)
+                        if not os.path.isdir(outdir):
+                            os.makedirs(outdir)
 
-                        outpath = "{}/{}_{}_{}_{}_{}{}.txt".format(args.outpath, year, model, mass, data, args.channel, fixedCloseSysStr)
+                        outpath = "{}/{}_{}_{}_{}_{}{}.txt".format(outdir, year, model, mass, data, args.channel, fixedCloseSysStr)
 
                         print("Writing data card to {}".format(outpath))
 
@@ -243,7 +248,7 @@ def main():
                         tempSpecial = copy.copy(configfile.special)
 
                         # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), tempSpecial, None, None, args.minNjet, args.maxNjet, args.scaleSyst, args.fixedCloseSys, args.CloseSys)
+                        dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), args.injectIntoData, tempSpecial, None, None, args.minNjet, args.maxNjet, args.scaleSyst, args.fixedCloseSys, args.CloseSys)
 
 if __name__ == "__main__":
     main()
