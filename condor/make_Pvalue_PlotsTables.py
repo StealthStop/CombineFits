@@ -302,19 +302,26 @@ class Plotter():
 
         r = ROOT.TGraph(npoints, array('d', xpoints), rvalue)
         r.SetLineColor(ROOT.kBlack)
-        r.SetLineStyle(ROOT.kDashed)
+        r.SetLineStyle(ROOT.kSolid)
         r.SetLineWidth(3)
         r.Draw("PL same")
         c1.Update()
         
-        line = ROOT.TF1("line", "1", Xmin, Xmax)
-        line.SetLineColor(ROOT.kRed)
+        line = ROOT.TF1("line", "-1", Xmin, Xmax)
+        line.SetLineColor(ROOT.kBlack)
+        line.SetLineStyle(2)
         line.Draw("same")
         
         line2 = ROOT.TF1("line", "1", Xmin, Xmax)
         line2.SetLineColor(ROOT.kBlack)
+        line2.SetLineStyle(2)
         line2.Draw("same")
    
+        line3 = ROOT.TF1("line", "0", Xmin, Xmax)
+        line3.SetLineColor(ROOT.kBlack)
+        line3.SetLineStyle(2)
+        line3.Draw("same")
+
         if approved:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
         else:

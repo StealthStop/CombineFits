@@ -2,6 +2,7 @@
 import re
 import os
 from sys import argv, stdout, stderr, exit
+import ctypes
 import datetime
 from optparse import OptionParser
 
@@ -58,7 +59,6 @@ if prefit == None or prefit.ClassName() != "RooArgSet":    raise RuntimeError, "
 fpf_b = fit_b.floatParsFinal()
 fpf_s = fit_s.floatParsFinal()
 
-nuis_p_i=0
 title = "pull"
 
 # Also make histograms for pull distributions:
@@ -79,6 +79,9 @@ for i in range(fpf_s.getSize()):
     nuis_p = prefit.find(name)
 
     mean_p, sigma_p, sigma_pu, sigma_pd = 0,0,0,0
+
+    if "beta7" in name or "beta8" in name or "delta8" in name:
+        print(name, nuis_s.getVal(), nuis_s.getErrorLo(), nuis_s.getErrorHi())
 
     if nuis_p != None:
         b = nuis_b.getVal(); bErrUp = nuis_b.getErrorHi(); bErrDown = nuis_b.getErrorLo()
@@ -148,7 +151,9 @@ sbChi2Histo.SetFillColorAlpha(cornblue, 0.35)
 sbChi2Histo.GetXaxis().SetTitle("Nuisance Parameter #chi^{2}")
 sbChi2Histo.GetYaxis().SetTitle("NPs / bin")
 
-bchi2 = 0.0; sbchi2 = 0.0
+lastBin = 14 
+bchi2 = 0.0; sbchi2 = 0.0; chi2Max = 0.0
+nuis_b_i=0; nuis_s_i=0
 for d in nuis_list:
     name = d["name"]; 
     nuis_b = d["bobj"]; nuis_s = d["sobj"]
@@ -167,32 +172,44 @@ for d in nuis_list:
     
             #print name, d["schi2"], d["bchi2"], d["dchi2"]
             if fit_name=='b':
-                nuis_p_i+=1
                 if nuis_x.getVal() > 0:
                     bchi2 += (nuis_x.getVal() / nuis_x.getErrorLo())**2.0
                 else:
                     bchi2 += (nuis_x.getVal() / nuis_x.getErrorHi())**2.0
-                gr_fit_b.SetPoint(nuis_p_i-1,nuis_p_i-0.5+0.1,nuis_x.getVal())
-                gr_fit_b.SetPointError(nuis_p_i-1,0,0,abs(nuis_x.getErrorLo()),nuis_x.getErrorHi())
-                hist_fit_b.SetBinContent(nuis_p_i,nuis_x.getVal())
-                hist_fit_b.SetBinError(nuis_p_i,nuis_x.getError())
-                hist_fit_b.GetXaxis().SetBinLabel(nuis_p_i,name)
-                gr_fit_b.GetXaxis().SetBinLabel(nuis_p_i,name)
+
+                if nuis_b_i < lastBin:
+                    gr_fit_b.SetPoint(nuis_b_i,nuis_b_i+0.5+0.1,nuis_x.getVal())
+                    gr_fit_b.SetPointError(nuis_b_i,0,0,abs(nuis_x.getErrorLo()),nuis_x.getErrorHi())
+                    gr_fit_b.GetXaxis().SetBinLabel(nuis_b_i+1,name)
+
+                hist_fit_b.SetBinContent(nuis_b_i+1,nuis_x.getVal())
+                hist_fit_b.SetBinError(nuis_b_i+1,nuis_x.getError())
+                hist_fit_b.GetXaxis().SetBinLabel(nuis_b_i+1,name)
+
+                nuis_b_i+=1
+
             if fit_name=='s':
                 if nuis_x.getVal() > 0:
                     sbchi2 += (nuis_x.getVal() / nuis_x.getErrorLo())**2.0
                 else:
                     sbchi2 += (nuis_x.getVal() / nuis_x.getErrorHi())**2.0
 
-                gr_fit_s.SetPoint(nuis_p_i-1,nuis_p_i-0.5-0.1,nuis_x.getVal())
-                gr_fit_s.SetPointError(nuis_p_i-1,0,0,abs(nuis_x.getErrorLo()),nuis_x.getErrorHi())
-                hist_fit_s.SetBinContent(nuis_p_i,nuis_x.getVal())
-                hist_fit_s.SetBinError(nuis_p_i,nuis_x.getError())
-                hist_fit_s.GetXaxis().SetBinLabel(nuis_p_i,name)
-                gr_fit_s.GetXaxis().SetBinLabel(nuis_p_i,name)
+                if nuis_s_i < lastBin:
+                    gr_fit_s.SetPoint(nuis_s_i,nuis_s_i+0.5-0.1,nuis_x.getVal())
+                    gr_fit_s.SetPointError(nuis_s_i,0,0,abs(nuis_x.getErrorLo()),nuis_x.getErrorHi())
+                    gr_fit_s.GetXaxis().SetBinLabel(nuis_s_i+1,name)
+
+                hist_fit_s.SetBinContent(nuis_s_i+1,nuis_x.getVal())
+                hist_fit_s.SetBinError(nuis_s_i+1,nuis_x.getError())
+                hist_fit_s.GetXaxis().SetBinLabel(nuis_s_i+1,name)
+
+                nuis_s_i+=1
     
-            hist_prefit.SetBinContent(nuis_p_i,mean_p)
-            hist_prefit.SetBinError(nuis_p_i,sigma_p)
+            hist_prefit.SetBinContent(nuis_b_i,mean_p)
+            hist_prefit.SetBinError(nuis_b_i,sigma_p)
+
+            if nuis_b_i == 1 and nuis_s_i == 1:
+                chi2Max = sbchi2 - bchi2
 
             newName = ""
             nameParts = name.split("_")
@@ -223,12 +240,12 @@ for d in nuis_list:
                 if badName in niceNames: newName += niceNames[badName]
                 else:                    newName += badName
 
-            hist_prefit.GetXaxis().SetBinLabel(nuis_p_i,newName)
-            hist_prefit.GetXaxis().SetBinLabel(nuis_p_i,newName)
+            hist_prefit.GetXaxis().SetBinLabel(nuis_b_i,newName)
+            hist_prefit.GetXaxis().SetBinLabel(nuis_b_i,newName)
 
             if "combo" not in file.GetName():
-                hist_prefit.GetXaxis().SetBinLabel(nuis_p_i,newName)
-                hist_prefit.GetXaxis().SetBinLabel(nuis_p_i,newName)
+                hist_prefit.GetXaxis().SetBinLabel(nuis_b_i,newName)
+                hist_prefit.GetXaxis().SetBinLabel(nuis_b_i,newName)
 
     # end of loop over s and b
 #end of loop over all fitted parameters
@@ -247,14 +264,14 @@ YMin = 0.529; YMax = 1; RatioYMin = 0; RatioYMax = 0.529
 PadFactor = (YMax-YMin) / (RatioYMax-RatioYMin)
 ROOT.gPad.SetPad(XMin, YMin, XMax, YMax)
 
-deltaChi2 = ROOT.TGraph(); runningdChi2h = ROOT.TH1F("runningdChi2", "runningdChi2", gr_fit_b.GetN(), 0, gr_fit_b.GetN())
+deltaChi2 = ROOT.TGraph(); runningdChi2h = ROOT.TH1F("runningdChi2", "runningdChi2", gr_fit_b.GetN()+1, 0, gr_fit_b.GetN()+1)
 x1 = ROOT.Double(0.0); y1 = ROOT.Double(0.0)
 x2 = ROOT.Double(0.0); y2 = ROOT.Double(0.0)
 
 y1up = ROOT.Double(0.0); y1down = ROOT.Double(0.0)
 y2up = ROOT.Double(0.0); y2down = ROOT.Double(0.0)
 
-lastBin = 14; incldChi2 = 0.0; runningdChi2 = 0.0
+incldChi2 = 0.0; runningdChi2 = 0.0
 for i in xrange(0, gr_fit_b.GetN()):
     gr_fit_b.GetPoint(i, x1, y1)
     gr_fit_s.GetPoint(i, x2, y2) 
@@ -287,8 +304,9 @@ for i in xrange(0, gr_fit_b.GetN()):
         
 runningdChi2h.SetBinContent(lastBin+1, runningdChi2)
 deltaChi2.SetPoint(lastBin, lastBin+0.5, incldChi2)
-gr_fit_b.GetPoint(lastBin, x1, y1); gr_fit_s.GetPoint(lastBin, x2, y2)
-gr_fit_b.SetPoint(lastBin, x1, -10.0); gr_fit_s.SetPoint(lastBin, x2, -10.0)
+
+#gr_fit_b.GetPoint(lastBin, x1, y1); gr_fit_s.GetPoint(lastBin, x2, y2)
+#gr_fit_b.SetPoint(lastBin, x1, -10.0); gr_fit_s.SetPoint(lastBin, x2, -10.0)
 
 dChi2Histo.SetTitle("")
 dChi2Histo.GetYaxis().SetTitleSize(0.06)
@@ -344,8 +362,18 @@ hist_prefit.GetXaxis().SetLabelOffset(0.012)
 hist_prefit.GetYaxis().SetTitle("#theta")
 hist_prefit.SetTitle("")
 hist_prefit.SetLineColor(ROOT.kBlack)
-theMax = 1.2
-theMin = -1.7
+
+N = gr_fit_b.GetN()
+by = gr_fit_b.GetY()
+bye = gr_fit_b.GetEYhigh()
+sy = gr_fit_s.GetY()
+sye = gr_fit_s.GetEYhigh()
+
+bmax = max(abs(by[i])+bye[i] for i in range(N))
+smax = max(abs(sy[i])+sye[i] for i in range(N))
+
+theMax = 1.2*max(bmax, smax)
+
 hist_prefit.SetMaximum(theMax)
 hist_prefit.SetMinimum(-theMax)
 hist_prefit.GetXaxis().SetRangeUser(0.0,lastBin+1)
@@ -354,10 +382,26 @@ dummyChi2 = hist_prefit.Clone("dummyChi2")
 dummyChi2.Reset("ICESM")
 dummyChi2.GetXaxis().SetBinLabel(lastBin+1, "Remainder")
 
-l = ROOT.TLine(lastBin, theMin, lastBin, theMax)
+values = []
+for i in range(1, runningdChi2h.GetNbinsX()): values.append(runningdChi2h.GetBinContent(i)) 
+for i in range(0, deltaChi2.GetN()): values.append(deltaChi2.GetY()[i])
+
+theRange = abs(max(values) - min(values))
+maxChi2 = max(values) + 0.2*theRange
+minChi2 = min(values) - 0.2*theRange
+
+
+dummyChi2.GetYaxis().SetRangeUser(minChi2, maxChi2)
+
+l = ROOT.TLine(lastBin, -theMax, lastBin, theMax)
 l.SetLineWidth(2)
 l.SetLineColor(ROOT.kBlack)
 l.SetLineStyle(1)
+
+l2 = ROOT.TLine(lastBin, minChi2, lastBin, maxChi2)
+l2.SetLineWidth(2)
+l2.SetLineColor(ROOT.kBlack)
+l2.SetLineStyle(1)
 
 ROOT.gPad.SetGridx()
 #hist_prefit.Draw("E2")
@@ -423,8 +467,6 @@ dummyChi2.GetYaxis().SetLabelSize(0.1*PadFactor)
 dummyChi2.GetXaxis().SetLabelSize(0.1*PadFactor)
 dummyChi2.GetXaxis().SetLabelOffset(0.012/PadFactor)
 
-dummyChi2.GetYaxis().SetRangeUser(theMin,0.7)
-
 dummyChi2.GetYaxis().SetNdivisions(5,5,0)
 dummyChi2.SetLineStyle(2)
 dummyChi2.SetLineColor(ROOT.kBlack)
@@ -444,7 +486,7 @@ dummyChi2.Draw()
 runningdChi2h.Draw("HIST SAME")
 deltaChi2.Draw("EPsame")
 leg2.Draw("SAME")
-l.Draw("SAME")
+l2.Draw("SAME")
 ROOT.gPad.SetGridx()
 
 fig = "Nuisance_Pulls"
@@ -574,6 +616,7 @@ meta.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.05, 1 - ROOT.gPad.GetTopMargin() - 
 meta.SetTextColor(cornblue);
 meta.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.05, 1 - ROOT.gPad.GetTopMargin() - 0.26, "#LT#chi^{2}(s+b)#GT = %3.3f"%(sbmean))
 meta.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.05, 1 - ROOT.gPad.GetTopMargin() - 0.32, "#sum#chi^{2} = %3.2f"%(sbchi2))
+print(abs(chi2Max)**0.5)
 
 #fig = "006"
 #if not options.approved:

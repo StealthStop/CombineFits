@@ -23,6 +23,7 @@ GETFITS=0
 GETPVALUES=0
 GETLIMITS=0
 GETALL=0
+GETNPCOMP=0
 MASKA=0
 
 while [[ $# -gt 0 ]]
@@ -80,6 +81,10 @@ do
             GETFITS=1
             shift
             ;;
+        --npComp)
+            GETNPCOMP=1
+            shift
+            ;;
         --all)
             GETALL=1
             shift
@@ -100,6 +105,7 @@ do
             echo "    --fits                      : get the fits"
             echo "    --pvalues                   : get the pvalues"
             echo "    --limits                    : get the limits"
+            echo "    --npComp                    : get the josh plot"
             echo "    --all                       : get all four of the aforementioned results"
             echo "    --maskA                     : get fit results for masked A region"
             exit 0
@@ -127,6 +133,14 @@ for DATATYPE in ${DATATYPES[@]}; do
     
         for MODEL in ${MODELS[@]}; do
     
+            # --------------------------------------------------------------------
+            # Set the crossover point between low mass and high mass optimizations
+            # --------------------------------------------------------------------
+            GRAFT="600"
+            if [[ "${MODEL}" == *"SYY"* ]]; then
+                GRAFT="650"
+            fi
+
             # --------------------------------
             # Copy over the impacts on request
             # --------------------------------
@@ -149,7 +163,20 @@ for DATATYPE in ${DATATYPES[@]}; do
                         cd ../../../
                     fi
                 fi
-    
+
+                # ----------------------------
+                # Make the NP comparison plots
+                # ----------------------------
+                if [[ ${GETNPCOMP} == 1 ]] || [[ ${GETALL} == 1 ]]; then
+                    THECARDS=
+                    if [[ "${MASS}" -gt "${GRAFT}" ]]; then
+                        THECARDS=${CARDS[1]}
+                    else
+                        THECARDS=${CARDS[0]}
+                    fi
+                    python makeNPplots.py --fitDir Fit_Run2UL_with_${THECARDS}_${DATATYPE} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL}
+                fi
+   
                 # -------------------------
                 # Make fit plots on request
                 # -------------------------
@@ -157,9 +184,9 @@ for DATATYPE in ${DATATYPES[@]}; do
                     echo "Making the fit plots -------------------------------------------"
                     for CARD in ${CARDS[@]}; do
                         python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG}
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 0p2
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 1p0 
+                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov
+                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 0p2
+                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 1p0 
                     done
                 fi
             done
@@ -167,13 +194,6 @@ for DATATYPE in ${DATATYPES[@]}; do
             # ---------------------------
             # Make limit plots on request
             # ---------------------------                  
-            # --------------------------------------------------------------------
-            # Set the crossover point between low mass and high mass optimizations
-            # --------------------------------------------------------------------
-            GRAFT="600"
-            if [[ "${MODEL}" == *"SYY"* ]]; then
-                GRAFT="650"
-            fi
             if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
                 echo "Making limit plots -------------------------------------------"
                 python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
