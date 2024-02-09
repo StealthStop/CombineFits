@@ -10,12 +10,11 @@ DOIMPACTS=0
 DOASYMPLIMS=0
 DOFITDIAGS=0
 DOMULTIDIMS=0
-DOALL=0
 DOLOWMASSES=0
 DOHIGHMASSES=0
-DOALLMASSES=0
 DRYRUN=0
 MASKA=0
+FITSTAG=""
 
 while [[ $# -gt 0 ]]
 do
@@ -63,10 +62,6 @@ do
             DOMULTIDIMS=1
             shift
             ;;
-        --all)
-            DOALL=1
-            shift
-            ;;
         --lowMasses)
             DOLOWMASSES=1
             shift
@@ -80,12 +75,13 @@ do
             shift
             shift
             ;;
-        --allMasses)
-            DOALLMASSES=1
-            shift
-            ;;
         --maskA)
             MASKA=1
+            shift
+            ;;
+        --fitsTag)
+            FITSTAG="_$2"
+            shift
             shift
             ;;
         --dryRun)
@@ -105,9 +101,9 @@ do
             echo "    --multiDims                 : run multi dim fits"
             echo "    --lowMasses                 : run low mass optimization fits"
             echo "    --highMasses                : run high mass optimization fits"
-            echo "    --allMasses                 : run high mass optimization fits"
+            echo "    --massRange                 : specific masses to run on"
             echo "    --maskA                     : run fits with A reg excluded"
-            echo "    --all                       : run four aforementioned types of fits"
+            echo "    --fitsTag                   : tag for customizing outputs"
             echo "    --dryRun                    : do not run condor submit"
             exit 0
             ;;
@@ -121,6 +117,16 @@ done
 MASKASTR=""
 if [[ "${MASKA}" == 1 ]]; then
     MASKASTR="_NoAReg"
+fi
+
+DOALLMASSES=0
+if [[ "${DOLOWMASSES}" == 0 && "${DOHIGHMASSES}" == 0 ]]; then
+    DOALLMASSES=1
+fi
+
+DOALLFITS=0
+if [[ "${DOIMPACTS}" == 0 && "${DOASYMPLIMS}" == 0 && "${DOFITDIAGS}" == 0 && "${DOMULTIDIMS}" == 0 ]]; then
+    DOALLFITS=1
 fi
 
 for CHANNEL in ${CHANNELS[@]}; do
@@ -152,21 +158,21 @@ for CHANNEL in ${CHANNELS[@]}; do
                 fi
 
                 FITFLAGS=()
-                if [[ ${DOASYMPLIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
+                if [[ ${DOASYMPLIMS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-A")
                 fi
-                if [[ ${DOFITDIAGS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
+                if [[ ${DOFITDIAGS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-F")
                 fi
-                if [[ ${DOIMPACTS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
+                if [[ ${DOIMPACTS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-I")
                 fi
-                if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALL} == 1 ]]; then
+                if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-M")
                 fi
 
                 for FITFLAG in ${FITFLAGS[@]}; do
-                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}"
+                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR}${FITSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}${FITSTAG}"
                     echo -e "\n"
                     echo ${COMMAND}
                     if [[ ${DRYRUN} == 0 ]]; then
