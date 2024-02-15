@@ -117,7 +117,7 @@ def main():
                                 tempSpecial = copy.copy(configfile.special)
 
                                 # Construct DataCardProducer class instance, which automatically calls member functions for writing out datacards
-                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), args.injectIntoData, tempSpecial, disc1, disc2, args.scaleSyst, args.minNjet, args.maxNjet)
+                                dataCardMaker(args.inpath, tempObs, outpath, tempSys, data, args.channel, year, args.NoMCcorr, tempMinNjet, tempMaxNjet, Model, str(mass), injectedModel, str(injectedMass), args.injectIntoData, tempSpecial, disc1, disc2, args.minNjet, args.maxNjet, args.scaleSyst)
     elif args.singleBE is not None:
         if args.singleBE.split("_")[0] == "":
             disc1 = args.singleBE.split("_")[1]

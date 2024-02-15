@@ -172,11 +172,11 @@ class dataCardMaker:
                 #else:
                 binValues.append(roundedVal)
             else:
-                if self.scaleSyst != None:
-                    double_val = self.scaleSyst*(val-1)+1
-                    if double_val < 0.0:
-                        double_val = 0.1
-                    binValues.append(double_val)
+                if self.scaleSyst != None and self.scaleSyst != 0.0:
+                    scaled_val = self.scaleSyst*(val-1)+1
+                    if scaled_val < 0.0:
+                        scaled_val = 0.1
+                    binValues.append(scaled_val)
                 else:
                     binValues.append(val)
  
@@ -217,7 +217,7 @@ class dataCardMaker:
     # --------------------------------------
     # Determine systematic variations ratios
     # --------------------------------------
-    def calcVarValues(self, tfile, hdict):
+    def calcVarValues(self, tfile, hdict, saturate):
         binValues = []; binErrors =[]; binNames = []
 
         # The histogram name will most likely contain the $CHANNEL keyword
@@ -286,16 +286,22 @@ class dataCardMaker:
             #    print("Currently doubling lepton systematic! CAUTION!!")
             #    val = "{:.3f}/{:.3f}".format(2*(valDown-1)+1, 2*(valUp-1)+1)
             #else:
+
+            final_valDown = valDown
+            final_valUp   = valUp
             if self.scaleSyst != None:
-                double_valDown = self.scaleSyst*(valDown-1)+1
-                double_valUp = self.scaleSyst*(valUp-1)+1
-                if double_valDown < 0.0:
-                    double_valDown = 0.1
-                if double_valUp < 0.0:
-                    double_valUp = 0.1
-                val = "{:.3f}/{:.3f}".format(double_valDown, double_valUp)
-            else:
-                val = "{:.3f}/{:.3f}".format(valDown, valUp)
+                final_valDown = self.scaleSyst*(valDown-1)+1
+                final_valUp = self.scaleSyst*(valUp-1)+1
+                if final_valDown < 0.0:
+                    final_valDown = 0.1
+                if final_valUp < 0.0:
+                    final_valUp = 0.1
+
+            if saturate:
+                final_valDown = max(min(final_valDown, 2.0), 0.5)
+                final_valUp   = max(min(final_valUp, 2.0), 0.5)
+
+            val = "{:.3f}/{:.3f}".format(valDown, valUp)
             err = "{}/{}".format(errDown, errUp)
 
             reg = regions[int(bin/(self.njets+1))]
@@ -440,7 +446,10 @@ class dataCardMaker:
                                                                        .replace("$MASS", self.mass)
 
             if "nomHist" in self.systematics[sy].keys() or ("ClosureCorrection_" in sy and self.systematics[sy]["type"] is not "mcStat") or "TT_" in sy:
-                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy])
+                saturate=False
+                if "QCD" in sy and "JEC" in sy:
+                    saturate=True
+                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy], saturate)
             elif self.systematics[sy]["type"] != "TF":
                 self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins, _ = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
             else:
