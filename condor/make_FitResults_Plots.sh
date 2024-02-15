@@ -25,6 +25,7 @@ GETLIMITS=0
 GETALL=0
 GETNPCOMP=0
 MASKA=0
+INPUTSTAG=""
 
 while [[ $# -gt 0 ]]
 do
@@ -63,6 +64,11 @@ do
                 DATATYPES+=("$2")
                 shift
             done
+            shift
+            ;;
+        --inputsTag)
+            INPUTSTAG="$2"
+            shift
             shift
             ;;
         --impacts)
@@ -124,6 +130,10 @@ if [[ ${MASKA} == 1 ]]; then
     TAG="_NoAReg"
 fi
 
+if [[ "${INPUTSTAG}" != "" ]]; then
+    TAG="${TAG}_${INPUTSTAG}"
+fi
+
 # ------------------------------------------------------
 # Begin main looping over options to get different plots
 # ------------------------------------------------------
@@ -174,7 +184,7 @@ for DATATYPE in ${DATATYPES[@]}; do
                     else
                         THECARDS=${CARDS[0]}
                     fi
-                    python makeNPplots.py --fitDir Fit_Run2UL_with_${THECARDS}_${DATATYPE} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL}
+                    python makeNPplots.py --fitDir Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE}
                 fi
    
                 # -------------------------
@@ -182,12 +192,13 @@ for DATATYPE in ${DATATYPES[@]}; do
                 # -------------------------
                 if [[ ${GETFITS} == 1 ]]; then
                     echo "Making the fit plots -------------------------------------------"
-                    for CARD in ${CARDS[@]}; do
-                        python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG}
-                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov
-                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 0p2
-                        #python make_fit_plots.py --path Fit_Run2UL_with_${CARD}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG} --asimov --expSig 1p0 
-                    done
+                    THECARDS=
+                    if [[ "${MASS}" -gt "${GRAFT}" ]]; then
+                        THECARDS=${CARDS[1]}
+                    else
+                        THECARDS=${CARDS[0]}
+                    fi
+                    python make_fit_plots.py --path Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG}
                 fi
             done
     
