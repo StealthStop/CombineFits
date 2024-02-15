@@ -233,12 +233,14 @@ def main():
                                 "log_%s_step3.txt"                                               % (tagName),
                                 "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                                 "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
+                                "higgsCombine%s_maskAreg.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_Asimov_1p0.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_Asimov_0p2.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov_0p2.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov_1p0.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
+                                "fitDiagnostics%s_maskAreg.root"                                 % (tagName), 
                                 "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
                                 "fitDiagnostics%s_Asimov_1p0.root"                               % (tagName), 
                                 "fitDiagnostics%s_Asimov_0p2.root"                               % (tagName), 
@@ -246,6 +248,7 @@ def main():
                                 "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
                                 "impacts_%s%s%s_%s_%s_Asimov_blind.pdf"                          % (options.year, model, mass, channel, options.dataType),
                                 "log_%s_Asymp_Asimov.txt"                                        % (tagName),
+                                "log_%s_FitDiag_maskAreg.txt"                                    % (tagName),
                                 "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
                                 "log_%s_FitDiag_Asimov_1p0.txt"                                  % (tagName),
                                 "log_%s_FitDiag_Asimov_0p2.txt"                                  % (tagName),
@@ -273,7 +276,7 @@ def main():
                                 makeCards = 1
                             else:
                                 makeCards = 0
-                                
+
                             fileParts.append(transfer)
                             fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards))
                             extraAsimov = ""
@@ -316,8 +319,7 @@ def main():
                                     transfer += "\"\n"
 
                                     fileParts.append(transfer)
-                                    fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), 
-                                                                                                            str(options.iterations), str(doToyS), channel))
+                                    fileParts.append("Arguments = %s %s %s %s %s %s %s %s %s %s %s\n" % (model, stauxi2, mass, options.year, options.dataType, str(r), str(seed), str(options.numToys), str(options.iterations), str(doToyS), channel))
                                     fileParts.append("Output = %s/log-files/MyFit_%s_%s_%s_%s.stdout\n"%(options.outPath, model, mass, str(r), str(seed)))
                                     fileParts.append("Error = %s/log-files/MyFit_%s_%s_%s_%s.stderr\n"%(options.outPath, model, mass, str(r), str(seed)))
                                     fileParts.append("Log = %s/log-files/MyFit_%s_%s_%s_%s.log\n"%(options.outPath, model, mass, str(r), str(seed)))
