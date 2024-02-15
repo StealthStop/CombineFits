@@ -35,11 +35,12 @@ parser.add_option("--year",          dest="year",          default="Run2UL", hel
 parser.add_option("--mass",          dest="mass",          default="400",    help="Which signal mass to plot")
 parser.add_option("--model",         dest="model",         default="RPV",    help="Which signal model to plot")
 parser.add_option("--channel",       dest="channel",       default="1l",     help="Which channel to plot")
+parser.add_option("--dataType",      dest="dataType",      default="Data",   help="Which datatype to plot")
 parser.add_option("--fitDir",        dest="fitDir",        default="Fits",   help="Where to get fits")
 
 (options, args) = parser.parse_args()
 
-fileName = "./%s/output-files/%s_%s_%s/fitDiagnostics%s%s%sData_%s.root"%(options.fitDir,options.model,options.mass,options.year,options.year,options.model,options.mass,options.channel)
+fileName = "./%s/output-files/%s_%s_%s/fitDiagnostics%s%s%s%s_%s.root"%(options.fitDir,options.model,options.mass,options.year,options.year,options.model,options.mass,options.dataType,options.channel)
 
 if not os.path.isdir("%s/nuisances_plots"%(options.fitDir)):
     os.makedirs("%s/nuisances_plots"%(options.fitDir))
@@ -79,9 +80,6 @@ for i in range(fpf_s.getSize()):
     nuis_p = prefit.find(name)
 
     mean_p, sigma_p, sigma_pu, sigma_pd = 0,0,0,0
-
-    if "beta7" in name or "beta8" in name or "delta8" in name:
-        print(name, nuis_s.getVal(), nuis_s.getErrorLo(), nuis_s.getErrorHi())
 
     if nuis_p != None:
         b = nuis_b.getVal(); bErrUp = nuis_b.getErrorHi(); bErrDown = nuis_b.getErrorLo()
