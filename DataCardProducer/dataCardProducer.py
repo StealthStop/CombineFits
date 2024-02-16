@@ -301,7 +301,7 @@ class dataCardMaker:
                 final_valDown = max(min(final_valDown, 2.0), 0.5)
                 final_valUp   = max(min(final_valUp, 2.0), 0.5)
 
-            val = "{:.3f}/{:.3f}".format(valDown, valUp)
+            val = "{:.3f}/{:.3f}".format(final_valDown, final_valUp)
             err = "{}/{}".format(errDown, errUp)
 
             reg = regions[int(bin/(self.njets+1))]
@@ -447,7 +447,7 @@ class dataCardMaker:
 
             if "nomHist" in self.systematics[sy].keys() or ("ClosureCorrection_" in sy and self.systematics[sy]["type"] is not "mcStat") or "TT_" in sy:
                 saturate=False
-                if "QCD" in sy and "JEC" in sy:
+                if "QCD" in sy and "JEC" in sy and "2l" in self.channel:
                     saturate=True
                 self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy], saturate)
             elif self.systematics[sy]["type"] != "TF":
