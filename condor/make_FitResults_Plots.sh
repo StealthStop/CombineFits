@@ -113,6 +113,7 @@ do
             echo "    --limits                    : get the limits"
             echo "    --npComp                    : get the josh plot"
             echo "    --all                       : get all four of the aforementioned results"
+            echo "    --inputsTag                 : name for choosing particular fit results"
             echo "    --maskA                     : get fit results for masked A region"
             exit 0
             ;;
