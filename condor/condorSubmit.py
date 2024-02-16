@@ -103,6 +103,7 @@ def main():
     parser.add_option ('--toyS',           dest='toyS',        action='store_true', default = False,   help="Sig.:   Submit toy jobs instead of the normal set of fits")
     parser.add_option ('--nJobs',          dest='numJobs',           type='int',    default = -1,      help="Can specify the number of jobs for toyS")
     parser.add_option ('-i',               dest='iterations',        type='int',    default =  1,      help="Can specify the number of iterations for toyS")
+    parser.add_option ('--binMask',        dest='binMask',           type='string', default = '',      help="comma-separated list of bins to mask")
     parser.add_option ('--cards',          dest='cards',             type='string', default = 'cards', help="Folder containing data cards")
     parser.add_option ('--makeCards',      dest='makeCards',   action='store_true', default = False,   help="Make cards when landing in condor area?")
     parser.add_option ('--edgeScan',       dest='edgeScan',          type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 1 and disc 2")
@@ -278,7 +279,7 @@ def main():
                                 makeCards = 0
 
                             fileParts.append(transfer)
-                            fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards))
+                            fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i %s\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards, options.binMask))
                             extraAsimov = ""
                             if asimov == 1:
                                 extraAsimov += "_Asimov"

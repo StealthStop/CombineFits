@@ -13,8 +13,11 @@ DOMULTIDIMS=0
 DOLOWMASSES=0
 DOHIGHMASSES=0
 DRYRUN=0
-MASKA=0
+MASKABCD=("A" "B" "C" "D")
+MASKNJETS=("6" "7" "8" "9" "10" "11" "12")
+DOMASK=0
 FITSTAG=""
+CARDSTAG=""
 
 while [[ $# -gt 0 ]]
 do
@@ -75,12 +78,33 @@ do
             shift
             shift
             ;;
-        --maskA)
-            MASKA=1
+        --maskABCD)
+            DOMASK=1
+            MASKABCD=()
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                MASKABCD+=("$2")
+                shift
+            done
+            shift
+            ;;
+        --maskNjets)
+            DOMASK=1
+            MASKNJETS=()
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                MASKNJETS+=("$2")
+                shift
+            done
             shift
             ;;
         --fitsTag)
             FITSTAG="_$2"
+            shift
+            shift
+            ;;
+        --cardsTag)
+            CARDSTAG="_$2"
             shift
             shift
             ;;
@@ -102,8 +126,10 @@ do
             echo "    --lowMasses                 : run low mass optimization fits"
             echo "    --highMasses                : run high mass optimization fits"
             echo "    --massRange                 : specific masses to run on"
-            echo "    --maskA                     : run fits with A reg excluded"
+            echo "    --maskABCD                  : list of ABCD regions to exclude"
+            echo "    --maskNjets                 : list of Njets bins to exclude"
             echo "    --fitsTag                   : tag for customizing outputs"
+            echo "    --cardsTag                  : tag for grabbing specific cards"
             echo "    --dryRun                    : do not run condor submit"
             exit 0
             ;;
@@ -129,7 +155,30 @@ if [[ "${DOIMPACTS}" == 0 && "${DOASYMPLIMS}" == 0 && "${DOFITDIAGS}" == 0 && "$
     DOALLFITS=1
 fi
 
+if [[ "${CARDSTAG}" != "" ]] && [[ "${FITSTAG}" == "" ]]; then
+    FITSTAG=${CARDSTAG}
+fi
+
 for CHANNEL in ${CHANNELS[@]}; do
+
+    # Make a string of bins to mask, to be passed to run_fits_disco.sh
+    BINMASKFLAG=""
+    if [[ "${DOMASK}" == 1 ]]; then
+        for MASKA in ${MASKABCD[@]}; do
+            AUX=""
+            if [[ "${MASKA}" == "A" ]]; then
+                AUX="Sig"
+            fi
+            for MASKJ in ${MASKNJETS[@]}; do
+                if [[ "${BINMASKFLAG}" != "" ]]; then
+                    BINMASKFLAG+=","
+                fi
+                BINMASKFLAG+="mask_YUL_${AUX}${MASKA}${MASKJ}_${CHANNEL}=1"
+            done
+        done
+        BINMASKFLAG="--binMask ${BINMASKFLAG}"
+    fi
+        
     for MODEL in ${MODELS[@]}; do
         for DATATYPE in ${DATATYPES[@]}; do
             for CARD in ${CARDS[@]}; do
@@ -172,7 +221,7 @@ for CHANNEL in ${CHANNELS[@]}; do
                 fi
 
                 for FITFLAG in ${FITFLAGS[@]}; do
-                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR}${FITSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}${FITSTAG}"
+                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}${FITSTAG}"
                     echo -e "\n"
                     echo ${COMMAND}
                     if [[ ${DRYRUN} == 0 ]]; then
