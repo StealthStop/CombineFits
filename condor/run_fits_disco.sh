@@ -55,7 +55,10 @@ ls -l
 eval `scramv1 runtime -sh`
 
 # Setup a mask for the A regions for running FitDiagnostics while masking
-MASKFLAG="--setParameters ${binMask}"
+MASKFLAG=""
+if [[ "$binMask" != "None" ]]; then
+    MASKFLAG="--setParameters ${binMask}"
+fi
 
 # Determine value for "inject" flag based on "dataType"
 # This flag is used for fits to Asimov data sets
@@ -164,7 +167,7 @@ then
             combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov_1p0 -t -1 --expectSignal=1.0 > log_${tagName}_FitDiag_Asimov_1p0.txt
         fi
     else
-        combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} --rMin $rMinDiag --rMax $rMaxDiag -v 2 --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
+        combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
     fi
 fi
 
