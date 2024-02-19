@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, injectIntoData, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, fixedCloseSys=None, CloseSys=None):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, injectIntoData, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, systsToScale = [], fixedCloseSys=None, CloseSys=None):
      
         self.path           = path
         self.observed       = observed
@@ -49,6 +49,7 @@ class dataCardMaker:
         self.fixedCloseSys  = fixedCloseSys
         self.CloseSys       = CloseSys
         self.scaleSyst      = scaleSyst
+        self.systsToScale   = systsToScale
         if disc1 is not None and disc2 is not None:
             self.disc1          = str(disc1)
             self.disc2          = str(disc2)
@@ -172,7 +173,7 @@ class dataCardMaker:
                 #else:
                 binValues.append(roundedVal)
             else:
-                if self.scaleSyst != None and self.scaleSyst != 0.0:
+                if "CorrectedDataClosure" in kwargs["extra"] and (any("closure" in syst for syst in self.systsToScale) or self.systsToScale == []) and self.scaleSyst != None and self.scaleSyst != 0.0:
                     scaled_val = self.scaleSyst*(val-1)+1
                     if scaled_val < 0.0:
                         scaled_val = 0.1
@@ -217,7 +218,7 @@ class dataCardMaker:
     # --------------------------------------
     # Determine systematic variations ratios
     # --------------------------------------
-    def calcVarValues(self, tfile, hdict, saturate):
+    def calcVarValues(self, tfile, hdict, sysName, saturate = False):
         binValues = []; binErrors =[]; binNames = []
 
         # The histogram name will most likely contain the $CHANNEL keyword
@@ -289,7 +290,7 @@ class dataCardMaker:
 
             final_valDown = valDown
             final_valUp   = valUp
-            if self.scaleSyst != None:
+            if self.scaleSyst != None and (any(sysName.split("_")[-1] in syst for syst in self.systsToScale) or self.systsToScale == []):
                 final_valDown = self.scaleSyst*(valDown-1)+1
                 final_valUp = self.scaleSyst*(valUp-1)+1
                 if final_valDown < 0.0:
@@ -449,7 +450,7 @@ class dataCardMaker:
                 saturate=False
                 if "QCD" in sy and "JEC" in sy and "2l" in self.channel:
                     saturate=True
-                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy], saturate)
+                self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.varNbins = self.calcVarValues(tfile, self.systematics[sy], sy, saturate)
             elif self.systematics[sy]["type"] != "TF":
                 self.systematics[sy]["binValues"], self.systematics[sy]["binErrors"], self.systematics[sy]["binNames"], self.sysNbins, _ = self.calcBinValues(tfile, self.systematics[sy], extra=sy)
             else:
