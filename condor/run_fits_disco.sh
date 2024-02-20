@@ -192,15 +192,11 @@ then
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject}             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}_Asimov.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
-        plotImpacts.py -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov
-        plotImpacts.py --blind -i impacts_${tagName}_Asimov.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_Asimov_blind
     else
         # Generate impacts based on observation
         combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass}             ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 -o impacts_${tagName}.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3.txt
-        plotImpacts.py -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}
-        plotImpacts.py --blind -i impacts_${tagName}.json -o impacts_${year}${signalType}${mass}_${channel}_${dataType}_blind
     fi
 
     rm higgsCombine_paramFit_Test_*root
