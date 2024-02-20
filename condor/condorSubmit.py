@@ -220,7 +220,7 @@ def main():
                                 "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                                 "higgsCombine%s.FitDiagnostics.mH%s.MODEL%s.root"                % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp.Significance.mH%s.MODEL%s.root"        % (tagName, mass, model),
-                                "higgsCombine%sSCAN_r_wSig.MultiDimFit.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                                "higgsCombine%s_dLLscan.MultiDimFit.mH%s.MODEL%s.root"           % (tagName, mass, model),
                                 "ws_%s.root"                                                     % (tagName),
                                 "fitDiagnostics%s.root"                                          % (tagName), 
                                 "impacts_%s.json"                                                % (tagName),
