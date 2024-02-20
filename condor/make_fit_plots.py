@@ -855,7 +855,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             draw_ExtraInfo(p1_list[i], i, channel+signal, sigStr)
  
     for ext in ["pdf"]:
-        c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + asimovStr + "_" + fitName + ".%s"%(ext))
+        c1.Print("%s/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + asimovStr + "_" + fitName + ".%s"%(ext))
 
     
 
@@ -918,8 +918,8 @@ def main():
 
     dirTag = glob.glob(card)[0].split("/")[-1]
 
-    if not os.path.exists("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path)):
-        os.makedirs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path))
+    if not os.path.exists("%s/fit_plots/"%(options.path)):
+        os.makedirs("%s/fit_plots/"%(options.path))
 
     if not os.path.exists("results"):
         os.makedirs("results")
