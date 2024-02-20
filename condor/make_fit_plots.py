@@ -770,7 +770,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #    hlist_post_sb_b[i].Draw("L SAME")
         #    survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
         hlist_data[i].SetMarkerStyle(8)
-        hlist_data[i].SetMarkerSize(1)
+        hlist_data[i].SetMarkerSize(4)
         #hlist_data[i].SetLineWidth(2)
         if plotdata:
             hlist_data[i].Draw("E1 X0 SAME")
@@ -815,7 +815,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_ratio[i].SetTitle("")
         #hlist_ratio[i].SetLineWidth(2)
         hlist_ratio[i].SetMarkerStyle(8)
-        hlist_ratio[i].SetMarkerSize(1)
+        hlist_ratio[i].SetMarkerSize(4)
         hlist_ratio[i].SetMarkerColor(ROOT.kBlack)
 
         hlist_ratio[i].GetYaxis().SetRangeUser(0.75, 1.25)
@@ -978,13 +978,6 @@ def main():
     if not os.path.isdir("%s/fit_plots/%s/"%(options.path,dirTag)):
         os.makedirs("%s/fit_plots/%s/"%(options.path,dirTag))
     
-    if "MaxSign" in path:
-        if "SYY" in signal and mass >= 700: return
-        if "RPV" in signal and mass >= 650: return
-    elif "MassExclusion" in path:
-        if "SYY" in signal and mass < 700: return
-        if "RPV" in signal and mass < 650: return
-
     print("Making pre and post fit distributions for:")
     print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, signal, mass, channel, dataType))
     card    = "{}/output-files/{}/{}_{}_{}_{}_{}{}.txt".format(options.path, dirTag, options.year, signal, mass, dataType, channel, close)

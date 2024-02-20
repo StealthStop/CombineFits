@@ -25,6 +25,7 @@ GETLIMITS=0
 GETALL=0
 GETNPCOMP=0
 MASKA=0
+NOGRAFT=0
 INPUTSTAG=""
 
 while [[ $# -gt 0 ]]
@@ -87,7 +88,7 @@ do
             GETFITS=1
             shift
             ;;
-        --npComp)
+        --npComps)
             GETNPCOMP=1
             shift
             ;;
@@ -95,8 +96,8 @@ do
             GETALL=1
             shift
             ;;
-        --maskA)
-            MASKA=1
+        --noGraft)
+            NOGRAFT=1
             shift
             ;;
         --help)
@@ -111,10 +112,10 @@ do
             echo "    --fits                      : get the fits"
             echo "    --pvalues                   : get the pvalues"
             echo "    --limits                    : get the limits"
-            echo "    --npComp                    : get the josh plot"
+            echo "    --npComps                   : get the josh plot"
             echo "    --all                       : get all four of the aforementioned results"
+            echo "    --noGraft                   : make pvalues and limits with a single optimization"
             echo "    --inputsTag                 : name for choosing particular fit results"
-            echo "    --maskA                     : get fit results for masked A region"
             exit 0
             ;;
         *)
@@ -124,15 +125,9 @@ do
     esac
 done
 
-MASKARG=""
 TAG=""
-if [[ ${MASKA} == 1 ]]; then
-    MASKARG="--maskRegA"
-    TAG="_NoAReg"
-fi
-
 if [[ "${INPUTSTAG}" != "" ]]; then
-    TAG="${TAG}_${INPUTSTAG}"
+    TAG="_${INPUTSTAG}"
 fi
 
 # ------------------------------------------------------
@@ -180,12 +175,17 @@ for DATATYPE in ${DATATYPES[@]}; do
                 # ----------------------------
                 if [[ ${GETNPCOMP} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                     THECARDS=
-                    if [[ "${MASS}" -gt "${GRAFT}" ]]; then
-                        THECARDS=${CARDS[1]}
+                    if [[ ${NOGRAFT} == 0 ]]; then
+                        if [[ "${MASS}" -gt "${GRAFT}" ]]; then
+                            THECARDS=${CARDS[1]}
+                        else
+                            THECARDS=${CARDS[0]}
+                        fi
+                        python makeNPplots.py --fitDir Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE}
                     else
-                        THECARDS=${CARDS[0]}
+                        python makeNPplots.py --fitDir Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE}
+                        python makeNPplots.py --fitDir Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE}
                     fi
-                    python makeNPplots.py --fitDir Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --mass ${MASS} --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE}
                 fi
    
                 # -------------------------
@@ -193,13 +193,18 @@ for DATATYPE in ${DATATYPES[@]}; do
                 # -------------------------
                 if [[ ${GETFITS} == 1 ]]; then
                     echo "Making the fit plots -------------------------------------------"
-                    THECARDS=
-                    if [[ "${MASS}" -gt "${GRAFT}" ]]; then
-                        THECARDS=${CARDS[1]}
+                    if [[ ${NOGRAFT} == 0 ]]; then
+                        THECARDS=
+                        if [[ "${MASS}" -gt "${GRAFT}" ]]; then
+                            THECARDS=${CARDS[1]}
+                        else
+                            THECARDS=${CARDS[0]}
+                        fi
+                        python make_fit_plots.py --path Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL}
                     else
-                        THECARDS=${CARDS[0]}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL}
+                        python make_fit_plots.py --path Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL}
                     fi
-                    python make_fit_plots.py --path Fit_Run2UL_with_${THECARDS}_${DATATYPE}${TAG} --dataType ${DATATYPE} --channel ${CHANNEL} --mass ${MASS} --signal ${MODEL} ${MASKARG}
                 fi
             done
     
@@ -208,8 +213,13 @@ for DATATYPE in ${DATATYPES[@]}; do
             # ---------------------------                  
             if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
                 echo "Making limit plots -------------------------------------------"
-                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
-                python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --asimov --noRatio
+                if [[ ${NOGRAFT} == 0 ]]; then
+                    python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
+                    python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --asimov --noRatio
+                else
+                    python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[0]}_${DATATYPE}${TAG}_NoGraft --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
+                    python make_Limit_Plots.py --inputDirs Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outputDir GraftedLimitPlots_${CARDS[1]}_${DATATYPE}${TAG}_NoGraft --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
+                fi
             fi
     
             # -----------------------------------
@@ -217,10 +227,15 @@ for DATATYPE in ${DATATYPES[@]}; do
             # -----------------------------------
             if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                 echo "Making pvalue plots -------------------------------------------"
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 1p0
-                python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 0p2
+                if [[ ${NOGRAFT} == 0 ]]; then
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 1p0
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 0p2
+                else
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[0]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG}_NoGraft --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                    python make_Pvalue_PlotsTables.py --basedirs Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} Fit_Run2UL_with_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[1]}_${DATATYPE}${TAG}_NoGraft --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                fi
             fi
         done
     done
