@@ -173,7 +173,7 @@ class dataCardMaker:
                 #else:
                 binValues.append(roundedVal)
             else:
-                if "CorrectedDataClosure" in kwargs["extra"] and (any("closure" in syst for syst in self.systsToScale) or self.systsToScale == []) and self.scaleSyst != None and self.scaleSyst != 0.0:
+                if "CorrectedDataClosure" in kwargs["extra"] and ("closure" in self.systsToScale or self.systsToScale == []) and self.scaleSyst != None:
                     scaled_val = self.scaleSyst*(val-1)+1
                     if scaled_val < 0.0:
                         scaled_val = 0.1
@@ -290,7 +290,7 @@ class dataCardMaker:
 
             final_valDown = valDown
             final_valUp   = valUp
-            if self.scaleSyst != None and (any(sysName.split("_")[-1] in syst for syst in self.systsToScale) or self.systsToScale == []):
+            if self.scaleSyst != None and (sysName.split("_")[-1] in self.systsToScale or self.systsToScale == []):
                 final_valDown = self.scaleSyst*(valDown-1)+1
                 final_valUp = self.scaleSyst*(valUp-1)+1
                 if final_valDown < 0.0:
@@ -677,7 +677,7 @@ class dataCardMaker:
                         lumi_str += "-- "
                     else:
                         lumi_str += "{} ".format(self.lumiSyst)
-            if self.scaleSyst != 0.0:
+            if self.scaleSyst != 0.0 or "lumi" not in self.systsToScale:
                 file.write(lumi_str)
 
             # -----------------------------------------------------------
@@ -705,7 +705,7 @@ class dataCardMaker:
                             process_str += "{} ".format(self.observed[process1]["sys"])
                         else:
                             process_str += "{} ".format("--")
-                if self.scaleSyst != 0.0:
+                if self.scaleSyst != 0.0 or "norm" not in self.systsToScale:
                     file.write(process_str)
 
             # --------------------------------------------------------
@@ -799,7 +799,7 @@ class dataCardMaker:
                             if "CorrectedData" in sys:
                                 sys_str += "-- -- -- -- "
                         
-                            if self.scaleSyst != 0.0:
+                            if self.scaleSyst != 0.0 or var not in self.systsToScale:
                                 file.write(sys_str)
                 else:
                     var = sys.split("_")[1]
@@ -868,9 +868,10 @@ class dataCardMaker:
                             else:
                                 sys_str += "{} ".format("--")
 
-                    if self.scaleSyst != 0.0:
+                    if self.scaleSyst != 0.0 or var not in self.systsToScale:
                         file.write(sys_str)
 
+            # Now writing the QCD_TF stat. unc.
             sys_str = "{0:<8}".format("\n"+"np_QCD_TF_" + self.channel + '\t')
             sys_str += "{0:<7}".format("lnN ")
 
@@ -890,8 +891,7 @@ class dataCardMaker:
                         else:
                             sys_str += "{:.3f} ".format(1 + self.systematics["QCD_TF"]["binErrors"][0])
 
-            if self.scaleSyst != 0.0:
-                file.write(sys_str)
+            file.write(sys_str)
 
             #sys_str = "{0:<8}".format("\n"+"np_QCD_Shape_" + self.channel + '\t')
             #sys_str += "{0:<7}".format("lnN ")
@@ -912,7 +912,7 @@ class dataCardMaker:
             #            else:
             #                sys_str += "{:.3f} ".format(self.systematics["QCD_Shape"]["binValues"][0])
 
-            #if self.scaleSyst != 0.0:
+            #if self.scaleSyst != 0.0 or sys_str.split("_")[-1] not in self.systsToScale:
             #    file.write(sys_str)
                         
 
@@ -1013,10 +1013,7 @@ class dataCardMaker:
                     if not mask[abin+ibin]:
                         continue
                     if ibin == 0:
-                        if self.scaleSyst != None and self.scaleSyst != 0.0:
-                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],(round(self.systematics["ClosureCorrection"]["binValues"][abin],4)-1)/self.scaleSyst+1))
-                        else:
-                            file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
+                        file.write("CH{0}_mcStat{1}TT_{2} param {4} {3}".format(self.channel, self.observed["TT"]["binNames"][ibin+abin][1:], self.year[-2:], self.systematics["ClosureCorrection_StatUnc"]["binErrors"][abin],round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
                 file.write("\n")
 
                 
