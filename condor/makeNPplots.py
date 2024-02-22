@@ -216,7 +216,7 @@ for d in nuis_list:
                 badName = "QCD_TF"; channel = nameParts[-1]
 
                 newName += niceNames[badName]
-                newName += " (%s)"%(channel.replace("l", "#ell"))
+                newName += " (%s)"%(channel)
 
             elif len(nameParts) >= 3:
                 badName = nameParts[1].split("A")[0]; njets = nameParts[1].split("A")[-1]; channel = nameParts[2]; 
@@ -224,7 +224,7 @@ for d in nuis_list:
                 if badName in niceNames: newName += niceNames[badName]
                 else:                    newName += badName
 
-                newName += " (N_{jets}=%s)"%(njets)
+                newName += " (N_{jets}=%s) (%s)"%(njets,channel)
 
             elif len(nameParts) >= 2:
                 badName = nameParts[1]
