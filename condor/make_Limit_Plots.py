@@ -660,21 +660,21 @@ class LimitPlots():
             elif (self.model=="StealthSYY"):
                 legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
             legend.AddEntry(grMean_2l,  "Mean expected limit (2l)",   "l" )
-            if "SYY" in self.model:
-                f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
+            #if "SYY" in self.model:
+            #    f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
-                old = f.Get("Figure 6b").Get("Graph1D_y3")
-                if not self.noRatio:
-                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                    old.Draw("lp")
-            elif "RPV" in self.model:
-                f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
+            #    old = f.Get("Figure 6b").Get("Graph1D_y3")
+            #    if not self.noRatio:
+            #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
+            #        old.Draw("lp")
+            #elif "RPV" in self.model:
+            #    f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
 
-                old = f.Get("Figure 6a").Get("Graph1D_y3")
+            #    old = f.Get("Figure 6a").Get("Graph1D_y3")
 
-                if not self.noRatio:
-                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                    old.Draw("lp")
+            #    if not self.noRatio:
+            #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
+            #        old.Draw("lp")
             legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
             if not asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
 
