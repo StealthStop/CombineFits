@@ -45,9 +45,9 @@ class Plotter():
                        "2017"        : "2017", 
                        "2018"        : "2018",
                        "Run2UL"      : "Run2UL", 
-                       "0l"          : "fully-hadronic", 
-                       "1l"          : "semi-leptonic",
-                       "2l"          : "fully-leptonic", 
+                       "0l"          : "0l", 
+                       "1l"          : "1l",
+                       "2l"          : "2l", 
                        "combo"       : "Combo", 
         }
 
