@@ -9,15 +9,17 @@ USERMASSRANGE=""
 DOIMPACTS=0
 DOASYMPLIMS=0
 DOFITDIAGS=0
-DOMULTIDIMS=0
+DODLLSCANS=0
 DOLOWMASSES=0
 DOHIGHMASSES=0
 DRYRUN=0
 MASKABCD=("A" "B" "C" "D")
 MASKNJETS=("6" "7" "8" "9" "10" "11" "12")
+MASKCHANNELS=("0l" "1l" "2l")
 DOMASK=0
 FITSTAG=""
 CARDSTAG=""
+ASIMOVOPTIONS=("0" "1")
 
 while [[ $# -gt 0 ]]
 do
@@ -49,6 +51,15 @@ do
             done
             shift
             ;;
+        --asimovOptions)
+            ASIMOVOPTIONS=()
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                ASIMOVOPTIONS+=("$2")
+                shift
+            done
+            shift
+            ;;
         --impacts)
             DOIMPACTS=1
             shift
@@ -61,8 +72,8 @@ do
             DOFITDIAGS=1
             shift
             ;;
-        --multiDims)
-            DOMULTIDIMS=1
+        --dLLscans)
+            DODLLSCANS=1
             shift
             ;;
         --lowMasses)
@@ -98,6 +109,16 @@ do
             done
             shift
             ;;
+        --maskChannels)
+            DOMASK=1
+            MASKCHANNELS=()
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                MASKCHANNELS+=("$2")
+                shift
+            done
+            shift
+            ;;
         --fitsTag)
             FITSTAG="_$2"
             shift
@@ -119,6 +140,7 @@ do
             echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
             echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
             echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
+            echo "    --asimovOptions             : specify run asimov, or not, or both"
             echo "    --impacts                   : run impacts"
             echo "    --asympLimits               : run asymptotic limits"
             echo "    --fitDiags                  : run fit diagnostics"
@@ -128,6 +150,7 @@ do
             echo "    --massRange                 : specific masses to run on"
             echo "    --maskABCD                  : list of ABCD regions to exclude"
             echo "    --maskNjets                 : list of Njets bins to exclude"
+            echo "    --maskChannels              : for combo fit, list of channels to exclude"
             echo "    --fitsTag                   : tag for customizing outputs"
             echo "    --cardsTag                  : tag for grabbing specific cards"
             echo "    --dryRun                    : do not run condor submit"
@@ -140,40 +163,57 @@ do
     esac
 done
 
-MASKASTR=""
-if [[ "${MASKA}" == 1 ]]; then
-    MASKASTR="_NoAReg"
-fi
-
+# If the user does not specify any specific masses, assume all
 DOALLMASSES=0
-if [[ "${DOLOWMASSES}" == 0 && "${DOHIGHMASSES}" == 0 ]]; then
+if [[ ${DOLOWMASSES} == 0 && ${DOHIGHMASSES} == 0 ]]; then
     DOALLMASSES=1
 fi
 
+# If the user does not specify any types of fits, assume they want all of them
 DOALLFITS=0
-if [[ "${DOIMPACTS}" == 0 && "${DOASYMPLIMS}" == 0 && "${DOFITDIAGS}" == 0 && "${DOMULTIDIMS}" == 0 ]]; then
+if [[ ${DOIMPACTS} == 0 && ${DOASYMPLIMS} == 0 && ${DOFITDIAGS} == 0 && ${DODLLSCANS} == 0 ]]; then
     DOALLFITS=1
 fi
 
-if [[ "${CARDSTAG}" != "" ]] && [[ "${FITSTAG}" == "" ]]; then
+# If the user does not specify a custom tag
+# for the outputs folder, use the data cards tag
+# that was specified
+if [[ ${CARDSTAG} != "" ]] && [[ ${FITSTAG} == "" ]]; then
     FITSTAG=${CARDSTAG}
 fi
 
+# Begin main loop over all options for determining fit jobs to submit
 for CHANNEL in ${CHANNELS[@]}; do
+
+    # For any non-combo fit, the channels to mask
+    # should only be the specific channel specified
+    if [[ ${CHANNEL} != "combo" ]]; then
+        MASKCHANNELS=("${CHANNEL}")
+    fi
 
     # Make a string of bins to mask, to be passed to run_fits_disco.sh
     BINMASKFLAG=""
-    if [[ "${DOMASK}" == 1 ]]; then
-        for MASKA in ${MASKABCD[@]}; do
-            AUX=""
-            if [[ "${MASKA}" == "A" ]]; then
-                AUX="Sig"
+    if [[ ${DOMASK} == 1 ]]; then
+        for MASKCH in ${MASKCHANNELS[@]}; do
+
+            # For the combo fit, the bins get an extra CH${channel}_ in their name
+            THEMASKCH=""
+            if [[ ${MASKCH} != ${CHANNEL} ]]; then
+                THEMASKCH="CH${MASKCH}_"
             fi
-            for MASKJ in ${MASKNJETS[@]}; do
-                if [[ "${BINMASKFLAG}" != "" ]]; then
-                    BINMASKFLAG+=","
+            for MASKA in ${MASKABCD[@]}; do
+
+                # For A region bins, a "Sig" is appended to the "A"
+                AUX=""
+                if [[ ${MASKA} == "A" ]]; then
+                    AUX="Sig"
                 fi
-                BINMASKFLAG+="mask_YUL_${AUX}${MASKA}${MASKJ}_${CHANNEL}=1"
+                for MASKJ in ${MASKNJETS[@]}; do
+                    if [[ ${BINMASKFLAG} != "" ]]; then
+                        BINMASKFLAG+=","
+                    fi
+                    BINMASKFLAG+="mask_${THEMASKCH}YUL_${AUX}${MASKA}${MASKJ}_${MASKCH}=1"
+                done
             done
         done
         BINMASKFLAG="--binMask ${BINMASKFLAG}"
@@ -184,22 +224,22 @@ for CHANNEL in ${CHANNELS[@]}; do
             for CARD in ${CARDS[@]}; do
 
                 # Do only low or high mass optimization fits depending on user
-                if [[ "${CARD}" == *"Max"* && ${DOLOWMASSES} == 0 && ${DOALLMASSES} == 0 ]] || [[ "${CARD}" == *"Mass"* && ${DOHIGHMASSES} == 0 && ${DOALLMASSES} == 0 ]]; then
+                if [[ ${CARD} == *"Max"* && ${DOLOWMASSES} == 0 && ${DOALLMASSES} == 0 ]] || [[ ${CARD} == *"Mass"* && ${DOHIGHMASSES} == 0 && ${DOALLMASSES} == 0 ]]; then
                     continue
                 fi
 
                 # Determine the nominal mass range to submit jobs for based on model and set of data cards
                 MASSRANGE=""
-                if [[ "${USERMASSRANGE}" == *"-"* ]]; then
+                if [[ ${USERMASSRANGE} == *"-"* ]]; then
                     MASSRANGE=${USERMASSRANGE}
                 else
-                    if [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Max"* ]]; then
+                    if [[ ${MODEL} == *"SYY"* && ${CARD} == *"Max"* ]]; then
                         MASSRANGE="300-650"
-                    elif [[ "${MODEL}" == *"SYY"* && "${CARD}" == *"Mass"* ]]; then
+                    elif [[ ${MODEL} == *"SYY"* && ${CARD} == *"Mass"* ]]; then
                         MASSRANGE="700-1400"
-                    elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Max"* ]]; then
+                    elif [[ ${MODEL} == *"RPV"* && ${CARD} == *"Max"* ]]; then
                         MASSRANGE="300-600"
-                    elif [[ "${MODEL}" == *"RPV"* && "${CARD}" == *"Mass"* ]]; then
+                    elif [[ ${MODEL} == *"RPV"* && ${CARD} == *"Mass"* ]]; then
                         MASSRANGE="650-1400"
                     else
                         echo "Could not determine mass range !"
@@ -216,18 +256,24 @@ for CHANNEL in ${CHANNELS[@]}; do
                 if [[ ${DOIMPACTS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-I")
                 fi
-                if [[ ${DOMULTIDIMS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
+                if [[ ${DODLLSCANS} == 1 ]] || [[ ${DOALLFITS} == 1 ]]; then
                     FITFLAGS+=("-M")
                 fi
 
                 for FITFLAG in ${FITFLAGS[@]}; do
-                    COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} --cards=${CARD}_${DATATYPE}${MASKASTR}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${MASKASTR}${FITSTAG}"
-                    echo -e "\n"
-                    echo ${COMMAND}
-                    if [[ ${DRYRUN} == 0 ]]; then
-                        sleep 1
-                        eval ${COMMAND} 
-                    fi
+                    for ASIMOVOPTION in ${ASIMOVOPTIONS[@]}; do
+                        ASIMOVFLAG=""
+                        if [[ ${ASIMOVOPTION} == "1" ]]; then
+                            ASIMOVFLAG="--doAsimov"
+                        fi
+                        COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} ${ASIMOVFLAG} --cards=${CARD}_${DATATYPE}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${FITSTAG}"
+                        echo -e "\n"
+                        echo ${COMMAND}
+                        if [[ ${DRYRUN} == 0 ]]; then
+                            sleep 1
+                            eval ${COMMAND} 
+                        fi
+                    done
                 done
             done
         done
