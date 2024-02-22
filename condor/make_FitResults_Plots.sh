@@ -87,7 +87,7 @@ do
             GETALL=0
             shift
             ;;
-        --dllScans)
+        --dLLscans)
             GETDLLSCANS=1
             GETALL=0
             shift
@@ -108,7 +108,7 @@ do
             echo "    --pvalues                   : make the pvalues/signal strength plots"
             echo "    --limits                    : make the expected and observed limits plots"
             echo "    --npComps                   : make the nuisance parameter comparison plots"
-            echo "    --dllScans                  : make the dLL vs r scan plots"
+            echo "    --dLLscans                  : make the dLL vs r scan plots"
             echo "    --noGraft                   : make pvalues and limits with a single optimization"
             echo "    --inputsTag                 : name for choosing particular fit results"
             exit 0
@@ -171,6 +171,7 @@ for DATATYPE in ${DATATYPES[@]}; do
                         mkdir -p ${DLLOUTPATH}
                         plot1DScan.py ${FITPREFIX}_${THECARDS}_${DATATYPE}${TAG}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim
                         mv Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf ${DLLOUTPATH}
+                        rm Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim*
                     fi
 
                     # -----------------------------------
@@ -209,7 +210,8 @@ for DATATYPE in ${DATATYPES[@]}; do
                         if [[ ${GETDLLSCANS} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                             mkdir -p ${FITPREFIX}_${CARD}_${DATATYPE}${TAG}/dLLscan_plots
                             plot1DScan.py ${FITPREFIX}_${CARD}_${DATATYPE}${TAG}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim
-                            mv Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG}/dLLscan_plots
+                            mv Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf ${FITPREFIX}_${CARD}_${DATATYPE}${TAG}/dLLscan_plots
+                            rm Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim*
                         fi
 
                         # -----------------------------------
@@ -248,7 +250,11 @@ for DATATYPE in ${DATATYPES[@]}; do
             # -----------------------------------
             if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                 if [[ ${NOGRAFT} == 0 ]]; then
-                    python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                    if [[ ${CHANNEL} == "combo" ]]; then
+                        python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels 0l 1l 2l combo --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                    else
+                        python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                    fi
                     python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
                     python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 1p0
                     python make_Pvalue_PlotsTables.py --basedirs ${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG} --outdir GraftedPvaluePlots_${CARDS[0]}_${DATATYPE}${TAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 0p2
