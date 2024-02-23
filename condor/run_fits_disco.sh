@@ -131,7 +131,7 @@ then
     if [ $asimov == 1 ]
     then
         combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
-        if [ ${dataType} == "Data" || ${dataType} == "pseudoData" ]
+        if [ ${dataType} == "Data" ] || [ ${dataType} == "pseudoData" ]
         then
             combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=1.0 -n ${tagName}_SignifExp_Asimov_1p0 > log_${tagName}_Sign_Asimov_1p0.txt
             combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=0.2 -n ${tagName}_SignifExp_Asimov_0p2 > log_${tagName}_Sign_Asimov_0p2.txt
@@ -184,7 +184,7 @@ then
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
         combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject}             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}_Asimov.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
-        if [ ${dataType} == "Data" || ${dataType} == "pseudoData" ]
+        if [ ${dataType} == "Data" ] || [ ${dataType} == "pseudoData" ]
         then
             combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=1.0 ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov_1p0.txt
             combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=1.0 ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov_1p0.txt
