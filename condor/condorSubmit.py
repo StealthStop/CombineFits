@@ -257,6 +257,12 @@ def main():
                             "log_%s_step1_Asimov.txt"                                        % (tagName),
                             "log_%s_step2_Asimov.txt"                                        % (tagName),
                             "log_%s_step3_Asimov.txt"                                        % (tagName),
+                            "log_%s_step1_Asimov_0p2.txt"                                    % (tagName),
+                            "log_%s_step2_Asimov_0p2.txt"                                    % (tagName),
+                            "log_%s_step3_Asimov_0p2.txt"                                    % (tagName),
+                            "log_%s_step1_Asimov_1p0.txt"                                    % (tagName),
+                            "log_%s_step2_Asimov_1p0.txt"                                    % (tagName),
+                            "log_%s_step3_Asimov_1p0.txt"                                    % (tagName),
                             "Run2UL_%s_%s_pseudoDataS_%s%s.txt"                              % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
                             "Run2UL_%s_%s_pseudoData_%s%s.txt"                               % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
                         ]
