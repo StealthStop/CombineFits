@@ -167,7 +167,7 @@ fi
 if [ $doMulti == 1 ] 
 then
     echo "Running MultiDimFit"
-    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -5.0 --rMax 5.0 --autoRange 5 --algo=grid --points=50 -n ${tagName}_dLLscan > /dev/null
+    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -20.0 --rMax 20.0 --autoRange 10 --algo=grid --points=100 -n ${tagName}_dLLscan > /dev/null
 fi
 
 # Run fits for making impact plots (using the CombineHarvester repo)

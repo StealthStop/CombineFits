@@ -1,6 +1,5 @@
 #!/bin/bash
 
-CARDS=("cards_MaxSign" "cards_MassExclusion")
 MODELS=("RPV" "StealthSYY")
 MASSES=("400" "800")
 CHANNELS=("0l" "1l" "2l" "combo")
@@ -17,7 +16,24 @@ GETALL=1
 
 NOGRAFT=0
 INPUTSTAG=""
-FITPREFIX="Fit_Run2UL_with"
+
+printHelp () {
+    echo "How run this script:"
+    echo "./make_FitResults_Plots.sh [OPTIONS]"
+    echo "[OPTIONS]"
+    echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
+    echo "    --masses mass1 mass2 ...    : space-separated list of the masses to process"
+    echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
+    echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
+    echo "    --fits                      : make the fits bonly and sb ABCD-njets plots"
+    echo "    --pvalues                   : make the pvalues/signal strength plots"
+    echo "    --limits                    : make the expected and observed limits plots"
+    echo "    --npComps                   : make the nuisance parameter comparison plots"
+    echo "    --dLLscans                  : make the dLL vs r scan plots"
+    echo "    --noGraft                   : make pvalues and limits with a single optimization"
+    echo "    --asimov                    : get the asimov version of applicable plots"
+    echo "    --inputsTag                 : name for choosing particular fit results"
+}
 
 while [[ $# -gt 0 ]]
 do
@@ -102,29 +118,19 @@ do
             shift
             ;;
         --help)
-            echo "How run this script:"
-            echo "./make_FitResults_Plots.sh [OPTIONS]"
-            echo "[OPTIONS]"
-            echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
-            echo "    --masses mass1 mass2 ...    : space-separated list of the masses to process"
-            echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
-            echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
-            echo "    --fits                      : make the fits bonly and sb ABCD-njets plots"
-            echo "    --pvalues                   : make the pvalues/signal strength plots"
-            echo "    --limits                    : make the expected and observed limits plots"
-            echo "    --npComps                   : make the nuisance parameter comparison plots"
-            echo "    --dLLscans                  : make the dLL vs r scan plots"
-            echo "    --noGraft                   : make pvalues and limits with a single optimization"
-            echo "    --asimov                    : get the asimov version of applicable plots"
-            echo "    --inputsTag                 : name for choosing particular fit results"
+            printHelp
             exit 0
             ;;
         *)
             echo "Unknown option \"$1\""
+            printHelp
             exit 1
             ;;
     esac
 done
+
+CARDS=("cards_MaxSign" "cards_MassExclusion")
+FITPREFIX="Fit_Run2UL_with"
 
 # If particular fit results are selected, propagate that name
 TAG=""
@@ -169,7 +175,7 @@ for DATATYPE in ${DATATYPES[@]}; do
                     if [[ ${GETDLLSCANS} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                         DLLOUTPATH="${FITDIR}/dLLscan_plots"
                         mkdir -p ${DLLOUTPATH}
-                        plot1DScan.py ${FITDIR}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output scan
+                        plot1DScan.py ${FITDIR}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output scan --y-max 17 --y-cut 11
                         mv scan.pdf ${DLLOUTPATH}/Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf && rm scan*
                     fi
 
@@ -180,58 +186,57 @@ for DATATYPE in ${DATATYPES[@]}; do
                         IMPACTSNAME="impacts_Run2UL${MODEL}${MASS}_${CHANNEL}_${DATATYPE}"
                         IMPACTSTAG="impacts_Run2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}"
                         mkdir -p ${IMPACTSOUTPATH}
+
+                        ASIMOVTAGS=("")
                         if [[ ${GETASIMOV} == 1 ]]; then
-                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}_Asimov.json     -o ${IMPACTSNAME}_Asimov
-                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}_Asimov_0p2.json -o ${IMPACTSNAME}_Asimov_0p2
-                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}_Asimov_1p0.json -o ${IMPACTSNAME}_Asimov_1p0
-                        else
-                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}.json -o ${IMPACTSNAME}
-                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}.json -o ${IMPACTSNAME}_blind --blind
-                        fi
+                            ASIMOVTAGS=("_Asimov" "_Asimov_0p2" "_Asimov_1p0")
+                        fi 
+                        for ASIMOVTAG in ${ASIMOVTAGS[@]}; do
+                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}${ASIMOVTAG}.json -o ${IMPACTSNAME}${ASIMOVTAG}
+                            plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}${ASIMOVTAG}.json -o ${IMPACTSNAME}${ASIMOVTAG}_blind --blind
+                        done
                         mv ${IMPACTSNAME}*.pdf ${IMPACTSOUTPATH}
                     fi
                 done
             done
 
-            TAGHIGH="${CARDS[1]}_${DATATYPE}${TAG}"
-            TAGLOW="${CARDS[0]}_${DATATYPE}${TAG}"
-            FITDIRHIGH="${FITPREFIX}_${TAGHIGH}"
-            FITDIRLOW="${FITPREFIX}_${TAGLOW}"
-    
-            # Make limit plots on request
-            if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
-                if [[ ${NOGRAFT} == 0 ]]; then
-                    if [[ ${GETASIMOV} == 0 ]]; then
-                        python make_Limit_Plots.py --inputDirs ${FITDIRLOW} ${FITDIRHIGH} --outputDir GraftedLimitPlots_${TAGLOW} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
-                    else
-                        python make_Limit_Plots.py --inputDirs ${FITDIRLOW} ${FITDIRHIGH} --outputDir GraftedLimitPlots_${TAGLOW} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --asimov --noRatio
-                    fi
-                else
-                    python make_Limit_Plots.py --inputDirs ${FITDIRLOW} ${FITDIRLOW} --outputDir GraftedLimitPlots_${TAGLOW}_NoGraft --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
-                    python make_Limit_Plots.py --inputDirs ${FITDIRHIGH} ${FITDIRHIGH} --outputDir GraftedLimitPlots_${TAGHIGH}_NoGraft --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} --noRatio
-                fi
+            ASIMOVFLAG=""
+            EXPSIGS=("")
+            if [[ ${GETASIMOV} == 1 ]]; then
+                ASIMOVFLAG="--asimov"
+                EXPSIGS=("" "--expSig 0p2" "--expSig 1p0")
             fi
+
+            # For pvalue plots, can feed in all channels together
+            THECHANNEL=${CHANNEL}
+            if [[ ${CHANNEL} == "combo" ]]; then
+                THECHANNEL="0l 1l 2l combo"
+            fi
+
+            GRAFTTAG="${CARDS[0]}_${DATATYPE}${TAG}"
+            FITDIRS="${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG}"
+            for CARD in ${CARDS[@]}; do
     
-            # Make pvalue plots/tables on request
-            if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                 # If not grafting, get all results for one optimization
-                if [[ ${NOGRAFT} == 0 ]]; then
-                    if [[ ${GETASIMOV} == 0 ]]; then
-                        if [[ ${CHANNEL} == "combo" ]]; then
-                            python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGLOW} --channels 0l 1l 2l combo --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
-                        else
-                            python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGLOW} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
-                        fi
-                    else
-                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGLOW} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov
-                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGLOW} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 1p0
-                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGLOW} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} --asimov --expSig 0p2
-                    fi
-                else
-                    python make_Pvalue_PlotsTables.py --basedirs ${FITDIRLOW} ${FITDIRLOW} --outdir GraftedPvaluePlots_${TAGLOW}_NoGraft --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
-                    python make_Pvalue_PlotsTables.py --basedirs ${FITDIRHIGH} ${FITDIRHIGH} --outdir GraftedPvaluePlots_${TAGHIGH}_NoGraft --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE}
+                if [[ ${NOGRAFT} == 0 ]] && [[ ${CARD} == ${CARDS[1]} ]]; then
+                    continue
+                elif [[ ${NOGRAFT} == 1 ]]; then
+                    GRAFTTAG="${CARD}_${DATATYPE}${TAG}"
+                    FITDIRS="${FITPREFIX}_${GRAFTTAG} ${FITPREFIX}_${GRAFTTAG}"
                 fi
-            fi
+
+                # Make limit plots on request
+                if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
+                    python make_Limit_Plots.py --inputDirs ${FITDIRS} --outputDir GraftedLimitPlots_${GRAFTTAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} ${ASIMOVFLAG} --noRatio
+                fi
+    
+                # Make pvalue plots/tables on request
+                if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
+                    for EXPSIG in ${EXPSIGS[@]}; do
+                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRS} --outdir GraftedPvaluePlots_${GRAFTTAG} --channels ${THECHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} ${ASIMOVFLAG} ${EXPSIG}
+                    done
+                fi
+            done
         done
     done
 done
