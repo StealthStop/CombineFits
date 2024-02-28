@@ -16,8 +16,8 @@ class SystTabulator():
 
         self.processes = ["TT", "Minor", model]
 
-        self.npEncoding = ["pdf", "scl", "fsr", "pu", "", "CorrectedDataClosure", "CC", "QCD_TF", "", "JEC", "JER", "btg", "ttg", "lep", "prf", "", "lumi", "TTX", "Other"]
-        self.npDecoding = [ "PDF", "($\mu_\mathrm{R}$, $\mu_\mathrm{F}$) scales", "FSR", "Pileup", "", "Non-Closure (Post-Correction)", "Correction Stat. Unc.", "QCD TF", "", "JES", "JER", "b tagging", "Top tagging", "Lepton ID", "Prefiring", "", "Integrated Luminosity", "Theoretical Cross Section", "Theoretical Cross Section"]
+        self.npEncoding = ["pdf", "scl", "fsr", "isr", "pu", "", "CorrectedDataClosure", "CC", "QCD_TF", "", "JEC", "JER", "btg", "ttg", "lep", "jet", "prf", "", "lumi", "TTX", "Other"]
+        self.npDecoding = [ "PDF", "($\mu_\mathrm{R}$, $\mu_\mathrm{F}$) scales", "FSR", "ISR", "Pileup", "", "Non-Closure (Post-Corr.)", "Closure Corr. Stat. Unc.", "QCD TF", "", "JES", "JER", "b tagging", "Top tagging", "Lepton ID/trigger", "Jet trigger", "Prefiring", "", "Integrated Luminosity", "Theoretical Cross Section", "Theoretical Cross Section"]
 
     # Upon specifying mass point, year, model, channel, and disc values for a particular fit
     # Parse the corresponding data card to get systematics and rates
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     if not os.path.exists(outPath):
         os.makedirs(outPath)
 
-    dataCardPath = "%s/%s_%s_%s_pseudoData_%s.txt"%(dataCardsPath, year, model, mass, channel)
+    dataCardPath = "%s/%s_%s_%s_Data_%s.txt"%(dataCardsPath, year, model, mass, channel)
 
     tabby = SystTabulator(dataCardPath, outPath, channel, model, mass, year)
 
