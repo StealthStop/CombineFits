@@ -426,7 +426,7 @@ def main():
         asimovStr = ""
         if args.asimov:
             asimovStr = "_Asimov"
-            if args.expSig != "None":
+            if args.expSig != "None" and args.expSig != "0p0":
                 asimovStr += "_%s"%(args.expSig)
 
         for model in models:

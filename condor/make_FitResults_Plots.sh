@@ -11,8 +11,9 @@ GETPVALUES=0
 GETLIMITS=0
 GETNPCOMPS=0
 GETDLLSCANS=0
-GETASIMOV=0
 GETALL=1
+
+ASIMOVINJECTIONS=("")
 
 NOGRAFT=0
 INPUTSTAG=""
@@ -31,7 +32,7 @@ printHelp () {
     echo "    --npComps                   : make the nuisance parameter comparison plots"
     echo "    --dLLscans                  : make the dLL vs r scan plots"
     echo "    --noGraft                   : make pvalues and limits with a single optimization"
-    echo "    --asimov                    : get the asimov version of applicable plots"
+    echo "    --asimovInjs                : get the asimov version of applicable plots with injected signal strengths"
     echo "    --inputsTag                 : name for choosing particular fit results"
 }
 
@@ -113,8 +114,13 @@ do
             NOGRAFT=1
             shift
             ;;
-        --asimov)
-            GETASIMOV=1
+        --asimovInjs)
+            ASIMOVINJECTIONS=()
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                ASIMOVINJECTIONS+=("$2")
+                shift
+            done
             shift
             ;;
         --help)
@@ -175,7 +181,7 @@ for DATATYPE in ${DATATYPES[@]}; do
                     if [[ ${GETDLLSCANS} == 1 ]] || [[ ${GETALL} == 1 ]]; then
                         DLLOUTPATH="${FITDIR}/dLLscan_plots"
                         mkdir -p ${DLLOUTPATH}
-                        plot1DScan.py ${FITDIR}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output scan --y-max 17 --y-cut 11
+                        plot1DScan.py ${FITDIR}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output scan --y-max 17 --y-cut 17
                         mv scan.pdf ${DLLOUTPATH}/Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf && rm scan*
                     fi
 
@@ -187,11 +193,14 @@ for DATATYPE in ${DATATYPES[@]}; do
                         IMPACTSTAG="impacts_Run2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}"
                         mkdir -p ${IMPACTSOUTPATH}
 
-                        ASIMOVTAGS=("")
-                        if [[ ${GETASIMOV} == 1 ]]; then
-                            ASIMOVTAGS=("_Asimov" "_Asimov_0p2" "_Asimov_1p0")
-                        fi 
-                        for ASIMOVTAG in ${ASIMOVTAGS[@]}; do
+                        for ASIMOVINJECTION in "${ASIMOVINJECTIONS[@]}"; do
+                            ASIMOVTAG=""
+                            if [[ ${ASIMOVINJECTION} != "" ]]; then 
+                                ASIMOVTAG="_Asimov"
+                                if [[ "${ASIMOVINJECTION}" != "0.0" ]]; then
+                                    ASIMOVTAG+="_${ASIMOVINJECTION/./p}"
+                                fi
+                            fi
                             plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}${ASIMOVTAG}.json -o ${IMPACTSNAME}${ASIMOVTAG}
                             plotImpacts.py -i ${IMPACTSINPATH}/${IMPACTSTAG}${ASIMOVTAG}.json -o ${IMPACTSNAME}${ASIMOVTAG}_blind --blind
                         done
@@ -199,13 +208,6 @@ for DATATYPE in ${DATATYPES[@]}; do
                     fi
                 done
             done
-
-            ASIMOVFLAG=""
-            EXPSIGS=("")
-            if [[ ${GETASIMOV} == 1 ]]; then
-                ASIMOVFLAG="--asimov"
-                EXPSIGS=("" "--expSig 0p2" "--expSig 1p0")
-            fi
 
             # For pvalue plots, can feed in all channels together
             THECHANNEL=${CHANNEL}
@@ -215,27 +217,35 @@ for DATATYPE in ${DATATYPES[@]}; do
 
             GRAFTTAG="${CARDS[0]}_${DATATYPE}${TAG}"
             FITDIRS="${FITPREFIX}_${CARDS[0]}_${DATATYPE}${TAG} ${FITPREFIX}_${CARDS[1]}_${DATATYPE}${TAG}"
-            for CARD in ${CARDS[@]}; do
-    
-                # If not grafting, get all results for one optimization
-                if [[ ${NOGRAFT} == 0 ]] && [[ ${CARD} == ${CARDS[1]} ]]; then
-                    continue
-                elif [[ ${NOGRAFT} == 1 ]]; then
-                    GRAFTTAG="${CARD}_${DATATYPE}${TAG}"
-                    FITDIRS="${FITPREFIX}_${GRAFTTAG} ${FITPREFIX}_${GRAFTTAG}"
+
+            for ASIMOVINJECTION in "${ASIMOVINJECTIONS[@]}"; do
+                ASIMOVFLAG=""
+                EXPSIG=""
+                if [[ "${ASIMOVINJECTION}" != "" ]]; then
+                    ASIMOVFLAG="--asimov"
+                    EXPSIG="--expSig ${ASIMOVINJECTION/./p}"
                 fi
 
-                # Make limit plots on request
-                if [[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]; then 
-                    python make_Limit_Plots.py --inputDirs ${FITDIRS} --outputDir GraftedLimitPlots_${GRAFTTAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} ${ASIMOVFLAG} --noRatio
-                fi
+                for CARD in ${CARDS[@]}; do
     
-                # Make pvalue plots/tables on request
-                if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
-                    for EXPSIG in ${EXPSIGS[@]}; do
-                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRS} --outdir GraftedPvaluePlots_${GRAFTTAG} --channels ${THECHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} ${ASIMOVFLAG} ${EXPSIG}
-                    done
-                fi
+                    # If not grafting, get all results for one optimization
+                    if [[ ${NOGRAFT} == 0 ]] && [[ ${CARD} == ${CARDS[1]} ]]; then
+                        continue
+                    elif [[ ${NOGRAFT} == 1 ]]; then
+                        GRAFTTAG="${CARD}_${DATATYPE}${TAG}"
+                        FITDIRS="${FITPREFIX}_${GRAFTTAG} ${FITPREFIX}_${GRAFTTAG}"
+                    fi
+
+                    # Make limit plots on request
+                    if ([[ ${GETLIMITS} == 1 ]] || [[ ${GETALL} == 1 ]]) && [[ "${EXPSIG}" == "" ]]; then 
+                        python make_Limit_Plots.py --inputDirs ${FITDIRS} --outputDir GraftedLimitPlots_${GRAFTTAG} --year Run2UL --model ${MODEL} --channel ${CHANNEL} --dataType ${DATATYPE} --wip --graft ${GRAFT} ${ASIMOVFLAG} --noRatio
+                    fi
+    
+                    # Make pvalue plots/tables on request
+                    if [[ ${GETPVALUES} == 1 ]] || [[ ${GETALL} == 1 ]]; then
+                        python make_Pvalue_PlotsTables.py --basedirs ${FITDIRS} --outdir GraftedPvaluePlots_${GRAFTTAG} --channels ${CHANNEL} --models ${MODEL} --wip --graft ${GRAFT} --dataType ${DATATYPE} ${ASIMOVFLAG} ${EXPSIG}
+                    fi
+                done
             done
         done
     done
