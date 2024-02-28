@@ -28,6 +28,8 @@ shift
 makeCards=$1
 shift
 binMask=$1
+shift
+inject="$1"
 
 runToys=0
 
@@ -58,14 +60,6 @@ eval `scramv1 runtime -sh`
 MASKFLAG=""
 if [[ "$binMask" != "None" ]]; then
     MASKFLAG="--setParameters ${binMask}"
-fi
-
-# Determine value for "inject" flag based on "dataType"
-# This flag is used for fits to Asimov data sets
-inject=0
-if [ ${dataType} == "pseudoDataS" ]
-then
-    inject=1.0
 fi
 
 # Make the datacard before we run combine
@@ -105,6 +99,18 @@ fitOptionsNoFallBack="${ws} -m ${mass} --keyword-value MODEL=${signalType} --cmi
 fitOptionsToys="${fitOptions} --saveToys --saveHybridResult"
 echo "Running with fit options: ${fitOptions}\n"
 
+ASIMOVSTR=""
+ASIMOVCMD=""
+if [ $asimov == 1 ]
+then
+    ASIMOVSTR="_Asimov"
+    if [ $inject != "0.0" ]
+    then
+        ASIMOVSTR+="_${inject/./p}"
+    fi
+    ASIMOVCMD="-t -1 --expectSignal=${inject}"
+fi
+
 # Run the asympotic fits for the limit plots and significance/p-value calculations for top panel of p-value plots
 if [ $doAsym == 1 ] 
 then
@@ -116,29 +122,14 @@ then
     # Note: Asimov data set is not used by default as your observed number of events in AsymptoticLimits mode
     # However, the Asimov data set is used in both modes when determining confidence intervals
     echo "Running Asymptotic fits"
-    if [ $asimov == 1 ]
-    then
-        combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim -t -1 --expectSignal=0 -n ${tagName}_AsymLimit_Asimov > log_${tagName}_Asymp_Asimov.txt
-    else
-        combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim                        -n ${tagName}_AsymLimit > log_${tagName}_Asymp.txt
-    fi    
+    combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim ${ASIMOVCMD} -n ${tagName}_AsymLimit${ASIMOVSTR} > log_${tagName}_Asymp${ASIMOVSTR}.txt
 
     rMinSign="-20.0"
     rMaxSign="20.0"
 
     # Calculate significance using Asimov data set and actual observation
     echo "Running Significance calculations"
-    if [ $asimov == 1 ]
-    then
-        combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=${inject} -n ${tagName}_SignifExp_Asimov > log_${tagName}_Sign_Asimov.txt
-        if [ ${dataType} == "Data" ] || [ ${dataType} == "pseudoData" ]
-        then
-            combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=1.0 -n ${tagName}_SignifExp_Asimov_1p0 > log_${tagName}_Sign_Asimov_1p0.txt
-            combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign -t -1 --expectSignal=0.2 -n ${tagName}_SignifExp_Asimov_0p2 > log_${tagName}_Sign_Asimov_0p2.txt
-        fi          
-    else
-        combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign                                -n ${tagName}_SignifExp > log_${tagName}_Sign.txt
-    fi
+    combine -M Significance ${fitOptions} ${MASKFLAG} --rMin $rMinSign --rMax $rMaxSign ${ASIMOVCMD} -n ${tagName}_SignifExp${ASIMOVSTR} > log_${tagName}_Sign${ASIMOVSTR}.txt
 fi
 
 # Run the fit diagnostics fits to calculate signal strength and uncertainty in bottom ratio panel of the p-value plots
@@ -150,24 +141,14 @@ then
 
     # Perform fit diagnostics using Asimov data set and observation
     echo "Running FitDiagnostics"
-    if [ $asimov == 1 ]
-    then
-        combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov -t -1 --expectSignal=${inject} > log_${tagName}_FitDiag_Asimov.txt
-        if [ ${dataType} == "Data" || ${dataType} == "pseudoData" ]
-        then
-            combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov_1p0 -t -1 --expectSignal=1.0 > log_${tagName}_FitDiag_Asimov_1p0.txt
-            combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}_Asimov_0p2 -t -1 --expectSignal=0.2 > log_${tagName}_FitDiag_Asimov_0p2.txt
-        fi
-    else
-        combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}  > log_${tagName}_FitDiag.txt
-    fi
+    combine -M FitDiagnostics ${fitOptionsNoFallBack} ${MASKFLAG} -v 2 --rMin $rMinDiag --rMax $rMaxDiag --plots --saveShapes --saveNormalizations --saveWithUncertainties -n ${tagName}${ASIMOVSTR} ${ASIMOVCMD} > log_${tagName}_FitDiag${ASIMOVSTR}.txt
 fi
 
 # Run asymptotic likihood scan
 if [ $doMulti == 1 ] 
 then
     echo "Running MultiDimFit"
-    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -20.0 --rMax 20.0 --autoRange 10 --algo=grid --points=100 -n ${tagName}_dLLscan > /dev/null
+    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -20.0 --rMax 20.0 --autoRange 10 --algo=grid --points=120 -n ${tagName}_dLLscan > /dev/null
 fi
 
 # Run fits for making impact plots (using the CombineHarvester repo)
@@ -179,27 +160,9 @@ then
 
     echo "Running Impacts"
     # Generate impacts based on Asimov data set
-    if [ $asimov == 1 ]
-    then
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject} ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=${inject}             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}_Asimov.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov.txt
-        if [ ${dataType} == "Data" ] || [ ${dataType} == "pseudoData" ]
-        then
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=1.0 ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov_1p0.txt
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=1.0 ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov_1p0.txt
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=1.0             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}_Asimov_1p0.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov_1p0.txt
-
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=0.2 ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1_Asimov_0p2.txt
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=0.2 ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2_Asimov_0p2.txt
-            combineTool.py -M Impacts -d ${ws} -m ${mass} -t -1 --rMin ${rMinImp} --rMax ${rMaxImp} --expectSignal=0.2             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}_Asimov_0p2.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3_Asimov_0p2.txt
-        fi
-    else
-        # Generate impacts based on observation
-        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass} ${fallBack} ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2.txt
-        combineTool.py -M Impacts -d ${ws} -m ${mass}             ${MASKFLAG} --rMin ${rMinImp} --rMax ${rMaxImp} --robustFit 1 -o impacts_${tagName}.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3.txt
-    fi
+    combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMinImp} --rMax ${rMaxImp} ${ASIMOVCMD} ${fallBack} ${MASKFLAG} --robustFit 1 --doInitialFit -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step1${ASIMOVSTR}.txt
+    combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMinImp} --rMax ${rMaxImp} ${ASIMOVCMD} ${fallBack} ${MASKFLAG} --robustFit 1 --doFits --parallel 8 -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step2${ASIMOVSTR}.txt
+    combineTool.py -M Impacts -d ${ws} -m ${mass} --rMin ${rMinImp} --rMax ${rMaxImp} ${ASIMOVCMD}             ${MASKFLAG} --robustFit 1 -o impacts_${tagName}${ASIMOVSTR}.json -v 2 --exclude 'rgx{.*mcStat[A-D]*}' > log_${tagName}_step3${ASIMOVSTR}.txt
 
     rm higgsCombine_paramFit_Test_*root
     rm higgsCombine_initialFit_Test.MultiDimFit.*.root

@@ -110,6 +110,7 @@ def main():
     parser.add_option ('--edgeScan1',      dest='edgeScan1',         type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 1")
     parser.add_option ('--edgeScan2',      dest='edgeScan2',         type='string', default = 'None',  help="Specify the bin edges you want to scan along disc 2")
     parser.add_option ('--doAsimov',       dest='doAsimov',    action='store_true', default = False,   help="do Asimov-style fits")
+    parser.add_option ('--inject',         dest='inject',            type='float',  default = 0.0,     help="injected signal strength for Asimov-style fits")
 
 
     # Parse command line arguments
@@ -195,9 +196,15 @@ def main():
             for channel in channels:
                 for disc1Edge, disc2Edge in binEdgeList:
                     binEdgeName = "_{}_{}".format(disc1Edge, disc2Edge) if disc1Edge else "0"
+
                     asimov = 0
+                    asimovStr = ""
                     if options.doAsimov:
                         asimov = 1
+                        asimovStr = "_Asimov"
+                        if options.inject > 0.0:
+                            asimovStr = "_%s"%(str(options.inject).replace(".", "p"))
+
                     print("Making directory for {} {} {}: bin edges 0.{} 0.{}".format(mass, channel, st, disc1Edge, disc2Edge))
                     # Create the directory for cards and output files
                     outDir = model+"_"+mass+"_"+options.year
@@ -220,51 +227,23 @@ def main():
                         tagName = "%s%s%s%s_%s%s"%(options.year, model, mass, options.dataType, channel, binEdgeName if binEdgeName is not "0" else "")
 
                         outputFiles = [
-                            "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
-                            "higgsCombine%s.FitDiagnostics.mH%s.MODEL%s.root"                % (tagName, mass, model),
-                            "higgsCombine%s_SignifExp.Significance.mH%s.MODEL%s.root"        % (tagName, mass, model),
-                            "higgsCombine%s_dLLscan.MultiDimFit.mH%s.MODEL%s.root"           % (tagName, mass, model),
-                            "ws_%s.root"                                                     % (tagName),
-                            "fitDiagnostics%s.root"                                          % (tagName), 
-                            "impacts_%s.json"                                                % (tagName),
-                            "log_%s_Asymp.txt"                                               % (tagName),
-                            "log_%s_FitDiag.txt"                                             % (tagName),
-                            "log_%s_Sign.txt"                                                % (tagName),
-                            "log_%s_step1.txt"                                               % (tagName),
-                            "log_%s_step2.txt"                                               % (tagName),
-                            "log_%s_step3.txt"                                               % (tagName),
-                            "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
-                            "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
-                            "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
-                            "higgsCombine%s_Asimov_1p0.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
-                            "higgsCombine%s_Asimov_0p2.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
-                            "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
-                            "higgsCombine%s_SignifExp_Asimov_0p2.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
-                            "higgsCombine%s_SignifExp_Asimov_1p0.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
-                            "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
-                            "fitDiagnostics%s_Asimov_1p0.root"                               % (tagName), 
-                            "fitDiagnostics%s_Asimov_0p2.root"                               % (tagName), 
-                            "impacts_%s_Asimov.json"                                         % (tagName),
-                            "impacts_%s_Asimov_0p2.json"                                     % (tagName),
-                            "impacts_%s_Asimov_1p0.json"                                     % (tagName),
-                            "log_%s_Asymp_Asimov.txt"                                        % (tagName),
-                            "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
-                            "log_%s_FitDiag_Asimov_1p0.txt"                                  % (tagName),
-                            "log_%s_FitDiag_Asimov_0p2.txt"                                  % (tagName),
-                            "log_%s_Sign_Asimov.txt"                                         % (tagName),
-                            "log_%s_Sign_Asimov_0p2.txt"                                     % (tagName),
-                            "log_%s_Sign_Asimov_1p0.txt"                                     % (tagName),
-                            "log_%s_step1_Asimov.txt"                                        % (tagName),
-                            "log_%s_step2_Asimov.txt"                                        % (tagName),
-                            "log_%s_step3_Asimov.txt"                                        % (tagName),
-                            "log_%s_step1_Asimov_0p2.txt"                                    % (tagName),
-                            "log_%s_step2_Asimov_0p2.txt"                                    % (tagName),
-                            "log_%s_step3_Asimov_0p2.txt"                                    % (tagName),
-                            "log_%s_step1_Asimov_1p0.txt"                                    % (tagName),
-                            "log_%s_step2_Asimov_1p0.txt"                                    % (tagName),
-                            "log_%s_step3_Asimov_1p0.txt"                                    % (tagName),
-                            "Run2UL_%s_%s_pseudoDataS_%s%s.txt"                              % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
-                            "Run2UL_%s_%s_pseudoData_%s%s.txt"                               % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
+                            "ws_%s.root"                                                         % (tagName),
+                            "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"        % (tagName, mass, model),
+                            "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root" % (tagName, mass, model),
+                            "higgsCombine%s_dLLscan.MultiDimFit.mH%s.MODEL%s.root"               % (tagName, mass, model),
+                            "log_%s_Asymp.txt"                                                   % (tagName),
+                            "log_%s_Asymp_Asimov.txt"                                            % (tagName),
+                            "higgsCombine%s%s.FitDiagnostics.mH%s.MODEL%s.root"                  % (tagName, asimovStr, mass, model),
+                            "higgsCombine%s_SignifExp%s.Significance.mH%s.MODEL%s.root"          % (tagName, asimovStr, mass, model),
+                            "fitDiagnostics%s%s.root"                                            % (tagName, asimovStr), 
+                            "impacts_%s%s.json"                                                  % (tagName, asimovStr),
+                            "log_%s_FitDiag%s.txt"                                               % (tagName, asimovStr),
+                            "log_%s_Sign%s.txt"                                                  % (tagName, asimovStr),
+                            "log_%s_step1%s.txt"                                                 % (tagName, asimovStr),
+                            "log_%s_step2%s.txt"                                                 % (tagName, asimovStr),
+                            "log_%s_step3%s.txt"                                                 % (tagName, asimovStr),
+                            "Run2UL_%s_%s_pseudoDataS_%s%s.txt"                                  % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
+                            "Run2UL_%s_%s_pseudoData_%s%s.txt"                                   % (model, mass, channel, binEdgeName if binEdgeName is not "0" else ""),
                         ]
                     
                         transfer = "transfer_output_remaps = \""
@@ -283,7 +262,7 @@ def main():
                             makeCards = 0
 
                         fileParts.append(transfer)
-                        fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i %s\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards, options.binMask))
+                        fileParts.append('Arguments = %s %s %s %s %s %i %i %i %i %s %i %s %i %s %s\n' % (options.cards, model, mass, options.year, options.dataType, doAsym, doFitDiag, doMulti, doImpact, channel, asimov, binEdgeName, makeCards, options.binMask, str(options.inject)))
                         extraAsimov = ""
                         if asimov == 1:
                             extraAsimov += "_Asimov"

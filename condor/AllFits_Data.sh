@@ -19,7 +19,7 @@ MASKCHANNELS=("0l" "1l" "2l")
 DOMASK=0
 FITSTAG=""
 CARDSTAG=""
-ASIMOVOPTIONS=("0" "1")
+ASIMOVINJECTIONS=("")
 
 while [[ $# -gt 0 ]]
 do
@@ -51,11 +51,11 @@ do
             done
             shift
             ;;
-        --asimovOptions)
-            ASIMOVOPTIONS=()
+        --asimovInj)
+            ASIMOVINJECTIONS=()
             while [[ $2 != *"--"* && $# -gt 1 ]]
             do
-                ASIMOVOPTIONS+=("$2")
+                ASIMOVINJECTIONS+=("$2")
                 shift
             done
             shift
@@ -141,6 +141,7 @@ do
             echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
             echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
             echo "    --asimovOptions             : specify run asimov, or not, or both"
+            echo "    --injections                : for Asimov, what sig. strength to inject signal"
             echo "    --impacts                   : run impacts"
             echo "    --asympLimits               : run asymptotic limits"
             echo "    --fitDiags                  : run fit diagnostics"
@@ -261,12 +262,12 @@ for CHANNEL in ${CHANNELS[@]}; do
                 fi
 
                 for FITFLAG in ${FITFLAGS[@]}; do
-                    for ASIMOVOPTION in ${ASIMOVOPTIONS[@]}; do
+                    for ASIMOVINJECTION in "${ASIMOVINJECTIONS[@]}"; do
                         ASIMOVFLAG=""
-                        if [[ ${ASIMOVOPTION} == "1" ]]; then
-                            ASIMOVFLAG="--doAsimov"
+                        if [[ ${ASIMOVINJECTION} != "" ]]; then
+                            ASIMOVFLAG="--doAsimov --inject ${ASIMOVINJECTION}"
                         fi
-                        COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} ${ASIMOVFLAG} --cards=${CARD}_${DATATYPE}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${FITSTAG}"
+                        COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} ${ASIMOVFLAG} --cards=${CARD}_${DATATYPE}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${FITSTAG} -c"
                         echo -e "\n"
                         echo ${COMMAND}
                         if [[ ${DRYRUN} == 0 ]]; then
