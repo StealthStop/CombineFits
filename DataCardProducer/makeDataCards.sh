@@ -5,7 +5,6 @@ CHANNELS=("0l" "1l" "2l" "combo")
 DATATYPES=("Data")
 OPTIMIZATIONS=()
 DRYRUN=0
-MASKATAG=""
 SCALESYST="1"
 SYSTS2SCALE=""
 SCALESYSTTAG=""
@@ -50,10 +49,6 @@ do
             ;;
         --highMass)
             OPTIMIZATIONS+=("MassExclusion")
-            shift
-            ;;
-        --maskA)
-            MASKATAG="_NoAReg"
             shift
             ;;
         --scaleSyst)
@@ -135,12 +130,8 @@ for CHANNEL in ${CHANNELS[@]}; do
             fi
             
             for OPT in ${OPTIMIZATIONS[@]}; do
-                INPUTSTAG="Fix_11_05_23"
-                if [[ "${OPT}" == "MaxSign" ]] && [[ "${MODEL}" == *"SYY"* ]] && [[ "${CHANNEL}" == *"1l"* ]]; then
-                    INPUTSTAG="1_29_24"
-                fi
-
-                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${MASKATAG}${SCALESYSTTAG}${CUSTOMTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${INJECTINTODATAFLAG} ${COMBOARG}"
+                INPUTSTAG="2_23_24"
+                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${SCALESYSTTAG}${CUSTOMTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${INJECTINTODATAFLAG} ${COMBOARG}"
                 echo "${COMMAND}"
                 if [[ ${DRYRUN} != 1 ]]; then
                     eval ${COMMAND}
