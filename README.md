@@ -72,48 +72,42 @@ An example calling of the bash script for making a full set of data cards would 
 
 Note that in wrapping the `produceDataCards.py` script, some assumptions are hard-coded about which configs to use, and the naming of analysis output folder.
 
-### Running Unblinded Data Fits
+### Submitting Fit Jobs to Condor
 
-The following steps can be used to make all of the datacards and run the final fits:
-```
-# Make data cards with no A region for first step of unblinding
-for ch in 0l 2l; do for sig in RPV StealthSYY; do for type in MassExclusion MaxSign; do python produceDataCard.py --config configs/v3_5_1_Data_NoAReg/cardConfig_${ch}_${sig}_v3_5_1_${type}_Min3 --inpath DisCo_outputs_0l_1l_2l_${type}_Fix_11_05_23/ --outpath ./cards_${type}_Data_NoAReg/ --year Run2UL --channel ${ch} --model ${sig} --dataType Data; done; done; done
-
-
-# Make data cards for final fits
-for ch in 0l 2l; do for sig in RPV StealthSYY; do for type in MassExclusion MaxSign; do python produceDataCard.py --config configs/v3_5_1_Data/cardConfig_${ch}_${sig}_v3_5_1_${type}_Min3 --inpath DisCo_outputs_0l_1l_2l_${type}_Fix_11_05_23/ --outpath ./cards_${type}_Data/ --year Run2UL --channel ${ch} --model ${sig} --dataType Data; done; done; done
-
-# Run all fits
-cd ../condor/
-./AllFits_Data_NoAReg.sh; ./AllFits_Data.sh 
-
-# Making final fit plots
-./make_FitPvalueLimit_Plots_Data.sh all
+The core script for submitting fit jobs to the LPC Condor grid is the `condorSubmit.py` script.
+For easy submitting of different types of jobs in bulk, a steering bash shell script is provided for the user `submitFitJobs.sh`
+The help menu for possible options reads
 
 ```
-
-Note that we are only running the first set of fits (i.e. NoAReg) to satisfy our initial unblinding policy. These fits may be bypassed later and are not necessary to get the full results. 
-
-### Running fits with Condor
-
-After the necessary data cards have been produced, `CombineFits/condor/condorSubmit.py` can be used to run various types of fitting procedures. 
-
-Relevant arguments:
-
-- `-d [Signals]` List of signal models, comma separated
-- `-t [DataType]` Specify whether running over pseudoData, pseudoDataS, or data
-- `-s [Suffix]` Specify the final state by number of leptons (e.g. 0l or 1l)
-- `-m [Masses]` List or range of masses (list: comma separated, range: inclusive on endpoints, separated by dash)
-- `-y [Year]` Desired year for fits
-- `--setClosure` Run fits using perfect closure data cards (must already be produced)
-- `-F` Run FitDiagnostics fitting method
-- `-A` Run AsymptoticLimit and Significance fitting methods
-- `--output [Outpath]` Name of directory where output of each condor job goes 
-
-Example usage:
+How to run this script:
+./submitFitJobs.sh [OPTIONS]
+[OPTIONS]
+    --models mod1 mod2 ...      : list of the models to process
+    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)
+    --dataTypes type1 type2 ... : list of the data types to process
+    --asimovInjs 0.0 0.2 ...    : values of expected signal for Asimov-style fits
+    --impacts                   : run impacts
+    --asympLimits               : run asymptotic limits
+    --fitDiags                  : run fit diagnostics
+    --dLLscans                  : run log likelihood scans
+    --lowMasses                 : run low-mass optimization fits
+    --highMasses                : run high-mass optimization fits
+    --massRange 400-600         : specific specific masses to run on
+    --maskABCD A B C D ...      : list of ABCD regions to exclude
+    --maskNjets 9 10 ...        : list of Njets bins to exclude
+    --maskChannels 0l ...       : for combo fit, list of channels to exclude
+    --fitsTag myFitResults      : tag for customizing fit outputs name
+    --cardsTag myDataCards      : tag for grabbing specific cards
+    --dryRun                    : do not run condor submit
 ```
-python condorSubmit.py -y 2016 -d RPV,SYY -m 300-1400 -t pseudoDataS -F -A --output Fit_2016
+
+An example for running the full set of fits would be:
+
 ```
+./submitFitJobs.sh --models RPV StealthSYY --channel 0l 1l 2l combo --dataTypes Data --cardsTag joshsLatestCards --fitstag joshsLatestFits
+```
+
+Note that by default, all fit types are run (impacts, asymp. limits, significance, log likelihood scans) and both mass optimizations
 
 ### Making pre- and post-fit Njet distributions
 

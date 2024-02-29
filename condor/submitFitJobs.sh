@@ -135,25 +135,24 @@ do
             ;;
         --help)
             echo "How to run this script:"
-            echo "./AllFits_Data.sh [OPTIONS]"
+            echo "./submitFitJobs.sh [OPTIONS]"
             echo "[OPTIONS]"
-            echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
-            echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
-            echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
-            echo "    --asimovOptions             : specify run asimov, or not, or both"
-            echo "    --injections                : for Asimov, what sig. strength to inject signal"
+            echo "    --models mod1 mod2 ...      : list of the models to process"
+            echo "    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)"
+            echo "    --dataTypes type1 type2 ... : list of the data types to process"
+            echo "    --asimovInjs 0.0 0.2 ...    : values of expected signal for Asimov-style fits"
             echo "    --impacts                   : run impacts"
             echo "    --asympLimits               : run asymptotic limits"
             echo "    --fitDiags                  : run fit diagnostics"
-            echo "    --multiDims                 : run multi dim fits"
-            echo "    --lowMasses                 : run low mass optimization fits"
-            echo "    --highMasses                : run high mass optimization fits"
-            echo "    --massRange                 : specific masses to run on"
-            echo "    --maskABCD                  : list of ABCD regions to exclude"
-            echo "    --maskNjets                 : list of Njets bins to exclude"
-            echo "    --maskChannels              : for combo fit, list of channels to exclude"
-            echo "    --fitsTag                   : tag for customizing outputs"
-            echo "    --cardsTag                  : tag for grabbing specific cards"
+            echo "    --dLLscans                  : run log likelihood scans"
+            echo "    --lowMasses                 : run low-mass optimization fits"
+            echo "    --highMasses                : run high-mass optimization fits"
+            echo "    --massRange 400-600         : specific specific masses to run on"
+            echo "    --maskABCD A B C D ...      : list of ABCD regions to exclude"
+            echo "    --maskNjets 9 10 ...        : list of Njets bins to exclude"
+            echo "    --maskChannels 0l ...       : for combo fit, list of channels to exclude"
+            echo "    --fitsTag myFitResults      : tag for customizing fit outputs name"
+            echo "    --cardsTag myDataCards      : tag for grabbing specific cards"
             echo "    --dryRun                    : do not run condor submit"
             exit 0
             ;;
@@ -267,7 +266,7 @@ for CHANNEL in ${CHANNELS[@]}; do
                         if [[ ${ASIMOVINJECTION} != "" ]]; then
                             ASIMOVFLAG="--doAsimov --inject ${ASIMOVINJECTION}"
                         fi
-                        COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} ${ASIMOVFLAG} --cards=${CARD}_${DATATYPE}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${FITSTAG} -c"
+                        COMMAND="python condorSubmit.py -d ${MODEL} -t ${DATATYPE} -s ${CHANNEL} -m ${MASSRANGE} -y Run2UL ${FITFLAG} ${BINMASKFLAG} ${ASIMOVFLAG} --cards=${CARD}_${DATATYPE}${CARDSTAG} --output=Fit_Run2UL_with_${CARD}_${DATATYPE}${FITSTAG}"
                         echo -e "\n"
                         echo ${COMMAND}
                         if [[ ${DRYRUN} == 0 ]]; then
