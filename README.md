@@ -38,6 +38,40 @@ cd CombineFits
 cmsenv
 ```
 
+### Producing Data Cards
+
+Production of data cards can typically proceed manually in the `DataCardsProducer` area of the `CombineFits` area.
+Ultimately, production is driven by the `produceDataCard.py` script, which references the `dataCardProducer.py` script for core machinery of reading ROOT files, computing values, etc.
+Likewise, these scripts depend on config files in the `configs` folder, which specify ROOT files where specific systematics can be taken from, which systematics to include, analysis bin info, etc.
+The python production scripts are steered by a main bash script `makeDataCards.sh` for easy producing in bulk by the user.
+The current help docs for the main bash script are:
+
+```
+How run this script:
+./makeDataCards.sh [OPTIONS]
+[OPTIONS]
+    --models mod1 mod2 ...      : list of the models to process
+    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)
+    --dataTypes type1 type2 ... : list of the data types to process
+    --lowMass ...               : make cards for low mass optimization
+    --highMass ...              : make cards for high mass optimization
+    --inputsTag myAnaOuptut ... : tag for specifying input ROOT files
+    --scaleSyst 2 ...           : scale systematics by some amount including removing them
+    --systsToScale fsr isr ...  : list of certain systs to scale only
+    --injectIntoData ...        : Inject signal into data with strength r
+    --cardsTag myCardsTag ...   : Custom tag for naming output cards folder
+    --doCombo ...               : Do combo of all three channels
+    --dryRun ...                : Print production commands to be run only
+```
+
+An example calling of the bash script for making a full set of data cards would be:
+
+```
+./makeDataCards.sh --models RPV StealthSYY --channels 0l 1l 2l combo --dataTypes Data --inputsTag bryansLatestAnaOutput --cardsTag joshsLatestCards
+```
+
+Note that in wrapping the `produceDataCards.py` script, some assumptions are hard-coded about which configs to use, and the naming of analysis output folder.
+
 ### Running Unblinded Data Fits
 
 The following steps can be used to make all of the datacards and run the final fits:
@@ -59,32 +93,6 @@ cd ../condor/
 ```
 
 Note that we are only running the first set of fits (i.e. NoAReg) to satisfy our initial unblinding policy. These fits may be bypassed later and are not necessary to get the full results. 
-### Using produceDataCard.py
-
-`produceDataCard.py` is a script for making data cards using our ABCD regions from the neural network. It takes a configuration file as an input in the style of `DataCardProducer/cardConfig.py` and outputs the data card to submit to Combine.
-
-Arguments:
-
-- `-c, --config [config file]` configuration file in the style of `DataCardProducer/cardConfig.py`.
-- `-o, --output [output path]` path to output destination. Writes to `datacard.txt` by default.
-- `-t, --dataType [dataType]` specify whether the data card constains pseudodata (pseudoData), pseudodata with signal injected (pseudoDataS), or data (data).
-- `-a, --ABCD` use the ABCD regions from neural network output to create data card.
-- `-s, --signal [model_mass]` used for making a specific data card for a given mass and signal model (separated by underscore).
-- `-l, --leptons [number of final state leptons]` specify which decay topology for which the cards should be made.
-- `-p, --path [NN inputs]` path to the neural network inputs for the data cards
-- `--all` produce all data cards for a given year (all models, all mass points, all final states, pseudodata with/without signal injected.
-- `--setClosure` force perfect ABCD closure for ttbar (only to be used with MC)
-
-Example usage for a single data card:
-```
-cd DataCardProducer
-python produceDataCard.py -c cardConfig -o mydatacard.txt --ABCD -s RPV_550 -l 0 -t pseudoDataS -p ../2016_DisCo_0l_1l_Inputs/
-```
-
-Or to make all data cards with MC event yields:
-```
-python produceDataCard.py -c cardConfigGoodClose -p ../2016_DisCo_0l_1l_Inputs/ --all 
-```
 
 ### Running fits with Condor
 

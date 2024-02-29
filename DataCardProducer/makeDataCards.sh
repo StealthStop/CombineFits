@@ -11,7 +11,8 @@ SCALESYSTTAG=""
 SCALESYSTFLAG=""
 INJECTINTODATAFLAG=""
 COMBOARG=""
-CUSTOMTAG=""
+CARDSTAG=""
+INPUTSTAG="2_23_24"
 
 while [[ $# -gt 0 ]]
 do
@@ -51,6 +52,11 @@ do
             OPTIMIZATIONS+=("MassExclusion")
             shift
             ;;
+        --inputsTag)
+            INPUTSTAG="$2"
+            shift
+            shift
+            ;;
         --scaleSyst)
             SCALESYSTFLAG="--scaleSyst $2"
             if [[ "$2" == "0" ]]; then
@@ -76,8 +82,8 @@ do
             shift
             shift
             ;;
-        --customTag)
-            CUSTOMTAG="_$2"
+        --cardsTag)
+            CARDSTAG="_$2"
             shift
             shift
             ;;
@@ -93,20 +99,19 @@ do
             echo "How run this script:"
             echo "./makeDataCards.sh [OPTIONS]"
             echo "[OPTIONS]"
-            echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
-            echo "    --masses mass1 mass2 ...    : space-separated list of the masses to process"
-            echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
-            echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
+            echo "    --models mod1 mod2 ...      : list of the models to process"
+            echo "    --masses mass1 mass2 ...    : list of the masses to process"
+            echo "    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)"
+            echo "    --dataTypes type1 type2 ... : list of the data types to process"
             echo "    --lowMass ...               : make cards for low mass optimization"
             echo "    --highMass ...              : make cards for high mass optimization"
-            echo "    --inputsTag ...             : tag for specifying input ROOT files"
-            echo "    --maskA ...                 : mask the A region"
-            echo "    --scaleSyst ...             : scale systematics by some amount including removing them"
-            echo "    --systsToScale ...          : specify certain systs to scale only"
+            echo "    --inputsTag myAnaOuptut ... : tag for specifying input ROOT files"
+            echo "    --scaleSyst 2 ...           : scale systematics by some amount including removing them"
+            echo "    --systsToScale fsr isr ...  : list of certain systs to scale only"
             echo "    --injectIntoData ...        : Inject signal into data with strength r"
-            echo "    --customTag ...             : Custom tag for naming output cards folder"
+            echo "    --cardsTag myCardsTag ...   : Custom tag for naming output cards folder"
             echo "    --doCombo ...               : Do combo of all three channels"
-            echo "    --dryRun ...                : Print commands to be run only"
+            echo "    --dryRun ...                : Print production commands to be run only"
             exit 0
             ;;
         *)
@@ -130,8 +135,7 @@ for CHANNEL in ${CHANNELS[@]}; do
             fi
             
             for OPT in ${OPTIMIZATIONS[@]}; do
-                INPUTSTAG="2_23_24"
-                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${SCALESYSTTAG}${CUSTOMTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${INJECTINTODATAFLAG} ${COMBOARG}"
+                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${SCALESYSTTAG}${CARDSTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${INJECTINTODATAFLAG} ${COMBOARG}"
                 echo "${COMMAND}"
                 if [[ ${DRYRUN} != 1 ]]; then
                     eval ${COMMAND}
