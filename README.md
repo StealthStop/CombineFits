@@ -109,41 +109,37 @@ An example for running the full set of fits would be:
 
 Note that by default, all fit types are run (impacts, asymp. limits, significance, log likelihood scans) and both mass optimizations
 
-### Making pre- and post-fit Njet distributions
+### Making Plots from Fit Results
 
-`CombineFits/DataCardProducer/make_fit_plots.py` is a script for making pre- and post-fit Njet distributions. It requires the output of the FitDiagnostics combine method.
-
-Relevant arguments:
-
-- `-s, --signal [Signal model]` Name of signal process
-- `-y, --year [Year]` Year for data cards used in fit
-- `-m, --mass [Mass]` Mass for data cards used in fit
-- `-d, --dataType [Data Type]` Specify whether fit was run over pseudoData, pseudoDataS, or data
-- `-p, --path [Path to Condor directory]` Path to the condor directory with the FitDiagnostics results
-- `-s, --suffix [Number of final state leptons]` Specify the number of final state leptons as 0l or 1l
-- `-n, --njets [Njet range in data cards]` Specify the range of Njets for the bins in data cards (separated with a dash, e.g. 7-12)
-- `--plotb/--plotsb/--plotsig/--plotdata` Include background fit, signal+background fit, signal component, or observed data in plots
-- `--all` Make the pre- and post-fit Njets distributions for all signal models, masses, and final states for both pseudoData and pseudoDataS
-
-Example usage:
+Finally, the making of various plots from the output fit results is steered by `makeFitResultPlots.sh`.
+The help menu for the script is:
 
 ```
-python make_fit_plots.py -y 2016 --path ../condor/Fit_2016 -s RPV -m 550 -d pseudoDataS --plotsb --plotb --plotdata --plotsig
+How run this script:
+./makeFitResultPlots.sh [OPTIONS]
+[OPTIONS]
+    --models mod1 mod2 ...      : list of the models to process
+    --masses mass1 mass2 ...    : list of the masses to process
+    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)
+    --dataTypes type1 type2 ... : list of the data types to process
+    --impacts                   : make the impacts plots
+    --fits                      : make the fits bonly and sb ABCD-njets plots
+    --pvalues                   : make the pvalues/signal strength plots
+    --limits                    : make the expected and observed limits plots
+    --npComps                   : make the nuisance parameter comparison plots
+    --dLLscans                  : make the dLL vs r scan plots
+    --noGraft                   : make pvalues and limits with a single optimization
+    --asimovInjs 0.0 0.2 ...    : get the asimov version of applicable plots with injected signal strengths
+    --fitsTag                   : name for choosing particular fit results
 ```
 
-The pre- and post-fit distributions will be saved in the `figures` directory and the raw histograms will be saved in the `resutls` directory.
+Currently, there are six unique plots that can be made from the fit output.
+The impacts and log likelihood plots are made using built-in plotting scripts from Combine.
+The four remaining plots are made using custom plotting scripts:
 
-### Making p-value plots
-
-`tabel_signal_strength.py` is a script that will produce p-value plots using the fit results from a condor directory as input. The script presumes that the name of this directory is `CombineFits/condor/Fit_<year>`.
-
-Relavent arguments:
-- `--basedir` Name of base condor directory containing fit results
-- `--pdfName` Name to add to the end of each p-value plot pdf (usually the date)
-- `--perfectClosure` Use the perfect closure fit results when making p-value plots
-- `--approved` Is the plot approved
-
-Example usage:
 ```
-python table_signal_string.py --pdfName=Jan12021
+--fits: runs make_fit_plots.py
+--pvalues: runs make_Pvalue_PlotsTables.py
+--limits: runs make_Limit_Plots.py
+--npComps: runs makeNPplots.py
 ```

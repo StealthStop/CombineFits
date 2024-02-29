@@ -16,24 +16,25 @@ GETALL=1
 ASIMOVINJECTIONS=("")
 
 NOGRAFT=0
-INPUTSTAG=""
+FITSTAG=""
 
 printHelp () {
     echo "How run this script:"
-    echo "./make_FitResults_Plots.sh [OPTIONS]"
+    echo "./makeFitResultPlots.sh [OPTIONS]"
     echo "[OPTIONS]"
-    echo "    --models mod1 mod2 ...      : space-separated list of the models to process"
-    echo "    --masses mass1 mass2 ...    : space-separated list of the masses to process"
-    echo "    --channels chan1 chan2 ...  : space-separated list of the channels to process ('combo' allowed)"
-    echo "    --dataTypes type1 type2 ... : space-separated list of the data types to process"
+    echo "    --models mod1 mod2 ...      : list of the models to process"
+    echo "    --masses mass1 mass2 ...    : list of the masses to process"
+    echo "    --channels chan1 chan2 ...  : list of the channels to process ('combo' allowed)"
+    echo "    --dataTypes type1 type2 ... : list of the data types to process"
+    echo "    --impacts                   : make the impacts plots"
     echo "    --fits                      : make the fits bonly and sb ABCD-njets plots"
     echo "    --pvalues                   : make the pvalues/signal strength plots"
     echo "    --limits                    : make the expected and observed limits plots"
     echo "    --npComps                   : make the nuisance parameter comparison plots"
     echo "    --dLLscans                  : make the dLL vs r scan plots"
     echo "    --noGraft                   : make pvalues and limits with a single optimization"
-    echo "    --asimovInjs                : get the asimov version of applicable plots with injected signal strengths"
-    echo "    --inputsTag                 : name for choosing particular fit results"
+    echo "    --asimovInjs 0.0 0.2 ...    : get the asimov version of applicable plots with injected signal strengths"
+    echo "    --fitsTag                   : name for choosing particular fit results"
 }
 
 while [[ $# -gt 0 ]]
@@ -75,8 +76,8 @@ do
             done
             shift
             ;;
-        --inputsTag)
-            INPUTSTAG="$2"
+        --fitsTag)
+            FITSTAG="$2"
             shift
             shift
             ;;
@@ -140,8 +141,8 @@ FITPREFIX="Fit_Run2UL_with"
 
 # If particular fit results are selected, propagate that name
 TAG=""
-if [[ "${INPUTSTAG}" != "" ]]; then
-    TAG="_${INPUTSTAG}"
+if [[ "${FITSTAG}" != "" ]]; then
+    TAG="_${FITSTAG}"
 fi
 
 # Begin main looping over options to make the different plots
