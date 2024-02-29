@@ -223,7 +223,9 @@ for DATATYPE in ${DATATYPES[@]}; do
                 EXPSIG=""
                 if [[ "${ASIMOVINJECTION}" != "" ]]; then
                     ASIMOVFLAG="--asimov"
-                    EXPSIG="--expSig ${ASIMOVINJECTION/./p}"
+                    if [[ "${ASIMOVINJECTION}" != "0.0" ]]; then
+                        EXPSIG="--expSig ${ASIMOVINJECTION/./p}"
+                    fi
                 fi
 
                 for CARD in ${CARDS[@]}; do

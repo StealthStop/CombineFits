@@ -122,7 +122,10 @@ then
     # Note: Asimov data set is not used by default as your observed number of events in AsymptoticLimits mode
     # However, the Asimov data set is used in both modes when determining confidence intervals
     echo "Running Asymptotic fits"
-    combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim ${ASIMOVCMD} -n ${tagName}_AsymLimit${ASIMOVSTR} > log_${tagName}_Asymp${ASIMOVSTR}.txt
+    if [ $inject == "0.0" ]
+    then
+        combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim ${ASIMOVCMD} -n ${tagName}_AsymLimit${ASIMOVSTR} > log_${tagName}_Asymp${ASIMOVSTR}.txt
+    fi
 
     rMinSign="-20.0"
     rMaxSign="20.0"

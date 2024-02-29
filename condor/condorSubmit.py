@@ -203,7 +203,7 @@ def main():
                         asimov = 1
                         asimovStr = "_Asimov"
                         if options.inject > 0.0:
-                            asimovStr = "_%s"%(str(options.inject).replace(".", "p"))
+                            asimovStr += "_%s"%(str(options.inject).replace(".", "p"))
 
                     print("Making directory for {} {} {}: bin edges 0.{} 0.{}".format(mass, channel, st, disc1Edge, disc2Edge))
                     # Create the directory for cards and output files
