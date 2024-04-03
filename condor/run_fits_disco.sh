@@ -127,8 +127,8 @@ then
         combine -M AsymptoticLimits ${fitOptions} ${MASKFLAG} --rMin $rMinLim --rMax $rMaxLim ${ASIMOVCMD} -n ${tagName}_AsymLimit${ASIMOVSTR} > log_${tagName}_Asymp${ASIMOVSTR}.txt
     fi
 
-    rMinSign="-20.0"
-    rMaxSign="20.0"
+    rMinSign="0.0"
+    rMaxSign="50.0"
 
     # Calculate significance using Asimov data set and actual observation
     echo "Running Significance calculations"
@@ -139,8 +139,8 @@ fi
 if [ $doFitDiag == 1 ] 
 then
 
-    rMinDiag="-20.0"
-    rMaxDiag="20.0"
+    rMinDiag="-50.0"
+    rMaxDiag="50.0"
 
     # Perform fit diagnostics using Asimov data set and observation
     echo "Running FitDiagnostics"
@@ -151,15 +151,15 @@ fi
 if [ $doMulti == 1 ] 
 then
     echo "Running MultiDimFit"
-    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -20.0 --rMax 20.0 --autoRange 10 --algo=grid --points=120 -n ${tagName}_dLLscan > /dev/null
+    combine -M MultiDimFit ${fitOptions} ${MASKFLAG} --verbose 0 --rMin -50 --rMax 50 --autoRange 5 --algo=grid --points=100 -n ${tagName}_dLLscan > /dev/null
 fi
 
 # Run fits for making impact plots (using the CombineHarvester repo)
 if [ $doImpact == 1 ] 
 then
 
-    rMinImp="-20.0"
-    rMaxImp="20.0"
+    rMinImp="-50.0"
+    rMaxImp="50.0"
 
     echo "Running Impacts"
     # Generate impacts based on Asimov data set
