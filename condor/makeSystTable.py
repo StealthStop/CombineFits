@@ -14,10 +14,24 @@ class SystTabulator():
         self.year         = year
         self.channel      = channel
 
+        self.optimization = None
+        if "MaxSign" in dataCardPath:
+            self.optimization = "lowmass"
+        else:
+            self.optimization = "highmass"
+
+        self.channelMacro = None
+        if   self.channel == "0l":
+            self.channelMacro = "\\zerol"
+        elif self.channel == "1l":
+            self.channelMacro = "\\onel"
+        elif self.channel == "2l":
+            self.channelMacro = "\\twol"
+
         self.processes = ["TT", "Minor", model]
 
         self.npEncoding = ["pdf", "scl", "fsr", "isr", "pu", "", "CorrectedDataClosure", "CC", "QCD_TF", "", "JEC", "JER", "btg", "ttg", "lep", "jet", "prf", "", "lumi", "TTX", "Other"]
-        self.npDecoding = [ "PDF", "($\mu_\mathrm{R}$, $\mu_\mathrm{F}$) scales", "FSR", "ISR", "Pileup", "", "Non-Closure (Post-Corr.)", "Closure Corr. Stat. Unc.", "QCD TF", "", "JES", "JER", "b tagging", "Top tagging", "Lepton ID/trigger", "Jet trigger", "Prefiring", "", "Integrated Luminosity", "Theoretical Cross Section", "Theoretical Cross Section"]
+        self.npDecoding = [ "PDF", "($\mu_\mathrm{R}$, $\mu_\mathrm{F}$) scales", "FSR", "ISR", "Pileup", "", "Non-Closure", "Non-Closure Corr. Stat. Unc.", "QCD TF", "", "JES", "JER", "b tagging", "t tagging", "Lepton ID", "Jet trigger", "Prefiring", "", "Luminosity", "Cross Section", "Cross Section"]
 
     # Upon specifying mass point, year, model, channel, and disc values for a particular fit
     # Parse the corresponding data card to get systematics and rates
@@ -73,8 +87,8 @@ class SystTabulator():
     
                 process = savedLines["process"][iBin].partition("_2t6j_")[0]
                 binName = savedLines["bin"][iBin]
-                region  = binName.split("_")[1][0]
-                njets   = binName.split("_")[1][1:]
+                region  = binName.replace("Sig","").split("_")[1][0]
+                njets   = binName.replace("Sig","").split("_")[1][1:]
     
                 for np in nps:
 
@@ -96,7 +110,7 @@ class SystTabulator():
                     # For all systematics, convert to a percent from 1 e.g. 1.1 or 0.9 ==> 10%
                     # And for any up/down systematic that is reported with "/", take the largest
                     # E.g. 1.02/0.8 ==> 20%, rather than 2%
-                    npVals = [100.0 * round(abs(1.0-eval(val)),2) for val in savedLines[np][iBin].split("/") if val != "10.000"]
+                    npVals = [100.0 * round(abs(1.0-eval(val)),3) for val in savedLines[np][iBin].split("/") if val != "10.000"]
             
                     if npName not in self.dataCardInfo:
                         self.dataCardInfo[npName] = {}
@@ -115,8 +129,8 @@ class SystTabulator():
 
         header = []
         header.append("\\begin{scotch}{l r r r}\n")
-        header.append("\multirow{2}{*}       & \\ttbar     & Minor      & %s    \\\\\n"%(self.model))
-        header.append("Source of uncertainty & background & background & signal \\\\\n")
+        header.append("Source of   & \\multicolumn{3}{c}{%s}  \\\\\n"%(self.channelMacro))
+        header.append("uncertainty & \\ttbar     & Other      & %s \\\\\n"%(self.model))
         header.append("\hline\n")
 
         return header
@@ -146,7 +160,7 @@ class SystTabulator():
                 if process not in npDict or npDict[process][0] == -999.0:
                     procChunks.append("\NA".ljust(12))
                 else:
-                    maximum = min(100, max(npDict[process]))
+                    maximum = min(100.0, max(npDict[process]))
                     minimum = min(npDict[process])
                     percentiles = np.percentile(npDict[process], [16, 84])
     
@@ -155,7 +169,7 @@ class SystTabulator():
                     elif  "TTX" in npEncode or "Other" in npEncode:
                         procChunks.append(("%d"%(maximum)).ljust(12))
                     elif "Closure" in npEncode:
-                        procChunks.append(("%d--%d"%(minimum, maximum)).ljust(12))
+                        procChunks.append(("%d"%(maximum)).ljust(12))
                     else:
                         procChunks.append(("%d--%d (%d)"%(int(percentiles[0]), int(percentiles[1]), maximum)).ljust(12))
    
@@ -170,7 +184,7 @@ class SystTabulator():
 
         footer = []
         footer.append("\end{scotch}\n")
-        footer.append("\label{tab:systematics_%s_%s}\n"%(self.model,self.channel))
+        footer.append("\label{tab:systematics_%s_%s_%s}\n"%(self.model,self.channel,self.optimization))
 
         return footer
 
