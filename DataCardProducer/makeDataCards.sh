@@ -7,12 +7,13 @@ OPTIMIZATIONS=()
 DRYRUN=0
 SCALESYST="1"
 SYSTS2SCALE=""
+GAUSSCONSTRAIN=""
 SCALESYSTTAG=""
 SCALESYSTFLAG=""
 INJECTINTODATAFLAG=""
 COMBOARG=""
 CARDSTAG=""
-INPUTSTAG="2_23_24"
+INPUTSTAG="2_29_24"
 
 while [[ $# -gt 0 ]]
 do
@@ -77,6 +78,15 @@ do
             done
             shift
             ;;
+        --gaussConstrain)
+            GAUSSCONSTRAIN="--gaussConstrain"
+            while [[ $2 != *"--"* && $# -gt 1 ]]
+            do
+                GAUSSCONSTRAIN+=" $2"
+                shift
+            done
+            shift
+            ;;
         --injectIntoData)
             INJECTINTODATAFLAG="--injectIntoData $2"
             shift
@@ -108,6 +118,7 @@ do
             echo "    --inputsTag myAnaOuptut ... : tag for specifying input ROOT files"
             echo "    --scaleSyst 2 ...           : scale systematics by some amount including removing them"
             echo "    --systsToScale fsr isr ...  : list of certain systs to scale only"
+            echo "    --gaussConstrain beta ...   : which BCD to Gaussian constrain"
             echo "    --injectIntoData ...        : Inject signal into data with strength r"
             echo "    --cardsTag myCardsTag ...   : Custom tag for naming output cards folder"
             echo "    --doCombo ...               : Do combo of all three channels"
@@ -135,7 +146,7 @@ for CHANNEL in ${CHANNELS[@]}; do
             fi
             
             for OPT in ${OPTIMIZATIONS[@]}; do
-                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${SCALESYSTTAG}${CARDSTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${INJECTINTODATAFLAG} ${COMBOARG}"
+                COMMAND="python produceDataCard.py --config configs/v3_5_1_${CONFIGTAG}/cardConfig_${CHANNEL}_${MODEL}_v3_5_1_${OPT}_Min3 --inpath DisCo_outputs_0l_1l_2l_${OPT}_${INPUTSTAG} --outpath ./cards_${OPT}_${DATATYPE}${SCALESYSTTAG}${CARDSTAG} --year Run2UL --channel ${CHANNEL} --model ${MODEL} --dataType ${DATATYPE} ${SCALESYSTFLAG} ${SYSTS2SCALE} ${GAUSSCONSTRAIN} ${INJECTINTODATAFLAG} ${COMBOARG}"
                 echo "${COMMAND}"
                 if [[ ${DRYRUN} != 1 ]]; then
                     eval ${COMMAND}

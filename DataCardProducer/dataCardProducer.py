@@ -25,7 +25,7 @@ import collections
 
 class dataCardMaker:
 
-    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, injectIntoData, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, systsToScale = [], fixedCloseSys=None, CloseSys=None):
+    def __init__(self, path, observed, outpath, systematics, dataType, channel, year, NoMCcorr, min_nj, max_nj, model, mass, injectedModel, injectedMass, injectIntoData, special, disc1, disc2, minNjetMask, maxNjetMask, scaleSyst = None, systsToScale = [], gaussConstrain = [], fixedCloseSys=None, CloseSys=None):
      
         self.path           = path
         self.observed       = observed
@@ -50,6 +50,7 @@ class dataCardMaker:
         self.CloseSys       = CloseSys
         self.scaleSyst      = scaleSyst
         self.systsToScale   = systsToScale
+        self.gaussConstrain = [bin.replace("B", "beta").replace("C", "gamma").replace("D", "delta") for bin in gaussConstrain]
         if disc1 is not None and disc2 is not None:
             self.disc1          = str(disc1)
             self.disc2          = str(disc2)
@@ -676,8 +677,12 @@ class dataCardMaker:
                     if proc == "TT":
                         lumi_str += "-- "
                     else:
-                        lumi_str += "{} ".format(self.lumiSyst)
-            if self.scaleSyst != 0.0 or "lumi" not in self.systsToScale:
+                        if self.scaleSyst != None:
+                            lumi_str += "{} ".format(1.0 + (self.lumiSyst-1.0)*self.scaleSyst)
+                        else:
+                            lumi_str += "{} ".format(1.0 + (self.lumiSyst-1.0))
+
+            if self.scaleSyst != 0.0 or ("lumi" not in self.systsToScale and self.systsToScale != []):
                 file.write(lumi_str)
 
             # -----------------------------------------------------------
@@ -702,10 +707,13 @@ class dataCardMaker:
                         if not self.observed[process2]["fit"]:
                             continue
                         if process1 == process2:
-                            process_str += "{} ".format(self.observed[process1]["sys"])
+                            if self.scaleSyst != None:
+                                process_str += "{} ".format(1.0 + (self.observed[process1]["sys"]-1.0)*self.scaleSyst)
+                            else:
+                                process_str += "{} ".format(1.0 + (self.observed[process1]["sys"]-1.0))
                         else:
                             process_str += "{} ".format("--")
-                if self.scaleSyst != 0.0 or "norm" not in self.systsToScale:
+                if self.scaleSyst != 0.0 or ("norm" not in self.systsToScale and self.systsToScale != []):
                     file.write(process_str)
 
             # --------------------------------------------------------
@@ -799,7 +807,7 @@ class dataCardMaker:
                             if "CorrectedData" in sys:
                                 sys_str += "-- -- -- -- "
                         
-                            if self.scaleSyst != 0.0 or var not in self.systsToScale:
+                            if self.scaleSyst != 0.0 or ("closure" not in self.systsToScale and self.systsToScale != []):
                                 file.write(sys_str)
                 else:
                     var = sys.split("_")[1]
@@ -868,7 +876,7 @@ class dataCardMaker:
                             else:
                                 sys_str += "{} ".format("--")
 
-                    if self.scaleSyst != 0.0 or var not in self.systsToScale:
+                    if self.scaleSyst != 0.0 or (var not in self.systsToScale and self.systsToScale != []):
                         file.write(sys_str)
 
             # Now writing the QCD_TF stat. unc.
@@ -912,7 +920,7 @@ class dataCardMaker:
             #            else:
             #                sys_str += "{:.3f} ".format(self.systematics["QCD_Shape"]["binValues"][0])
 
-            #if self.scaleSyst != 0.0 or sys_str.split("_")[-1] not in self.systsToScale:
+            #if self.scaleSyst != 0.0 or (sys_str.split("_")[-1] not in self.systsToScale and self.systsToScale != []):
             #    file.write(sys_str)
                         
 
@@ -1006,7 +1014,14 @@ class dataCardMaker:
                                 file.write("{0}{1}_{4:<12} rateParam Y{5}_{2}_{4} {3} (@0*@1/@2*@3) beta{1}_{4},gamma{1}_{4},delta{1}_{4},CH{4}_mcStat{1}TT_{5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,self.channel,self.year[-2:], round(self.systematics["ClosureCorrection"]["binValues"][abin],4)))
 
                     else: 
-                        file.write("{0}{1}_{6:<12} rateParam Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(params[int(ibin/self.njets)],self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, "[0.,{}]".format(10*rate),self.channel,self.year[-2:])) 
+                        abcdBinName = params[int(ibin/self.njets)]
+                        paramName = "rateParam"
+                        paramRange = "[0.,{}]".format(10*rate)
+                        if abcdBinName in self.gaussConstrain:
+                            paramName = "param"
+                            paramRange = rate**0.5
+                        
+                        file.write("{0}{1}_{6:<12} {8} Y{7}_{2}_{6} {3} {4:<12} {5}\n".format(abcdBinName,self.observed[bkgd]["binNames"][ibin+abin][1:],self.observed[bkgd]["binNames"][ibin+abin],bkgd,rate, paramRange,self.channel,self.year[-2:], paramName)) 
 
                 # TTbar MC stat uncertainty applied to the alpha parameters
                 for ibin in range(0, len(self.observedPerBin), self.njets):
