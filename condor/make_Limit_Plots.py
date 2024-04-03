@@ -11,14 +11,17 @@ ROOT.gROOT.SetBatch(True)
 
 class LimitPlots():
 
-    def __init__(self, inputDirs, outputDir, year, model, channel, dataType, limitType, graft, noRatio):
+    def __init__(self, inputDirs, outputDir, year, model, channel, dataType, graft, noRatio, doSummary, asimov, wip, approved):
 
         self.inputDirs     = inputDirs
         self.year          = year
         self.model         = model
         self.channel       = channel
+        self.doSummary     = doSummary
         self.dataType      = dataType
-        self.limitType     = limitType
+        self.asimov        = asimov
+        self.wip           = wip
+        self.approved      = approved
         self.graft         = graft
         self.canvas        = None
         self.tdrStyle      = None
@@ -290,7 +293,7 @@ class LimitPlots():
     # ----------------
     # make limit plots
     # ----------------
-    def make_LimitPlots(self, approved = False, wip = True, limitType = "AsymptoticLimits", asimov=False, combo=False):
+    def make_LimitPlots(self):
 
         # -----------
         # make canvas
@@ -333,7 +336,7 @@ class LimitPlots():
         limits_obs              = [0] * num_mass_points # dot black point line on the limit plot
         limits_obsErr           = [0] * num_mass_points # unc. on dot black point line
         
-        if combo:
+        if self.doSummary:
             limits_mean_0l = [0] * num_mass_points
             limits_mean_1l = [0] * num_mass_points
             limits_mean_2l = [0] * num_mass_points
@@ -341,16 +344,9 @@ class LimitPlots():
         # ---------------------------
         # labels for input root files
         # ---------------------------
-        extra = ""
-    
-        if (self.limitType == "AsymptoticLimits"):
-            extra = "_AsymLimit"
-
-        elif (self.limitType == "Significance"):
-            extra = "_SignifExp"
-
-        if asimov:
-            extra += "_Asimov"
+        asimovStr = ""
+        if self.asimov:
+            asimovStr = "_Asimov"
 
         # -------------------------------------------------
         # loop over mass points to open and read root files
@@ -365,20 +361,21 @@ class LimitPlots():
                 self.inputDir = self.inputDirs[1]
 
             # path for input root files   
-            label    = self.year + self.model + mass + self.dataType + "_" + self.channel + "_AsymLimit" 
-            fitInput = self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + label + "." + self.limitType + ".mH" + mass + ".MODEL" + self.model + ".root"
+            label    = self.year + self.model + mass + self.dataType + "_" + self.channel + "_AsymLimit" + asimovStr
+            fitInput = self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + label + ".AsymptoticLimits.mH" + mass + ".MODEL" + self.model + ".root"
             
             extra_inputs = []
-            if combo:
+            if self.doSummary:
                 for ch in ["0l", "1l", "2l"]:
-                    extra_label    = self.year + self.model + mass + self.dataType + "_" + ch + "_AsymLimit" 
-                    extra_inputs.append(self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + extra_label + "." + self.limitType + ".mH" + mass + ".MODEL" + self.model + ".root")
+                    extra_label    = self.year + self.model + mass + self.dataType + "_" + ch + "_AsymLimit" + asimovStr
+                    theInputDir = self.inputDir
+                    extra_inputs.append(theInputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + extra_label + ".AsymptoticLimits.mH" + mass + ".MODEL" + self.model + ".root")
 
             try:
                 # load input root files 
                 rootFile = ROOT.TFile.Open(fitInput, "READ")
 
-                if combo:
+                if self.doSummary:
                     extra_rootFiles = []
                     extraTrees = []
                     for i,ext in enumerate(extra_inputs):
@@ -414,7 +411,7 @@ class LimitPlots():
             # ------------------------------------------------------------------
             # Overlay mean for three channels independently for combo limit plot
             # ------------------------------------------------------------------
-            if combo:
+            if self.doSummary:
                 try:
                     extraTrees[0].GetEntry(iEntry)
                 except Exception as e:
@@ -494,7 +491,7 @@ class LimitPlots():
         # store expected and observed limits
         # ----------------------------------
         limits_exp = [0] * num_mass_points
-        if combo:
+        if self.doSummary:
             limits_exp_0l = [0] * num_mass_points
             limits_exp_1l = [0] * num_mass_points
             limits_exp_2l = [0] * num_mass_points
@@ -506,7 +503,7 @@ class LimitPlots():
             limits_95expected_above[n] = limits_95expected_above[n] * sigBr[n]
             limits_mean[n]             = limits_mean[n] * sigBr[n]
 
-            if combo:
+            if self.doSummary:
                 limits_mean_0l[n]             = limits_mean_0l[n] * sigBr[n]
                 limits_mean_1l[n]             = limits_mean_1l[n] * sigBr[n]
                 limits_mean_2l[n]             = limits_mean_2l[n] * sigBr[n]
@@ -547,7 +544,7 @@ class LimitPlots():
         #   -- red solid line - theory cross section for stop pair production
         # -------------------------------------------------------------------
         grMean      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp,dtype="d")) # blue dahed line
-        if combo:
+        if self.doSummary:
             grMean_0l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_0l,dtype="d")) # red dahed line
             grMean_1l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_1l,dtype="d")) # cyan dahed line
             grMean_2l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_2l,dtype="d")) # magenta dahed line
@@ -575,7 +572,7 @@ class LimitPlots():
         grMean.SetLineColor(ROOT.kBlue)
         grMean.Draw("lp")
 
-        if combo:
+        if self.doSummary:
             grMean_0l.SetMarkerSize(0)
             grMean_0l.SetLineWidth(2)
             grMean_0l.SetLineStyle(2)
@@ -598,7 +595,7 @@ class LimitPlots():
         grObs.SetMarkerStyle(20)
         grObs.SetLineColor(ROOT.kBlack)
         grObs.SetMarkerColor(ROOT.kBlack)
-        if not asimov: grObs.Draw("lp")
+        if not self.asimov: grObs.Draw("lp")
         grTheory.SetLineColor(2)
         grTheory.SetLineWidth(2)
         grTheoryErr.SetLineColor(2)
@@ -608,7 +605,7 @@ class LimitPlots():
         # add them to legend
         legend = None
         if self.noRatio:
-            if combo:
+            if self.doSummary:
                 legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
             else:
                 legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
@@ -647,19 +644,16 @@ class LimitPlots():
         grMean.Draw("lp")
 
         ratio = grMean.Clone()
-        if combo:
+        if self.doSummary:
+
             grMean_0l.Draw("lp")
             grMean_1l.Draw("lp")
             grMean_2l.Draw("lp")
-            legend.AddEntry(grGreen,  "68% expected",   "f" )
+
             legend.AddEntry(grMean_0l,  "Mean expected limit (0l)",   "l" )
-            legend.AddEntry(grYellow, "95% expected",   "f" )
             legend.AddEntry(grMean_1l,  "Mean expected limit (1l)",   "l" )
-            if (self.model=="RPV"):
-                legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
-            elif (self.model=="StealthSYY"):
-                legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
             legend.AddEntry(grMean_2l,  "Mean expected limit (2l)",   "l" )
+
             #if "SYY" in self.model:
             #    f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
@@ -676,9 +670,17 @@ class LimitPlots():
             #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
             #        old.Draw("lp")
             legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
-            if not asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
+            if not self.asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
 
         #grMean.Draw("lp")
+
+        legend.AddEntry(grGreen,  "68% expected",   "f" )
+        legend.AddEntry(grYellow, "95% expected",   "f" )
+
+        if (self.model=="RPV"):
+            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
+        elif (self.model=="StealthSYY"):
+            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
 
         if self.noRatio:
             self.canvas.cd()
@@ -725,20 +727,33 @@ class LimitPlots():
             RatioHist.SetMarkerColor(ROOT.kBlack)
 
         #grObs.Draw("lp")
+        graftPoint = 625
+        if "SYY" in self.model:
+            graftPoint = 675
+        line = ROOT.TLine(graftPoint, 1.5e-2, graftPoint, 1.5)
+        line.SetLineColor(ROOT.kBlack)
+        line.SetLineWidth(2)
+        line.SetLineStyle(2)
+        line.Draw("SAME")
+
+        #leftArrow = ROOT.TLatex()
+        #leftArrow.SetTextAlign(32)
+        #leftArrow.SetTextSize(0.050)
+        #leftArrow.DrawLatex(graftPoint-5, 1.0, "#leftarrow")
+        #rightArrow = ROOT.TLatex()
+        #rightArrow.SetTextAlign(12)
+        #rightArrow.SetTextSize(0.050)
+        #rightArrow.DrawLatex(graftPoint+5, 1.0, "#rightarrow")
 
         # -----------------------
         # draw signal information
         # -----------------------
-        if asimov:
-            self.asimov = "_Asimov"
-        else:
-            self.asimov = ""
         if self.graft == 0:
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".pdf")
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
         else:
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".pdf")
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
 
 # -------------
 # Main function
@@ -749,9 +764,9 @@ def main():
     parser.add_argument("--outputDir", dest="outputDir", type=str, required=True,                                      help = "path to write output files"      )
     parser.add_argument("--year",      dest="year",      type=str, default = "Run2UL" ,                                help = "which year to plot"              )
     parser.add_argument("--model",     dest="model",     type=str, default = "RPV" ,                                   help = "which model to plot"             )
-    parser.add_argument("--channel",   dest="channel",   type=str, default = "1l" ,                                    help = "which channel to plot"           )
+    parser.add_argument("--channel",   dest="channel",   type=str, default = "1l" ,                                    help = "which channels to plot"          )
+    parser.add_argument("--doSummary", dest="doSummary",           default = False,              action='store_true',  help = "include expected for all three channels")
     parser.add_argument("--dataType",  dest="dataType",  type=str, default = "pseudoData",                             help = "which dataType to plot"          )
-    parser.add_argument("--limitType", dest="limitType", type=str, default = "AsymptoticLimits",                       help = "which limitType to plot"         )
     parser.add_argument("--approved",  dest="approved",            default = False,              action="store_true",  help = "is plot approved"                )
     parser.add_argument("--asimov",    dest="asimov",              default = False,              action="store_true",  help = "use the Asimov data set"         )
     parser.add_argument("--wip",       dest="wip",                 default = False,              action="store_true",  help = "is plot a work in progress"      )
@@ -761,12 +776,8 @@ def main():
 
     args = parser.parse_args()
 
-    combo = args.channel == "combo"
-
-    limitPlots_Objects = LimitPlots(args.inputDirs, args.outputDir, args.year, args.model, args.channel, args.dataType, args.limitType, args.graft, args.noRatio) 
-    limitPlots_Objects.make_LimitPlots(args.approved, args.wip, args.limitType, args.asimov, combo)
-
-
+    limitPlots_Objects = LimitPlots(args.inputDirs, args.outputDir, args.year, args.model, args.channel, args.dataType, args.graft, args.noRatio, args.doSummary, args.asimov, args.wip, args.approved) 
+    limitPlots_Objects.make_LimitPlots()
 
 if __name__ == '__main__':
     main()

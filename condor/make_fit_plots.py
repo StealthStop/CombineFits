@@ -672,6 +672,16 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
     c1, p1_list, p2_list = makeCanvasAndPads(maskRegA = maskRegA)
 
     c1, p1_list, p2_list = formatCanvasAndPads(c1, p1_list, p2_list)
+
+    nBins = hlist_ratio[0].GetNbinsX()
+    absMaxVals = []
+    for i in range(len(p1_list)):
+        for iBin in range(1, nBins+1):
+            absMaxVals.append(1.0+abs(1.0-hlist_ratio[i].GetBinContent(iBin))+hlist_ratio[i].GetBinError(iBin))
+    
+    ratioRange = 1.25
+    if max(absMaxVals) > 1.25:
+        ratioRange = 1.65
     
     survival = []
     for i in range(len(p1_list)):
@@ -805,18 +815,18 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
         hlist_ratio[i].SetMarkerSize(4)
         hlist_ratio[i].SetMarkerColor(ROOT.kBlack)
 
-        hlist_ratio[i].GetYaxis().SetRangeUser(0.75, 1.25)
+        hlist_ratio[i].GetYaxis().SetRangeUser(2.0-ratioRange, ratioRange)
         hlist_ratio[i].GetXaxis().SetLabelSize(0.2)
         hlist_ratio[i].GetXaxis().SetTitleSize(0.145)        
         hlist_ratio[i].GetXaxis().SetLabelOffset(0.027)
-        hlist_ratio[i].GetYaxis().SetNdivisions(4, 2, 0)
+        hlist_ratio[i].GetYaxis().SetNdivisions(204)
 
-        pull_unc_list[i].GetYaxis().SetRangeUser(0.75, 1.25)
+        pull_unc_list[i].GetYaxis().SetRangeUser(2.0-ratioRange, ratioRange)
         pull_unc_list[i].GetXaxis().SetLabelSize(0.23)
         pull_unc_list[i].GetXaxis().SetTitleSize(0.145 * pad1Size/pad4Size)        
         pull_unc_list[i].GetXaxis().SetLabelOffset(0.020)
         pull_unc_list[i].GetXaxis().SetTitleOffset(1.1)
-        pull_unc_list[i].GetYaxis().SetNdivisions(4, 2, 0)
+        pull_unc_list[i].GetYaxis().SetNdivisions(204)
 
         #pull_unc_list[i].SetLineWidth(0)
 
@@ -836,10 +846,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
 
         if maskRegA: 
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i+1, channel+signal, sigStr)
+            draw_ExtraInfo(p1_list[i], i+1, fitChannel+signal, sigStr)
         else:
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i, channel+signal, sigStr)
+            draw_ExtraInfo(p1_list[i], i, fitChannel+signal, sigStr)
  
     for ext in ["pdf"]:
         fitChannelStr = ""
