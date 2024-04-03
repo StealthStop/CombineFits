@@ -11,6 +11,7 @@ GETPVALUES=0
 GETLIMITS=0
 GETNPCOMPS=0
 GETDLLSCANS=0
+GETCORRMATRIX=0
 GETALL=1
 
 ASIMOVINJECTIONS=("")
@@ -32,6 +33,7 @@ printHelp () {
     echo "    --limits                    : make the expected and observed limits plots"
     echo "    --npComps                   : make the nuisance parameter comparison plots"
     echo "    --dLLscans                  : make the dLL vs r scan plots"
+    echo "    --corrMatrix                : make correlation matrices"
     echo "    --noGraft                   : make pvalues and limits with a single optimization"
     echo "    --asimovInjs 0.0 0.2 ...    : get the asimov version of applicable plots with injected signal strengths"
     echo "    --fitsTag                   : name for choosing particular fit results"
@@ -115,6 +117,11 @@ do
             NOGRAFT=1
             shift
             ;;
+        --corrMatrix)
+            GETCORRMATRIX=1
+            GETALL=0
+            shift
+            ;;
         --asimovInjs)
             ASIMOVINJECTIONS=()
             while [[ $2 != *"--"* && $# -gt 1 ]]
@@ -184,6 +191,13 @@ for DATATYPE in ${DATATYPES[@]}; do
                         mkdir -p ${DLLOUTPATH}
                         plot1DScan.py ${FITDIR}/output-files/${MODEL}_${MASS}_Run2UL/higgsCombineRun2UL${MODEL}${MASS}${DATATYPE}_${CHANNEL}_dLLscan.MultiDimFit.mH${MASS}.MODEL${MODEL}.root --main-color 4 --output scan --y-max 17 --y-cut 17
                         mv scan.pdf ${DLLOUTPATH}/Run2UL_${MODEL}_${MASS}_${CHANNEL}_LogLikelihoodScan_prelim.pdf && rm scan*
+                    fi
+
+                    # Make correlation matrix
+                    if [[ ${GETCORRMATRIX} == 1 ]] || [[ ${GETALL} == 1 ]]; then
+                        CORROUTPATH="${FITDIR}/corrMatrix_plots"
+                        mkdir -p ${CORROUTPATH}
+                        python make_CorrelationMatrix_plots.py -p ${FITDIR} --mass ${MASS} --signal ${MODEL}  --channel ${CHANNEL}
                     fi
 
                     # Make the impact plots from the json
