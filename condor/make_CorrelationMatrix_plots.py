@@ -65,7 +65,6 @@ def reformat(histo, channel, fit):
     rawLabels = []; correlations = []
     for xBin in xBins:
         xLabel = histo.GetXaxis().GetBinLabel(xBin)
-        print(xLabel)
         if "Stat" not in xLabel and ("np" in xLabel or "beta" in xLabel or "gamma" in xLabel or "delta" in xLabel or xLabel == "r"):
             for yBin in yBins:
                 yLabel = histo.GetYaxis().GetBinLabel(yBin)

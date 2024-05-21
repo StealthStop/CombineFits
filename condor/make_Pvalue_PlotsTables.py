@@ -48,18 +48,18 @@ class Plotter():
                        "0l"          : "0l", 
                        "1l"          : "1l",
                        "2l"          : "2l", 
-                       "combo"       : "Combo", 
+                       "combo"       : "0l+1l+2l", 
         }
-
+        
         self.colors = {"2016"        : ROOT.kBlack,
                        "2016preVFP"  : ROOT.kRed+1,
                        "2016postVFP" : ROOT.kBlue+1,
                        "2017"        : ROOT.kGreen+1,
                        "2018"        : ROOT.kOrange+1,
                        "Run2UL"      : ROOT.kBlack,
-                       "0l"          : ROOT.TColor.GetColor("#2ca25f"),
-                       "1l"          : ROOT.TColor.GetColor("#5cb4e8"),
-                       "2l"          : ROOT.TColor.GetColor("#CE1256"),
+                       "0l"          : ROOT.TColor.GetColor("#3F90DA"),
+                       "1l"          : ROOT.TColor.GetColor("#FFA90E"),
+                       "2l"          : ROOT.TColor.GetColor("#BD1F01"),
                        "combo"       : ROOT.kBlack,
         }
 
@@ -69,9 +69,9 @@ class Plotter():
                         "2017"        : 2,
                         "2018"        : 7,
                         "Run2UL"      : 1,
-                        "0l"          : 7,
+                        "0l"          : 2,
                         "1l"          : 7,
-                        "2l"          : 7,
+                        "2l"          : 9,
                         "combo"       : 1,
         }
 
@@ -96,7 +96,7 @@ class Plotter():
 
         entries = []
 
-        color = ROOT.TColor.GetColor("#8B2D8F")
+        color = ROOT.TColor.GetColor("#832DB6")
         # Draw the 1sigma, 2sigma, and 3sigma lines
         # For 1 sigma: s = 0.68
         #   1 - (0.5 + s/2) = 0.5 - s/2
@@ -181,7 +181,7 @@ class Plotter():
         for model in models:
 
             if  model == "RPV": 
-                legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj");
+                legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}},#color[0]{Jh}#tilde{t} #rightarrow t #tilde{#chi}^{#color[0]{J}0}_{1},#color[0]{Jh}#tilde{#chi}^{#color[0]{J}0}_{1} #rightarrow qqq");
             
             elif model == "StealthSYY": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg");
@@ -251,7 +251,7 @@ class Plotter():
 
         if not approved:
             if wip:
-                cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Work in Progress")
+                cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "")
             else:
                 cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Preliminary")
    
@@ -263,9 +263,9 @@ class Plotter():
         graftPoint = 625
         if "SYY" in model:
             graftPoint = 675
-        graftLine = ROOT.TLine(graftPoint, 0, graftPoint, 1)
+        graftLine = ROOT.TLine(graftPoint, 1e-5, graftPoint, 1)
         graftLine.SetLineColor(ROOT.kBlack)
-        graftLine.SetLineStyle(2)
+        graftLine.SetLineStyle(3)
         graftLine.SetLineWidth(2)
         graftLine.Draw("same")
 
@@ -341,7 +341,7 @@ class Plotter():
         
         rgraftLine = ROOT.TLine(graftPoint, -ratioMax, graftPoint, ratioMax)
         rgraftLine.SetLineColor(ROOT.kBlack)
-        rgraftLine.SetLineStyle(2)
+        rgraftLine.SetLineStyle(3)
         rgraftLine.SetLineWidth(2)
         rgraftLine.Draw("same")
 
@@ -350,8 +350,12 @@ class Plotter():
 
         if approved:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.png"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.C"%(self.asimov))
         else:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.png"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.C"%(self.asimov))
         del c1
 
 
@@ -438,7 +442,7 @@ def main():
     masses = []
     for mass in range(int(args.massRange[0]), int(args.massRange[1])+50, 50):
         masses.append(str(mass))
-    channels = args.channels
+    channels = ["0l", "1l", "2l", "combo"]
 
     # -----------------------------------------
     # Loop over all jobs in get the info needed
@@ -548,7 +552,7 @@ def main():
     makeSigTex("%s/table_signal_strength.tex"%(outPath), l)
 
     thePlotter = Plotter(pdfName, path, outPath, asimovStr)
-    thePlotter.makePValuePlot(path, dataSets, runtype, args.approved, args.wip, args.years, args.channels, args.models)
+    thePlotter.makePValuePlot(path, dataSets, runtype, args.approved, args.wip, args.years, channels, args.models)
 
 
 

@@ -42,8 +42,8 @@ class LimitPlots():
         if self.noRatio:
             self.canvas = ROOT.TCanvas("canvas", "", 800, 600 )
             self.canvas.SetTopMargin(0.09)
-            self.canvas.SetBottomMargin(0.13)
-            self.canvas.SetLeftMargin(0.16)
+            self.canvas.SetBottomMargin(0.14)
+            self.canvas.SetLeftMargin(0.13)
             self.canvas.SetRightMargin(0.03)
         else:
             self.TopMargin    = 0.09
@@ -148,8 +148,8 @@ class LimitPlots():
         self.tdrStyle.SetTitleColor(1, "XYZ")
         self.tdrStyle.SetTitleFont(42, "XYZ")
         self.tdrStyle.SetTitleSize(0.06, "XYZ")
-        self.tdrStyle.SetTitleXOffset(0.9)
-        self.tdrStyle.SetTitleYOffset(1.25)
+        self.tdrStyle.SetTitleXOffset(1.0)
+        self.tdrStyle.SetTitleYOffset(1.0)
 
         self.tdrStyle.SetLabelColor(1, "XYZ")
         self.tdrStyle.SetLabelFont(42, "XYZ")
@@ -176,7 +176,7 @@ class LimitPlots():
     # -----------------
     # draw lumi and CMS
     # -----------------
-    def draw_LumiCMS(self, approved = False, wip = True):
+    def draw_LumiCMS(self):
 
         self.canvas.cd()
         if self.noRatio:
@@ -223,16 +223,16 @@ class LimitPlots():
             latex.DrawLatex(1.0 + 0.07 - rightMargin, 1.0 - 0.02 - topMargin + 0.2 * topMargin, lumiText)
 
         if self.noRatio:
-            self.textXposition = leftMargin + 0.045 * (1.0 - leftMargin - rightMargin)
-            self.textYposition = 1.0 - topMargin - 0.045 * (1 - topMargin - bottomMargin)
+            self.textXposition = leftMargin + 0.045
+            self.textYposition = 1.0 - topMargin - 0.01
         else:
-            self.textXposition = leftMargin + 0.06 + 0.045 * (1.0 - leftMargin - rightMargin)
-            self.textYposition = 1.0 - topMargin - 0.045 * (1 - topMargin - bottomMargin) - 0.02
+            self.textXposition = leftMargin + 0.06 + 0.045
+            self.textYposition = 1.0 - topMargin - 0.045 - 0.02
 
         # Text alignment in ROOT
         # https://root.cern.ch/doc/master/classTAttText.html#ATTTEXT1
         textAlignment = 13
-        cmsTextSize = 0.6
+        cmsTextSize = 0.7
 
         latex.SetTextFont(61)
         latex.SetTextSize(cmsTextSize * topMargin)
@@ -241,14 +241,14 @@ class LimitPlots():
         #latex.DrawLatex(self.textXposition, self.textYposition, "Private Work")
 
         # Label with "Prelimiary" if not approved and "work in progress" is WIP
-        if not approved:
+        if not self.approved:
 
             latex.SetTextFont(52)
             latex.SetTextAlign(textAlignment)
-            latex.SetTextSize(0.35 * cmsTextSize * topMargin)
+            latex.SetTextSize(cmsTextSize * topMargin / 1.3)
 
             extraText = ""
-            if not wip:
+            if not self.wip:
                 extraText = "Preliminary"
             else:
                 extraText = "Work in Progress"
@@ -280,15 +280,15 @@ class LimitPlots():
         if not self.noRatio:
             self.textYposition -= 0.1
 
-        if (self.model=="RPV"):
-            latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.9 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 3.6 * textSize) - 0.55, "m_{#tilde{#chi}^{0}_{1}} = 100 GeV")
+        #if (self.model=="RPV"):
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}) = 1.0")
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 1.9 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 3.6 * textSize) - 0.55, "m_{#tilde{#chi}^{0}_{1}} = 100 GeV")
       
-        elif (self.model=="StealthSYY"):
-            latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t#tilde{S}g) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.6 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 3.3 * textSize) - 0.55, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
+        #elif (self.model=="StealthSYY"):
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t#tilde{S}g) = 1.0")
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 1.6 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
+        #    latex.DrawLatex(self.textXposition, (self.textYposition - 3.3 * textSize) - 0.55, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
         
     # ----------------
     # make limit plots
@@ -483,8 +483,8 @@ class LimitPlots():
         projectingXmax           = 1200 + 50
         #projectingXmax           = mass_points[-1] + 50
         projectingRLimitYmin     = 0.002
-        projectingRLimitYmax     = 40
-        projectingRLimitXYtitles = ";m_{ #tilde{t}} [GeV]; 95% CL upper limit on #sigma#bf{#it{#Beta}} [pb]"
+        projectingRLimitYmax     = 5000
+        projectingRLimitXYtitles = ";m_{ #tilde{t}} [GeV];#sigma#color[0]{I}#bf{#it{#Beta}}^{#color[0]{.}#bf{2}} [pb]"
         plotLabel                = self.outputDir + "_CLs"
 
         # ----------------------------------
@@ -560,11 +560,14 @@ class LimitPlots():
             grGreen.SetPoint(n, mass_points[n], limits_68expected_above[n])
             grGreen.SetPoint(num_mass_points + n, mass_points[num_mass_points - n - 1], limits_68expected_below[num_mass_points - n - 1])
 
-        grYellow.SetFillColor(ROOT.kOrange)
-        grYellow.SetLineColor(ROOT.kOrange)
+        kCMSgreen  = ROOT.TColor.GetColor("#85D1FB")
+        kCMSyellow = ROOT.TColor.GetColor("#FFDF7F")
+
+        grYellow.SetFillColor(kCMSyellow)
+        grYellow.SetLineColor(kCMSyellow)
         grYellow.Draw("f")
-        grGreen.SetFillColor(ROOT.kGreen+1)
-        grGreen.SetLineColor(ROOT.kGreen)
+        grGreen.SetFillColor(kCMSgreen)
+        grGreen.SetLineColor(kCMSgreen)
         grGreen.Draw("f, same")
         grMean.SetMarkerSize(0)
         grMean.SetLineWidth(2)
@@ -604,38 +607,54 @@ class LimitPlots():
 
         # add them to legend
         legend = None
+        thLegend = None
         if self.noRatio:
             if self.doSummary:
-                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
+                legend = ROOT.TLegend(0.65, 0.50, 0.90, 0.75)
+                thLegend = ROOT.TLegend(0.65, 0.80, 0.90, 0.90)
             else:
-                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
-            legend.SetNColumns(2)
+                legend = ROOT.TLegend(0.65, 0.50, 0.90, 0.75)
+                thLegend = ROOT.TLegend(0.65, 0.80, 0.90, 0.90)
+
+            legend.SetNColumns(1)
             legend.SetFillColor(0)
             legend.SetFillStyle(0)
             legend.SetTextFont(42)
             legend.SetBorderSize(0)
             legend.SetTextAlign(12)
             legend.SetTextSize(0.035)
+
+            thLegend.SetNColumns(1)
+            thLegend.SetFillColor(0)
+            thLegend.SetFillStyle(0)
+            thLegend.SetTextFont(42)
+            thLegend.SetBorderSize(0)
+            thLegend.SetTextAlign(12)
+            thLegend.SetTextSize(0.035)
+
         else: 
-            legend = ROOT.TLegend(0.325, 0.60, 0.975, 0.85)
-            legend.SetNColumns(2)
+            legend = ROOT.TLegend(0.6, 0.60, 0.975, 0.85)
+            legend.SetNColumns(1)
             legend.SetFillColor(0)
             legend.SetFillStyle(0)
             legend.SetTextFont(42)
             legend.SetBorderSize(0)
             legend.SetTextAlign(12)
             legend.SetTextSize(0.035)
+
+        legend.SetHeader("95% CL upper limits")
 
         header = ""
         if (self.model=="RPV"):
-            header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj"
-            legend.SetHeader(header)
+            header = "RPV"
+            thLegend.SetHeader(header)
         elif (self.model=="StealthSYY"):
-            header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg"
-            legend.SetHeader(header)
+            header = "Stealth SY#bar{Y}"
+            thLegend.SetHeader(header)
 
 
         legend.Draw()
+        thLegend.Draw()
 
         grTheoryErr.Draw("3, same")       
         grTheory.Draw("   l, same") 
@@ -669,18 +688,15 @@ class LimitPlots():
             #    if not self.noRatio:
             #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
             #        old.Draw("lp")
-            legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
-            if not self.asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
+        if not self.asimov: legend.AddEntry(grObs,    "Observed", "lp")
+        legend.AddEntry(grMean,  "Median expected",   "l" )
 
         #grMean.Draw("lp")
 
         legend.AddEntry(grGreen,  "68% expected",   "f" )
         legend.AddEntry(grYellow, "95% expected",   "f" )
 
-        if (self.model=="RPV"):
-            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
-        elif (self.model=="StealthSYY"):
-            legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
+        thLegend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
 
         if self.noRatio:
             self.canvas.cd()
@@ -733,7 +749,7 @@ class LimitPlots():
         line = ROOT.TLine(graftPoint, 1.5e-2, graftPoint, 1.5)
         line.SetLineColor(ROOT.kBlack)
         line.SetLineWidth(2)
-        line.SetLineStyle(2)
+        line.SetLineStyle(9)
         line.Draw("SAME")
 
         #leftArrow = ROOT.TLatex()
@@ -751,9 +767,11 @@ class LimitPlots():
         if self.graft == 0:
             self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
             self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".C")
         else:
             self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
             self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".C")
 
 # -------------
 # Main function

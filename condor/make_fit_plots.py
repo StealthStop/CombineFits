@@ -58,6 +58,9 @@ sigpredcol = ROOT.TColor.GetColor("#85c2a3")
 #bkgobscol  = ROOT.TColor.GetColor("#ce1256")
 bkgobscol   = ROOT.TColor.GetColor("#5cb4e8")
 
+cmscolors = {"TT" : "#9c9ca1", "TTX" : "#7a21dd", "QCD" : "#f89c20", "Other" : "#5790fc"}
+nicenames = {"TT" : "t#bar{t} + jets", "TTX" : "t#bar{t} + X", "QCD" : "QCD multijet", "Other" : "Other"}
+
 # -------------------
 # get fit information
 # -------------------
@@ -479,9 +482,9 @@ def draw_LumiCMS(canvas, iPad, year, approved = False, wip = True):
 
         extraText = ""
         if not wip:
-            extraText = "Preliminary"
+            extraText = "Supplementary"
         else:
-            extraText = "Work in Progress"
+            extraText = ""
 
         if iPad == 0:
             latex.DrawLatex(textXposition + 0.21, textYposition, extraText) 
@@ -569,8 +572,8 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
 
             sep_post_hist_list.append(h)
 
-            h.SetLineColor(j+40) 
-            h.SetFillColor(j+40) 
+            h.SetLineColor(ROOT.TColor.GetColor(cmscolors[key])) 
+            h.SetFillColor(ROOT.TColor.GetColor(cmscolors[key])) 
 
             temp_stack_b.Add(h)
             temp_stack_b.SetMinimum(5)
@@ -593,8 +596,8 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
                 h.GetYaxis().SetTitleSize(0.175 * padRatio)
                 h.GetYaxis().SetLabelSize(0.145 * padRatio)
 
-            h.SetLineColor(j+40) 
-            h.SetFillColor(j+40) 
+            h.SetLineColor(ROOT.TColor.GetColor(cmscolors[key])) 
+            h.SetFillColor(ROOT.TColor.GetColor(cmscolors[key])) 
 
             temp_stack_sb.Add(h)
             temp_stack_sb.SetMinimum(5)
@@ -616,7 +619,8 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
         hlist_post_b[i].SetMarkerColor(ROOT.kGray)
         #hlist_post_b[i].SetFillColorAlpha(ROOT.kGray, 0.70)
         #hlist_post_b[i].SetFillStyle(3744)
-        hlist_post_b[i].SetLineColor(ROOT.kBlue - 6)
+        bonlycol = ROOT.TColor.GetColor("#a96b59")
+        hlist_post_b[i].SetLineColor(bonlycol)
 
         #hlist_post_sb_b[i].SetLineColor(bkgobscol)
         #hlist_post_sb_b[i].SetMarkerColor(bkgobscol)
@@ -626,12 +630,17 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
         #hlist_post_sb[i].SetFillStyle(3744)
         hlist_post_sb[i].SetMarkerSize(0)
         hlist_post_sb[i].SetMarkerColor(ROOT.kGray)
-        hlist_post_sb[i].SetLineColor(ROOT.kMagenta + 2)
+        hlist_post_sb[i].SetLineColor(bonlycol)
 
-        hlist_pre_sig[i].SetLineColor(sigpredcol)
-        hlist_pre_sig[i].SetMarkerColor(sigpredcol)
-        hlist_post_sig[i].SetLineColor(sigobscol)
-        hlist_post_sig[i].SetMarkerColor(sigobscol)
+        presigcol = ROOT.TColor.GetColor("#e42536")
+
+        hlist_pre_sig[i].SetLineColor(presigcol)
+        hlist_pre_sig[i].SetMarkerColor(presigcol)
+
+        postsigcol = ROOT.TColor.GetColor("#e42536")
+
+        hlist_post_sig[i].SetLineColor(postsigcol)
+        hlist_post_sig[i].SetMarkerColor(postsigcol)
 
         hlist_data[i].SetLineColor(kBlack)
     
@@ -786,7 +795,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
             #l.SetFillStyle(0)
 
             for h in sep_post_hist_list:
-                l.AddEntry(h, "{}".format(h.GetTitle()), "f")
+                l.AddEntry(h, nicenames[h.GetTitle()], "f")
 
             if postfit_sb:
                 l.AddEntry(hlist_post_sb[i], "Bkg+Sig Fit", "lf")
@@ -848,10 +857,10 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, si
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
             draw_ExtraInfo(p1_list[i], i+1, fitChannel+signal, sigStr)
         else:
-            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
+            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = False)
             draw_ExtraInfo(p1_list[i], i, fitChannel+signal, sigStr)
  
-    for ext in ["pdf"]:
+    for ext in ["pdf", "C", "png"]:
         fitChannelStr = ""
         if channel != fitChannel:
             fitChannelStr = "_%s"%(fitChannel)
