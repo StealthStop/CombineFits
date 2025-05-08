@@ -21,6 +21,7 @@ parser.add_option("--all",            action="store_true",           dest="all",
 parser.add_option("--maskRegA",       action="store_true",           dest="maskRegA",   default=False,                help="When plotting data, this flag will mask the A region distribution")
 parser.add_option('--asimov',         action="store_true",           dest='asimov',     default=False,                help = 'Is plot w/wo asimov style'       )
 parser.add_option('--expSig',         action="store", type="string", dest='expSig',     default = "None",             help = 'Make plots with r=x (must run specific fits)')
+parser.add_option('--hepData',        action='store_true', default=False, dest='hepData', help='make HEPData entry')
 
 (options, args) = parser.parse_args()
 
@@ -58,10 +59,13 @@ sigpredcol = ROOT.TColor.GetColor("#85c2a3")
 #bkgobscol  = ROOT.TColor.GetColor("#ce1256")
 bkgobscol   = ROOT.TColor.GetColor("#5cb4e8")
 
+cmscolors = {"TT" : "#9c9ca1", "TTX" : "#7a21dd", "QCD" : "#f89c20", "Other" : "#5790fc"}
+nicenames = {"TT" : "t#bar{t} + jets", "TTX" : "t#bar{t} + X", "QCD" : "QCD", "Other" : "Other"}
+
 # -------------------
 # get fit information
 # -------------------
-def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
+def getFitInfo(fitDiag_path, pre_path, signal, year, channel, fitChannel, njets, maskRegA, component = "NotCombo"):
 
     try:
         f_fit = ROOT.TFile.Open(fitDiag_path, "READ")
@@ -90,8 +94,7 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
 
     regs =["A", "B", "C", "D"] 
     if channel == "combo":
-        regs =["A0", "B0", "C0", "D0", "A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"] 
-        njets = [8, 12]
+        regs = ["%s%s"%(r, fitChannel[0]) for r in ["A", "B", "C", "D"]]
 
     for reg in regs:
         if maskRegA and reg == "A": continue
@@ -113,23 +116,21 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
         postfit_sb_TT[reg] = []
         postfit_sb_BG_OTHER[reg] = []
 
-        k = 0
         ch = ""
         channel_temp = channel
         reg_temp = reg
  
         if channel == "combo":
-            k = int(reg[1:])
-            ch = "CH{}l_".format(k)
+            ch = "CH{}_".format(fitChannel)
             reg_temp = reg[:1]
-            channel_temp = "{}l".format(k)
+            channel_temp = fitChannel
 
         if reg_temp == "A":
             reg_temp = "SigA"
 
         data[reg] = []
 
-        for i in range(njets[0]-k,njets[1]+1-k):
+        for i in range(njets[0],njets[1]+1):
             postfit_sb[reg].append((i, 
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/total".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
@@ -141,6 +142,10 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
 
             # Individual background components post fit
             #if "2l" not in channel and "2l" not in ch:
+            postfit_sb_TT[reg].append((i, 
+                 f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                 f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                 ))
             postfit_sb_QCD[reg].append((i, 
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/QCD".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/QCD".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
@@ -148,10 +153,6 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
             postfit_sb_TTX[reg].append((i, 
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TTX".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TTX".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
-                 ))
-            postfit_sb_TT[reg].append((i, 
-                 f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
-                 f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
                  ))
             postfit_sb_BG_OTHER[reg].append((i, 
                  f_fit.Get("shapes_fit_s/{}Y{}_{}{}_{}/Other".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
@@ -170,6 +171,10 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
 
             #prefit_sb[reg].append((i, w_pre.function("shapes_prefit/{}{}/".format(reg,i))))
             #if "2l" not in channel and "2l" not in ch:
+            postfit_b_TT[reg].append((i, 
+                 f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
+                 f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
+                 ))
             postfit_b_QCD[reg].append((i, 
                  f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/QCD".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                  f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/QCD".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
@@ -177,10 +182,6 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
             postfit_b_TTX[reg].append((i, 
                  f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TTX".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
                  f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TTX".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
-                 ))
-            postfit_b_TT[reg].append((i, 
-                 f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
-                 f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/TT".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinError(1)
                  ))
             postfit_b_BG_OTHER[reg].append((i, 
                  f_fit.Get("shapes_fit_b/{}Y{}_{}{}_{}/Other".format(ch,year[-2:],reg_temp,i,channel_temp)).GetBinContent(1),
@@ -224,13 +225,9 @@ def getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA):
 # ---------------
 # make histograms
 # ---------------
-def makeHist(reg, bin_info, tag, njets, combo=False, debug=False):
+def makeHist(reg, bin_info, tag, njets, debug=False):
 
-    k = 0
-    if combo:
-        k = int(reg[1:])
-
-    h = ROOT.TH1D("Region{}{}".format(reg, tag), "", njets[1]-njets[0] + 1, njets[0] - k, njets[1] + 1 - k)
+    h = ROOT.TH1D("Region{}{}".format(reg, tag), "", njets[1]-njets[0] + 1, njets[0], njets[1] + 1)
 
     bins = bin_info[reg]
     if debug:
@@ -279,7 +276,7 @@ def makeHistStack(reg, bin_info, tag, njets, combo=False):
 # -----------
 # make canvas
 # -----------
-def makeCanvasAndPads(combo=False, maskRegA=False):
+def makeCanvasAndPads(maskRegA=False):
     tag = "TEST" 
 
     c1                          = ROOT.TCanvas( "c1_%s"%(tag), "c1_%s"%(tag), 0, 0, 4800, 1920 )
@@ -353,11 +350,12 @@ def draw_ExtraInfo(canvas, iPad, packedInfo, sigStr):
 
     channelStr = ""
     if "0l" in packedInfo:
-        channelStr = "0L Channel"
+        channelStr = "All-hadronic"
+        #channelStr = "0\\ell"
     elif "1l" in packedInfo:
-        channelStr = "1L Channel"
+        channelStr = "Single lepton"
     elif "2l" in packedInfo:
-        channelStr = "2L Channel"
+        channelStr = "Fully leptonic"
 
     modelStr = ""
     if "SYY" in packedInfo:
@@ -393,13 +391,14 @@ def draw_ExtraInfo(canvas, iPad, packedInfo, sigStr):
         textSizeF = pad4Size / pad2Size
 
     text = ROOT.TLatex()
+    #text = ROOT.TMathText()
     text.SetNDC(True)
 
     text.SetTextSize(0.070 / textSizeF)
-    text.SetTextFont(62)
-    text.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
+    text.SetTextFont(42)
+    #text.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
     #text.SetTextColor(ROOT.TColor.GetColor("#88258c"))
-    #text.SetTextColor(ROOT.kBlack)
+    text.SetTextColor(ROOT.kBlue)
 
     if regionStr != "":
         text.SetTextAlign(33)
@@ -408,16 +407,23 @@ def draw_ExtraInfo(canvas, iPad, packedInfo, sigStr):
     if modelStr != "" and iPad == 3:
         text.DrawLatex(1.0 - marginR - 0.2 * marginR, 0.8, modelStr)
     if channelStr != "" and iPad == 3:
-        text.SetTextAlign(13)
-        text.DrawLatex(0.75 * extraL, 0.8, channelStr)
+        #text.SetTextAlign(13)
+        #text.DrawLatex(0.75 * extraL, 0.8, channelStr)
+        text.DrawLatex(1.0 - marginR - 0.2 * marginR, 0.72, channelStr)
     if sigStr != "" and iPad == 3:
+        #text2 = ROOT.TLatex()
+        #text.SetNDC(True)
+        #text.SetTextSize(0.070 / textSizeF)
+        #text.SetTextFont(62)
+        #text.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
         text.SetTextAlign(33)
-        text.DrawLatex(1.0 - marginR - 0.2 * marginR - extraR, 0.72, sigStr[4:])
+        #text.DrawLatex(1.0 - marginR - 0.2 * marginR - extraR, 0.72, sigStr[4:])
+        text.DrawLatex(1.0 - marginR - 0.2 * marginR - extraR, 0.64, sigStr[4:])
 
 # -----------------
 # draw lumi and CMS
 # -----------------
-def draw_LumiCMS(canvas, iPad, year, approved = False, wip = True):
+def draw_LumiCMS(canvas, iPad, year, approved = True, wip = True):
 
     if iPad > 0 and iPad < 3:
         return
@@ -486,9 +492,9 @@ def draw_LumiCMS(canvas, iPad, year, approved = False, wip = True):
 
         extraText = ""
         if not wip:
-            extraText = "Preliminary"
+            extraText = ""
         else:
-            extraText = "Work in Progress"
+            extraText = ""
 
         if iPad == 0:
             latex.DrawLatex(textXposition + 0.21, textYposition, extraText) 
@@ -509,10 +515,18 @@ def drawWithNoYerr(c, h, color):
 
     return lines
 
+def make_hep_data(bonly_fit, bstack):
+
+    print("="*30)
+    print("MAKING HEP DATA")
+    print(bonly_fit)
+    print(bstack)
+    print("="*30)
+
 # --------------
 # make fit plots
 # --------------
-def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, asimovStr, fitName, outfile, obs, njets, path, plotFinalPred=True, maskRegA=False):
+def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, fitChannel, sigStr, postfit_bonly, postfit_sb, plotdata, plotsig, asimovStr, fitName, outfile, obs, njets, path, plotFinalPred=True, maskRegA=False):
 
     nLegItems = 0
     if postfit_bonly:
@@ -526,7 +540,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
     if pre_path.find("perfectClose") != -1:
         close += "_perfectClose"
-    pre_b, post_b, post_sb, post_sb_b, post_sig, pre_sig, data, prefit_sep_b, postfit_sep_sb = getFitInfo(fitDiag_path, pre_path, signal, year, channel, njets, maskRegA)
+    pre_b, post_b, post_sb, post_sb_b, post_sig, pre_sig, data, prefit_sep_b, postfit_sep_sb = getFitInfo(fitDiag_path, pre_path, signal, year, channel, fitChannel, njets, maskRegA)
 
     hlist_data = []
     hlist_pre_b = []
@@ -542,27 +556,24 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
     regs = data.keys()
 
     for reg in regs:
-        hlist_data.append(makeHist(    reg, obs,      "_data",        njets, channel == "combo") )
-        hlist_pre_b.append(makeHist(   reg, pre_b,    "_pre_bonly",   njets, channel == "combo") )
-        hlist_post_b.append(makeHist(  reg, post_b,   "_post_bonly",  njets, channel == "combo") )
-        hlist_post_sb.append(makeHist( reg, post_sb,  "_post_sb",     njets, channel == "combo") )
-        hlist_post_sb_b.append(makeHist( reg, post_sb_b,  "_post_sb_b",     njets, channel == "combo") )
-        hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal", njets, channel == "combo") )
-        hlist_pre_sig.append(makeHist(reg, pre_sig, "_pre_signal", njets, channel == "combo") )
+        hlist_data.append(makeHist(    reg, obs,      "_data",        njets) )
+        hlist_pre_b.append(makeHist(   reg, pre_b,    "_pre_bonly",   njets) )
+        hlist_post_b.append(makeHist(  reg, post_b,   "_post_bonly",  njets) )
+        hlist_post_sb.append(makeHist( reg, post_sb,  "_post_sb",     njets) )
+        hlist_post_sb_b.append(makeHist( reg, post_sb_b,  "_post_sb_b",     njets) )
+        hlist_post_sig.append(makeHist(reg, post_sig, "_post_signal", njets) )
+        hlist_pre_sig.append(makeHist(reg, pre_sig, "_pre_signal", njets) )
 
-        temp_stack_b = ROOT.THStack("b_stack", ";;Number of Events")
-        temp_stack_sb = ROOT.THStack("sb_stack", ";;Number of Events")
+        temp_stack_b = ROOT.THStack("b_stack", ";;Number of events")
+        temp_stack_sb = ROOT.THStack("sb_stack", ";;Number of events")
 
         sep_post_hist_list = []
 
         for j,key in enumerate(prefit_sep_b.keys()): 
        
-            k = 0
             tag = "_post_sep_b"
-            if channel == "combo":
-                k = int(reg[1:])
 
-            h = ROOT.TH1D("Region{}{}{}".format(reg, key, tag), "{}".format(key), njets[1]-njets[0] + 1, njets[0] - k, njets[1] + 1 - k)
+            h = ROOT.TH1D("Region{}{}{}".format(reg, key, tag), "{}".format(key), njets[1]-njets[0] + 1, njets[0], njets[1] + 1)
 
             bins = prefit_sep_b[key][reg]
 
@@ -572,26 +583,23 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 else:
                     h.Fill(bins[i][0], bins[i][1])
                 h.SetBinError(i, bins[i][2])
-                h.GetYaxis().SetTitle("Number of Events")
+                h.GetYaxis().SetTitle("Number of events")
                 h.GetYaxis().SetTitleOffset(0.55)
                 h.GetYaxis().SetTitleSize(0.175 * padRatio)
                 h.GetYaxis().SetLabelSize(0.145 * padRatio)
 
             sep_post_hist_list.append(h)
 
-            h.SetLineColor(j+40) 
-            h.SetFillColor(j+40) 
+            h.SetLineColor(ROOT.TColor.GetColor(cmscolors[key])) 
+            h.SetFillColor(ROOT.TColor.GetColor(cmscolors[key])) 
 
             temp_stack_b.Add(h)
             temp_stack_b.SetMinimum(5)
             temp_stack_b.SetMaximum(2E6)
 
-            k = 0
             tag = "_post_sep_sb"
-            if channel == "combo":
-                k = int(reg[1:])
 
-            h = ROOT.TH1D("Region{}{}{}".format(reg, key, tag), "{}".format(key), njets[1]-njets[0] + 1, njets[0] - k, njets[1] + 1 - k)
+            h = ROOT.TH1D("Region{}{}{}".format(reg, key, tag), "{}".format(key), njets[1]-njets[0] + 1, njets[0], njets[1] + 1)
 
             bins = postfit_sep_sb[key][reg]
 
@@ -601,13 +609,13 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 else:
                     h.Fill(bins[i][0], bins[i][1])
                 h.SetBinError(i, bins[i][2])
-                h.GetYaxis().SetTitle("Number of Events")
+                h.GetYaxis().SetTitle("Number of events")
                 h.GetYaxis().SetTitleOffset(0.55)
                 h.GetYaxis().SetTitleSize(0.175 * padRatio)
                 h.GetYaxis().SetLabelSize(0.145 * padRatio)
 
-            h.SetLineColor(j+40) 
-            h.SetFillColor(j+40) 
+            h.SetLineColor(ROOT.TColor.GetColor(cmscolors[key])) 
+            h.SetFillColor(ROOT.TColor.GetColor(cmscolors[key])) 
 
             temp_stack_sb.Add(h)
             temp_stack_sb.SetMinimum(5)
@@ -622,14 +630,17 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
     #save_to_root(hlist_post_b, outfile)
     #save_to_root(hlist_post_sb, outfile)
     #save_to_root(hlist_post_sig, outfile)
- 
+    
+    make_hep_data(hlist_post_b, hlist_post_sep_b)
+    
     for i in range(len(hlist_pre_b)):
         hlist_post_b[i].SetFillColorAlpha(ROOT.kGray,0.6)
         hlist_post_b[i].SetMarkerSize(0)
         hlist_post_b[i].SetMarkerColor(ROOT.kGray)
         #hlist_post_b[i].SetFillColorAlpha(ROOT.kGray, 0.70)
         #hlist_post_b[i].SetFillStyle(3744)
-        hlist_post_b[i].SetLineColor(ROOT.kBlue - 6)
+        bonlycol = ROOT.TColor.GetColor("#a96b59")
+        hlist_post_b[i].SetLineColor(bonlycol)
 
         #hlist_post_sb_b[i].SetLineColor(bkgobscol)
         #hlist_post_sb_b[i].SetMarkerColor(bkgobscol)
@@ -639,12 +650,17 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #hlist_post_sb[i].SetFillStyle(3744)
         hlist_post_sb[i].SetMarkerSize(0)
         hlist_post_sb[i].SetMarkerColor(ROOT.kGray)
-        hlist_post_sb[i].SetLineColor(ROOT.kMagenta + 2)
+        hlist_post_sb[i].SetLineColor(bonlycol)
 
-        hlist_pre_sig[i].SetLineColor(sigpredcol)
-        hlist_pre_sig[i].SetMarkerColor(sigpredcol)
-        hlist_post_sig[i].SetLineColor(sigobscol)
-        hlist_post_sig[i].SetMarkerColor(sigobscol)
+        presigcol = ROOT.TColor.GetColor("#e42536")
+
+        hlist_pre_sig[i].SetLineColor(presigcol)
+        hlist_pre_sig[i].SetMarkerColor(presigcol)
+
+        postsigcol = ROOT.TColor.GetColor("#e42536")
+
+        hlist_post_sig[i].SetLineColor(postsigcol)
+        hlist_post_sig[i].SetMarkerColor(postsigcol)
 
         hlist_data[i].SetLineColor(kBlack)
     
@@ -682,9 +698,19 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_ratio.append(h_temp)
         pull_unc_list.append(h_temp2)
 
-    c1, p1_list, p2_list = makeCanvasAndPads(channel == "combo", maskRegA = maskRegA)
+    c1, p1_list, p2_list = makeCanvasAndPads(maskRegA = maskRegA)
 
     c1, p1_list, p2_list = formatCanvasAndPads(c1, p1_list, p2_list)
+
+    nBins = hlist_ratio[0].GetNbinsX()
+    absMaxVals = []
+    for i in range(len(p1_list)):
+        for iBin in range(1, nBins+1):
+            absMaxVals.append(1.0+abs(1.0-hlist_ratio[i].GetBinContent(iBin))+hlist_ratio[i].GetBinError(iBin))
+    
+    ratioRange = 1.25
+    if max(absMaxVals) > 1.25:
+        ratioRange = 1.65
     
     survival = []
     for i in range(len(p1_list)):
@@ -693,7 +719,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         if i == 0:
 
             for hist in [hlist_post_sig[i], hlist_pre_sig[i], hlist_post_sb[i], hlist_post_b[i], hlist_data[i]]:
-                hist.GetYaxis().SetTitle("Number of Events")
+                hist.GetYaxis().SetTitle("Number of events")
                 hist.GetYaxis().SetTitleOffset(0.55)
                 hist.GetYaxis().SetTitleSize(0.175 * padRatio)
                 hist.GetYaxis().SetLabelSize(0.145 * padRatio)
@@ -709,9 +735,9 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             pull_unc_list[i].GetYaxis().SetLabelSize(0.145)
 
         elif i == 3:
-            hlist_ratio[i].GetXaxis().SetTitle("Number of Jets")        
+            hlist_ratio[i].GetXaxis().SetTitle("N_{Jets}")        
             hlist_ratio[i].GetXaxis().SetTitleOffset(0.0)
-            pull_unc_list[i].GetXaxis().SetTitle("Number of Jets")        
+            pull_unc_list[i].GetXaxis().SetTitle("N_{Jets}")        
             pull_unc_list[i].GetXaxis().SetTitleOffset(0.0)
 
         hlist_post_sig[i].GetYaxis().SetRangeUser(5, 2E6)
@@ -770,7 +796,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         #    hlist_post_sb_b[i].Draw("L SAME")
         #    survival.append(drawWithNoYerr(p1_list[i], hlist_post_b[i], fitcol))
         hlist_data[i].SetMarkerStyle(8)
-        hlist_data[i].SetMarkerSize(1)
+        hlist_data[i].SetMarkerSize(4)
         #hlist_data[i].SetLineWidth(2)
         if plotdata:
             hlist_data[i].Draw("E1 X0 SAME")
@@ -784,18 +810,19 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
             l = None
             l = ROOT.TLegend(0.25, 0.70 - nLegItems*0.075, 1.0, 0.81)
             l.SetNColumns(2)
-            l.SetTextSize(0.05)
+            l.SetTextSize(0.07)
             l.SetBorderSize(0)
             #l.SetFillStyle(0)
 
+            sep_post_hist_list.reverse()
             for h in sep_post_hist_list:
-                l.AddEntry(h, "{}".format(h.GetTitle()), "f")
+                l.AddEntry(h, nicenames[h.GetTitle()], "f")
 
             if postfit_sb:
                 l.AddEntry(hlist_post_sb[i], "Bkg+Sig Fit", "lf")
                 #l.AddEntry(hlist_post_b[i], "Bkg Fit.", "l")
             if postfit_bonly and not postfit_sb:
-                l.AddEntry(hlist_post_b[i], "Bkg Fit.", "lf")
+                l.AddEntry(hlist_post_b[i], "Bkg fit.", "lf")
             if plotdata:
                 if "pseudoData" in fitName:
                     l.AddEntry(hlist_data[i], "PseudoData", "pe")
@@ -807,7 +834,7 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
                 if postfit_sb:
                     l.AddEntry(hlist_post_sig[i], "Signal (Fit)", "l")
                 else:
-                    l.AddEntry(hlist_pre_sig[i], "Signal (r=1)", "l")
+                    l.AddEntry(hlist_pre_sig[i], "Signal", "l")
    
             l.Draw("SAME")
 
@@ -815,21 +842,21 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
         hlist_ratio[i].SetTitle("")
         #hlist_ratio[i].SetLineWidth(2)
         hlist_ratio[i].SetMarkerStyle(8)
-        hlist_ratio[i].SetMarkerSize(1)
+        hlist_ratio[i].SetMarkerSize(4)
         hlist_ratio[i].SetMarkerColor(ROOT.kBlack)
 
-        hlist_ratio[i].GetYaxis().SetRangeUser(0.75, 1.25)
+        hlist_ratio[i].GetYaxis().SetRangeUser(2.0-ratioRange, ratioRange)
         hlist_ratio[i].GetXaxis().SetLabelSize(0.2)
         hlist_ratio[i].GetXaxis().SetTitleSize(0.145)        
         hlist_ratio[i].GetXaxis().SetLabelOffset(0.027)
-        hlist_ratio[i].GetYaxis().SetNdivisions(4, 2, 0)
+        hlist_ratio[i].GetYaxis().SetNdivisions(204)
 
-        pull_unc_list[i].GetYaxis().SetRangeUser(0.75, 1.25)
+        pull_unc_list[i].GetYaxis().SetRangeUser(2.0-ratioRange, ratioRange)
         pull_unc_list[i].GetXaxis().SetLabelSize(0.23)
         pull_unc_list[i].GetXaxis().SetTitleSize(0.145 * pad1Size/pad4Size)        
         pull_unc_list[i].GetXaxis().SetLabelOffset(0.020)
         pull_unc_list[i].GetXaxis().SetTitleOffset(1.1)
-        pull_unc_list[i].GetYaxis().SetNdivisions(4, 2, 0)
+        pull_unc_list[i].GetYaxis().SetNdivisions(204)
 
         #pull_unc_list[i].SetLineWidth(0)
 
@@ -849,24 +876,23 @@ def make_fit_plots(signal, year, pre_path, fitDiag_path, channel, sigStr, postfi
 
         if maskRegA: 
             draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i+1, channel+signal, sigStr)
+            draw_ExtraInfo(p1_list[i], i+1, fitChannel+signal, sigStr)
         else:
-            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = True)
-            draw_ExtraInfo(p1_list[i], i, channel+signal, sigStr)
+            draw_LumiCMS(p1_list[i], i, year, approved = False, wip = False)
+            draw_ExtraInfo(p1_list[i], i, fitChannel+signal, sigStr)
  
-    for ext in ["pdf"]:
-        c1.Print("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + asimovStr + "_" + fitName + ".%s"%(ext))
+    for ext in ["pdf", "root", "png", "eps"]:
+        fitChannelStr = ""
+        if channel != fitChannel:
+            fitChannelStr = "_%s"%(fitChannel)
+        c1.Print("%s/fit_plots/"%(options.path) + year + "_" + signal + "_" + channel + fitChannelStr + asimovStr + "_" + fitName + ".%s"%(ext))
 
     
 
-def getObs(card, njets, combo=False, maskRegA=False):
-
-    if combo:
-        njets = [8,12]
+def getObs(card, njets, channel, fitChannel, maskRegA=False):
 
     try:
         f = open(card, "r")
-
     except: 
         print("Could not open card {}".format(card))
         return None
@@ -888,22 +914,23 @@ def getObs(card, njets, combo=False, maskRegA=False):
     else:
         ABCD = ["A", "B", "C", "D"] 
         
-    if combo:
+    if channel == "combo":
         ABCD = ["A0", "B0", "C0", "D0", "A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"] 
     data = OrderedDict()
 
     for reg in ABCD:
+        if channel == "combo" and fitChannel[0] not in reg:
+            continue
         data[reg] = []
 
     for i,reg in enumerate(ABCD):
 
-        k = 0
-        if combo:
-            k = int(reg[1:])
+        if channel == "combo" and fitChannel[0] not in reg:
+            continue
 
         for j in range(0,njets[1]-njets[0] + 1):
 
-            data[reg].append( ( njets[0]-k+j, float(data_temp[i*(njets[1]-njets[0]+1)+j]), sqrt(float(data_temp[i*(njets[1]-njets[0]+1)+j])) ) )
+            data[reg].append( ( njets[0]+j, float(data_temp[i*(njets[1]-njets[0]+1)+j]), sqrt(float(data_temp[i*(njets[1]-njets[0]+1)+j])) ) )
 
     return data
 
@@ -916,10 +943,11 @@ def main():
     dirTag = "cards"
     card    = "{}/output-files/cards*".format(options.path)
 
+    print(card)
     dirTag = glob.glob(card)[0].split("/")[-1]
 
-    if not os.path.exists("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path)):
-        os.makedirs("%s/output-files/plots_dataCards_TT_allTTvar/fit_plots/"%(options.path))
+    if not os.path.exists("%s/fit_plots/"%(options.path)):
+        os.makedirs("%s/fit_plots/"%(options.path))
 
     if not os.path.exists("results"):
         os.makedirs("results")
@@ -934,6 +962,11 @@ def main():
     dataType = options.dataType
     channel  = options.channel
 
+    # For combo fit, need to get channel fits for all three channels
+    fitChannels = [channel]
+    if channel == "combo":
+        fitChannels = ["0l", "1l", "2l"]
+
     close     = ""
     if options.setClosure:
         close = "_perfectClose"
@@ -944,7 +977,7 @@ def main():
     elif "SYY" in signal:
         sigStr = "SYY"
 
-    sigStr += " m_{ #tilde{t}} = %d GeV"%(mass)
+    sigStr += " m_{#tilde{t}} = %d GeV"%(mass)
 
     asimovStr = ""
     if options.asimov:
@@ -952,14 +985,10 @@ def main():
         if options.expSig != "None":
             asimovStr += "_%s"%(options.expSig)
 
-    if channel == "2l":
-        njets = [6, 10]
-    elif channel == "1l":
-        njets = [7, 11]
-    elif channel == "0l":
-        njets = [8, 12]
-    elif channel == "combo":
-        njets = [8, 12]
+    njets = {"0l" : [8,12],
+             "1l" : [7,11],
+             "2l" : [6,10]
+    }
     
     shortSig = signal[-3:]
 
@@ -978,29 +1007,25 @@ def main():
     if not os.path.isdir("%s/fit_plots/%s/"%(options.path,dirTag)):
         os.makedirs("%s/fit_plots/%s/"%(options.path,dirTag))
     
-    if "MaxSign" in path:
-        if "SYY" in signal and mass >= 700: return
-        if "RPV" in signal and mass >= 650: return
-    elif "MassExclusion" in path:
-        if "SYY" in signal and mass < 700: return
-        if "RPV" in signal and mass < 650: return
-
     print("Making pre and post fit distributions for:")
     print("Year: {}\t Signal: {}\t Mass: {}\t Final State: {}\t Data Type: {}".format(options.year, signal, mass, channel, dataType))
     card    = "{}/output-files/{}/{}_{}_{}_{}_{}{}.txt".format(options.path, dirTag, options.year, signal, mass, dataType, channel, close)
-    obs     = getObs(card, njets, channel == "combo", maskRegA=options.maskRegA)
-    if obs == None: return
 
-    if dataType == "pseudoData":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True, True, asimovStr, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-        #make_fit_plots(signalName, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True,  False,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True, True,  asimovStr, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, options.plotFinalPred, maskRegA=options.maskRegA)
-    elif dataType == "pseudoDataS":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-    elif dataType == "Data":
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
-        make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path, maskRegA=options.maskRegA)
+    for fitChannel in fitChannels:
+        theNjets = njets[fitChannel]
+        obs     = getObs(card, theNjets, channel, fitChannel, maskRegA=options.maskRegA)
+        if obs == None: return
+
+        if dataType == "pseudoData":
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, True, False, True, True, asimovStr, "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs,   theNjets, path,   maskRegA=options.maskRegA)
+            #make_fit_plots(signalName, options.year, pre_path, fitDiag_path, c, sigStr, False, True, True, True,  False,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, njets, path)
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, False, True, True, True,  asimovStr, "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs,  theNjets, path,  options.plotFinalPred, maskRegA=options.maskRegA)
+        elif dataType == "pseudoDataS":
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, theNjets, path, maskRegA=options.maskRegA)
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, theNjets, path, maskRegA=options.maskRegA)
+        elif dataType == "Data":
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, True, False, True,  True, asimovStr,  "{}_bonly".format(dataType), "{}/results/{}_FitPlots.root".format(path, name), obs, theNjets, path, maskRegA=options.maskRegA)
+            make_fit_plots(signalName, options.year, pre_path, fitDiag_path, channel, fitChannel, sigStr, False, True, True,  True, asimovStr,  "{}_sb".format(dataType),    "{}/results/{}_FitPlots.root".format(path, name), obs, theNjets, path, maskRegA=options.maskRegA)
 
 if __name__ == '__main__':
     main()

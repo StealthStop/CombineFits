@@ -45,21 +45,21 @@ class Plotter():
                        "2017"        : "2017", 
                        "2018"        : "2018",
                        "Run2UL"      : "Run2UL", 
-                       "0l"          : "fully-hadronic", 
-                       "1l"          : "semi-leptonic",
-                       "2l"          : "fully-leptonic", 
-                       "combo"       : "Combo", 
+                       "0l"          : "0l", 
+                       "1l"          : "1l",
+                       "2l"          : "2l", 
+                       "combo"       : "0l+1l+2l", 
         }
-
+        
         self.colors = {"2016"        : ROOT.kBlack,
                        "2016preVFP"  : ROOT.kRed+1,
                        "2016postVFP" : ROOT.kBlue+1,
                        "2017"        : ROOT.kGreen+1,
                        "2018"        : ROOT.kOrange+1,
                        "Run2UL"      : ROOT.kBlack,
-                       "0l"          : ROOT.TColor.GetColor("#2ca25f"),
-                       "1l"          : ROOT.TColor.GetColor("#5cb4e8"),
-                       "2l"          : ROOT.TColor.GetColor("#CE1256"),
+                       "0l"          : ROOT.TColor.GetColor("#3F90DA"),
+                       "1l"          : ROOT.TColor.GetColor("#FFA90E"),
+                       "2l"          : ROOT.TColor.GetColor("#BD1F01"),
                        "combo"       : ROOT.kBlack,
         }
 
@@ -69,9 +69,9 @@ class Plotter():
                         "2017"        : 2,
                         "2018"        : 7,
                         "Run2UL"      : 1,
-                        "0l"          : 7,
+                        "0l"          : 2,
                         "1l"          : 7,
-                        "2l"          : 7,
+                        "2l"          : 9,
                         "combo"       : 1,
         }
 
@@ -96,7 +96,7 @@ class Plotter():
 
         entries = []
 
-        color = ROOT.TColor.GetColor("#8B2D8F")
+        color = ROOT.TColor.GetColor("#832DB6")
         # Draw the 1sigma, 2sigma, and 3sigma lines
         # For 1 sigma: s = 0.68
         #   1 - (0.5 + s/2) = 0.5 - s/2
@@ -135,7 +135,7 @@ class Plotter():
         Ymin = 5.0e-10 # 5.0e-37 
 
         #if runType != "pseudoDataS":
-        #Ymin = 5.0e-37 # 5.0e-10 
+        Ymin = 5.0e-37 # 5.0e-10 
         Ymax = 1
     
         numSigma = 4
@@ -147,7 +147,7 @@ class Plotter():
         c1.cd(1)
         ROOT.gPad.SetPad("p1", "p1", 0, 2.5 / 9.0, 1, 1, ROOT.kWhite, 0, 0)
         #ROOT.gPad.SetPad("p1", "p1", 0, 2.0 / 9.0, 1, 1, ROOT.kWhite, 0, 0)
-        #ROOT.gPad.SetBottomMargin(0.01)
+        ROOT.gPad.SetBottomMargin(0.0)
         ROOT.gPad.SetLeftMargin(0.11)
         ROOT.gPad.SetRightMargin(0.04)
         #ROOT.gPad.SetTopMargin(0.06 * (8.0 / 6.5))
@@ -171,7 +171,7 @@ class Plotter():
         h.Draw()
 
         #legend = ROOT.TLegend(0.30, 0.03, 0.93, 0.29,"")
-        legend = ROOT.TLegend(0.30, 0.13, 0.93, 0.29,"")
+        legend = ROOT.TLegend(0.40, 0.15, 0.93, 0.31,"")
         legend.SetNColumns(2)
         legend.SetTextSize(0.05)
         legend.SetBorderSize(0)
@@ -181,7 +181,7 @@ class Plotter():
         for model in models:
 
             if  model == "RPV": 
-                legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj");
+                legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}},#color[0]{Jh}#tilde{t} #rightarrow t #tilde{#chi}^{#color[0]{J}0}_{1},#color[0]{Jh}#tilde{#chi}^{#color[0]{J}0}_{1} #rightarrow qqq");
             
             elif model == "StealthSYY": 
                 legend.SetHeader("pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg");
@@ -251,7 +251,7 @@ class Plotter():
 
         if not approved:
             if wip:
-                cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Work in Progress")
+                cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "")
             else:
                 cmstext.DrawLatex(ROOT.gPad.GetLeftMargin() + 0.095, 1 - (ROOT.gPad.GetTopMargin() - 0.017), "Preliminary")
    
@@ -259,7 +259,33 @@ class Plotter():
         cmstext.SetTextAlign(31)
         cmstext.SetTextSize(0.045)
         cmstext.DrawLatex(1 - ROOT.gPad.GetRightMargin(), 1 - (ROOT.gPad.GetTopMargin() - 0.017), "138 fb^{-1} (13 TeV)")
-    
+
+        graftPoint = 625
+        if "SYY" in model:
+            graftPoint = 675
+        graftLine = ROOT.TLine(graftPoint, 1e-5, graftPoint, 1)
+        graftLine.SetLineColor(ROOT.kBlack)
+        graftLine.SetLineStyle(3)
+        graftLine.SetLineWidth(2)
+        graftLine.Draw("same")
+
+        #leftArrow1 = ROOT.TLatex()
+        #leftArrow1.SetTextAlign(32)
+        #leftArrow1.SetTextSize(0.050)
+        #leftArrow1.DrawLatex(graftPoint-5, 1e-9, "#leftarrow")
+        #rightArrow1 = ROOT.TLatex()
+        #rightArrow1.SetTextAlign(12)
+        #rightArrow1.SetTextSize(0.050)
+        #rightArrow1.DrawLatex(graftPoint+5, 1e-9, "#rightarrow")
+        #leftArrow2 = ROOT.TLatex()
+        #leftArrow2.SetTextAlign(32)
+        #leftArrow2.SetTextSize(0.060)
+        #leftArrow2.DrawLatex(graftPoint, 0.7, "#leftarrow")
+        #rightArrow2 = ROOT.TLatex()
+        #rightArrow2.SetTextAlign(12)
+        #rightArrow2.SetTextSize(0.060)
+        #rightArrow2.DrawLatex(graftPoint+8, 0.7, "#rightarrow")
+ 
         c1, aux = self.drawSignificanceLines(c1, Xmin, Xmax, numSigma)
 
         c1.cd(2)
@@ -267,10 +293,23 @@ class Plotter():
         #ROOT.gPad.SetPad("p2", "p2", 0, 0, 1, 0.1 / 9.0, ROOT.kWhite, 0, 0)
         ROOT.gPad.SetLeftMargin(0.11)
         ROOT.gPad.SetRightMargin(0.04)
-        ROOT.gPad.SetTopMargin(0.01)
+        ROOT.gPad.SetTopMargin(0.0)
         ROOT.gPad.SetBottomMargin(0.37)
         ROOT.gPad.SetTicks(1,1)
+        ROOT.gPad.SetGridy(1)
     
+        diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
+        
+        rvalue  = array('d', diagnostics["rList"])
+        rpvalue = array('d', diagnostics["rpList"])
+        rmvalue = array('d', diagnostics["rmList"])
+        zero    = array('d', diagnostics["zero"])
+
+        ratioMax = min(1.0 + max(abs(1.0-abs(max(rvalue))), abs(1.0-abs(min(rvalue)))), 6.0)
+
+        if channel != "1l":
+            ratioMax = 15.0
+
         # Make ratio (signal strength)
         hr = ROOT.TH1F("dummyr","dummyr",1, Xmin, Xmax)
         hr.SetStats(0)
@@ -285,16 +324,10 @@ class Plotter():
         hr.GetYaxis().SetTitleOffset(0.3)
         hr.SetLineWidth(0)
         maxR = 1.0 
-        hr.GetYaxis().SetRangeUser(-1.3, 1.3)
+        #hr.GetYaxis().SetRangeUser(-ratioMax, ratioMax)
+        hr.GetYaxis().SetRangeUser(-0.2, 2.8)
         hr.GetYaxis().SetNdivisions(4, 2, 0)
         hr.Draw()
-
-        diagnostics = dataSets["%s_%s_%s"%(year, model, channel)].getData()
-        
-        rvalue  = array('d', diagnostics["rList"])
-        rpvalue = array('d', diagnostics["rpList"])
-        rmvalue = array('d', diagnostics["rmList"])
-        zero    = array('d', diagnostics["zero"])
 
         rband = ROOT.TGraphAsymmErrors(npoints, array('d', xpoints), rvalue, zero, zero, rmvalue, rpvalue)
         rband.SetFillColor(ROOT.TColor.GetColor("#99D8C9"))
@@ -302,23 +335,28 @@ class Plotter():
 
         r = ROOT.TGraph(npoints, array('d', xpoints), rvalue)
         r.SetLineColor(ROOT.kBlack)
-        r.SetLineStyle(ROOT.kDashed)
+        r.SetLineStyle(ROOT.kSolid)
         r.SetLineWidth(3)
         r.Draw("PL same")
         c1.Update()
         
-        line = ROOT.TF1("line", "1", Xmin, Xmax)
-        line.SetLineColor(ROOT.kRed)
-        line.Draw("same")
-        
-        line2 = ROOT.TF1("line", "1", Xmin, Xmax)
-        line2.SetLineColor(ROOT.kBlack)
-        line2.Draw("same")
-   
+        rgraftLine = ROOT.TLine(graftPoint, -ratioMax, graftPoint, ratioMax)
+        rgraftLine.SetLineColor(ROOT.kBlack)
+        rgraftLine.SetLineStyle(3)
+        rgraftLine.SetLineWidth(2)
+        rgraftLine.Draw("same")
+
+        ROOT.gPad.RedrawAxis("g")
+        hr.Draw("AXIS SAME")
+
         if approved:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.png"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_" + tag + self.pdfName + "%s.C"%(self.asimov))
         else:
             c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.pdf"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.png"%(self.asimov))
+            c1.Print(self.outPath + "/" + runType + "_" + model + "_"+ tag + self.pdfName + "%s_prelim.C"%(self.asimov))
         del c1
 
 
@@ -377,7 +415,7 @@ def main():
     parser.add_argument('--dataTypes', dest='dataTypes', type=str, nargs="+", default = ["pseudoDataS"] ,            help = 'Which dataTypes to plot'         )
     parser.add_argument('--years',     dest='years',     type=str, nargs="+", default = ["Run2UL"] ,                 help = 'Which years to plot'             )
     parser.add_argument('--channels',  dest='channels',  type=str, nargs="+", default = ["0l", "1l", "2l", "combo"], help = 'Which channels to plot'          )
-    parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1400"] ,            help = 'End points of mass range to plot')
+    parser.add_argument('--massRange', dest='massRange', type=str, nargs="+", default = ["300", "1250"] ,            help = 'End points of mass range to plot')
     parser.add_argument('--graft',     dest='graft',     type=int,            default = 0,                           help = 'All masses below (inclusive) the graft value will use the first basedir, anything above will use second')
     parser.add_argument('--expSig',    dest='expSig',    type=str,            default = "None",                       help = 'Make plots with r=x (must run specific fits)')
 
@@ -405,7 +443,7 @@ def main():
     masses = []
     for mass in range(int(args.massRange[0]), int(args.massRange[1])+50, 50):
         masses.append(str(mass))
-    channels = args.channels
+    channels = ["0l", "1l", "2l", "combo"]
 
     # -----------------------------------------
     # Loop over all jobs in get the info needed
@@ -419,7 +457,7 @@ def main():
         asimovStr = ""
         if args.asimov:
             asimovStr = "_Asimov"
-            if args.expSig != "None":
+            if args.expSig != "None" and args.expSig != "0p0":
                 asimovStr += "_%s"%(args.expSig)
 
         for model in models:
@@ -515,7 +553,7 @@ def main():
     makeSigTex("%s/table_signal_strength.tex"%(outPath), l)
 
     thePlotter = Plotter(pdfName, path, outPath, asimovStr)
-    thePlotter.makePValuePlot(path, dataSets, runtype, args.approved, args.wip, args.years, args.channels, args.models)
+    thePlotter.makePValuePlot(path, dataSets, runtype, args.approved, args.wip, args.years, channels, args.models)
 
 
 

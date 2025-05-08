@@ -11,14 +11,17 @@ ROOT.gROOT.SetBatch(True)
 
 class LimitPlots():
 
-    def __init__(self, inputDirs, outputDir, year, model, channel, dataType, limitType, graft, noRatio):
+    def __init__(self, inputDirs, outputDir, year, model, channel, dataType, graft, noRatio, doSummary, asimov, wip, approved):
 
         self.inputDirs     = inputDirs
         self.year          = year
         self.model         = model
         self.channel       = channel
+        self.doSummary     = doSummary
         self.dataType      = dataType
-        self.limitType     = limitType
+        self.asimov        = asimov
+        self.wip           = wip
+        self.approved      = approved
         self.graft         = graft
         self.canvas        = None
         self.tdrStyle      = None
@@ -39,8 +42,8 @@ class LimitPlots():
         if self.noRatio:
             self.canvas = ROOT.TCanvas("canvas", "", 800, 600 )
             self.canvas.SetTopMargin(0.09)
-            self.canvas.SetBottomMargin(0.13)
-            self.canvas.SetLeftMargin(0.16)
+            self.canvas.SetBottomMargin(0.14)
+            self.canvas.SetLeftMargin(0.13)
             self.canvas.SetRightMargin(0.03)
         else:
             self.TopMargin    = 0.09
@@ -145,8 +148,8 @@ class LimitPlots():
         self.tdrStyle.SetTitleColor(1, "XYZ")
         self.tdrStyle.SetTitleFont(42, "XYZ")
         self.tdrStyle.SetTitleSize(0.06, "XYZ")
-        self.tdrStyle.SetTitleXOffset(0.9)
-        self.tdrStyle.SetTitleYOffset(1.25)
+        self.tdrStyle.SetTitleXOffset(1.0)
+        self.tdrStyle.SetTitleYOffset(1.0)
 
         self.tdrStyle.SetLabelColor(1, "XYZ")
         self.tdrStyle.SetLabelFont(42, "XYZ")
@@ -173,7 +176,7 @@ class LimitPlots():
     # -----------------
     # draw lumi and CMS
     # -----------------
-    def draw_LumiCMS(self, approved = False, wip = True):
+    def draw_LumiCMS(self):
 
         self.canvas.cd()
         if self.noRatio:
@@ -220,35 +223,35 @@ class LimitPlots():
             latex.DrawLatex(1.0 + 0.07 - rightMargin, 1.0 - 0.02 - topMargin + 0.2 * topMargin, lumiText)
 
         if self.noRatio:
-            self.textXposition = leftMargin + 0.045 * (1.0 - leftMargin - rightMargin)
-            self.textYposition = 1.0 - topMargin - 0.045 * (1 - topMargin - bottomMargin)
+            self.textXposition = leftMargin + 0.045
+            self.textYposition = 1.0 - topMargin - 0.01
         else:
-            self.textXposition = leftMargin + 0.06 + 0.045 * (1.0 - leftMargin - rightMargin)
-            self.textYposition = 1.0 - topMargin - 0.045 * (1 - topMargin - bottomMargin) - 0.02
+            self.textXposition = leftMargin + 0.06 + 0.045
+            self.textYposition = 1.0 - topMargin - 0.045 - 0.02
 
         # Text alignment in ROOT
         # https://root.cern.ch/doc/master/classTAttText.html#ATTTEXT1
         textAlignment = 13
-        cmsTextSize = 0.6
+        cmsTextSize = 0.7
 
         latex.SetTextFont(61)
         latex.SetTextSize(cmsTextSize * topMargin)
         latex.SetTextAlign(textAlignment)
-        latex.DrawLatex(self.textXposition, self.textYposition, "CMS")
+        latex.DrawLatex(self.textXposition - 0.02, self.textYposition, "CMS")
         #latex.DrawLatex(self.textXposition, self.textYposition, "Private Work")
 
         # Label with "Prelimiary" if not approved and "work in progress" is WIP
-        if not approved:
+        if not self.approved:
 
             latex.SetTextFont(52)
             latex.SetTextAlign(textAlignment)
-            latex.SetTextSize(0.35 * cmsTextSize * topMargin)
+            latex.SetTextSize(cmsTextSize * topMargin / 1.3)
 
             extraText = ""
-            if not wip:
+            if not self.wip:
                 extraText = "Preliminary"
             else:
-                extraText = "Work in Progress"
+                extraText = "Preliminary"#Work in Progress"
                 #extraText = "(CMS Simulation)"
 
             latex.DrawLatex(self.textXposition, self.textYposition - 1.1 * cmsTextSize * topMargin, extraText) 
@@ -256,13 +259,13 @@ class LimitPlots():
     # -----------------------
     # draw signal information
     # -----------------------
-    def draw_SignalInfo(self):
+    def draw_SignalInfo(self, channel):
         if self.noRatio:
             self.canvas.cd()
         else:
             self.pad1.cd(1)
 
-        textSize = 0.04
+        textSize = 0.045
 
         latex = ROOT.TLatex()
         latex.SetNDC()
@@ -273,24 +276,64 @@ class LimitPlots():
         latex.SetTextAlign(12)
         latex.SetTextFont(42)
         latex.SetTextSize(textSize)
-        
+       
+        #mt = ROOT.TMathText()
+        #mt.SetNDC()
+        #mt.SetTextAngle(0)
+        #mt.SetTextColor(ROOT.kBlack)
+        #mt.SetBorderSize(0)
+        #mt.SetFillStyle(0)
+        #mt.SetTextAlign(12)
+        #mt.SetTextFont(42)
+        #mt.SetTextSize(textSize)
+        #mt.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
+       
+        if channel == "0l":
+            channel_text = "All-hadronic" 
+        elif channel == "1l":
+            channel_text = "Single lepton" 
+        elif channel == "2l":
+            channel_text = "Fully leptonic" 
+ 
         if not self.noRatio:
             self.textYposition -= 0.1
 
         if (self.model=="RPV"):
-            latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.9 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
+            latex.DrawLatex(0.35, 0.87, "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}, #tilde{#chi}^{0}_{1} #rightarrow jjj") 
+            #latex.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
+            latex.SetTextColor(ROOT.kBlue)
+            if "combo" in channel:
+                latex.DrawLatex(0.79, 0.87, "Combination")
+                latex.DrawLatex(0.79, 0.82, "Combination")
+            else:
+                latex.DrawLatex(0.79, 0.87, "%s"%(channel_text))
+            latex.SetTextColor(ROOT.kBlack)
+            #latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t #tilde{#chi}^{0}_{1}) = 1.0")
+            #latex.DrawLatex(self.textXposition, (self.textYposition - 1.9 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{#chi}^{0}_{1} #rightarrow jjj) = 1.0")
             latex.DrawLatex(self.textXposition, (self.textYposition - 3.6 * textSize) - 0.55, "m_{#tilde{#chi}^{0}_{1}} = 100 GeV")
       
         elif (self.model=="StealthSYY"):
-            latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t#tilde{S}g) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 1.6 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
-            latex.DrawLatex(self.textXposition, (self.textYposition - 3.3 * textSize) - 0.55, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
+            latex.DrawLatex(0.265, 0.87, "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{S} g, #tilde{S} #rightarrow S #tilde{G}, S #rightarrow gg") 
+            #latex.SetTextColor(ROOT.TColor.GetColor("#7C99D1"))
+            latex.SetTextColor(ROOT.kBlue)
+            if "combo" in channel:
+                latex.DrawLatex(0.79, 0.87, "Combination")
+                latex.DrawLatex(0.79, 0.82, "Combination")
+            else:
+                latex.DrawLatex(0.79, 0.87, "%s"%(channel_text))
+            latex.SetTextColor(ROOT.kBlack)
+            #latex.DrawLatex(self.textXposition, (self.textYposition - 0.55),                  "#bf{#it{#Beta}}(#tilde{t} #rightarrow t#tilde{S}g) = 1.0")
+            #latex.DrawLatex(self.textXposition, (self.textYposition - 1.6 * textSize) - 0.55, "#bf{#it{#Beta}}(#tilde{S} #rightarrow S#tilde{G}) = 1.0, #bf{#it{#Beta}}(S #rightarrow gg) = 1.0")
+
+            #latex.DrawLatex(self.textXposition - 0.01, (self.textYposition - 3.3 * textSize) - 0.56, "m_{#tilde{S}} = 100 GeV, m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
+
+            latex.DrawLatex(self.textXposition - 0.01, (self.textYposition - 3.3 * textSize) - 0.50, "m_{#tilde{S}} = 100 GeV")
+            latex.DrawLatex(self.textXposition - 0.01, (self.textYposition - 3.3 * textSize) - 0.56, "m_{#tilde{G}} = 1 GeV, m_{S} = 90 GeV")
         
     # ----------------
     # make limit plots
     # ----------------
-    def make_LimitPlots(self, approved = False, wip = True, limitType = "AsymptoticLimits", asimov=False, combo=False):
+    def make_LimitPlots(self):
 
         # -----------
         # make canvas
@@ -333,7 +376,7 @@ class LimitPlots():
         limits_obs              = [0] * num_mass_points # dot black point line on the limit plot
         limits_obsErr           = [0] * num_mass_points # unc. on dot black point line
         
-        if combo:
+        if self.doSummary:
             limits_mean_0l = [0] * num_mass_points
             limits_mean_1l = [0] * num_mass_points
             limits_mean_2l = [0] * num_mass_points
@@ -341,16 +384,9 @@ class LimitPlots():
         # ---------------------------
         # labels for input root files
         # ---------------------------
-        extra = ""
-    
-        if (self.limitType == "AsymptoticLimits"):
-            extra = "_AsymLimit"
-
-        elif (self.limitType == "Significance"):
-            extra = "_SignifExp"
-
-        if asimov:
-            extra += "_Asimov"
+        asimovStr = ""
+        if self.asimov:
+            asimovStr = "_Asimov"
 
         # -------------------------------------------------
         # loop over mass points to open and read root files
@@ -365,20 +401,21 @@ class LimitPlots():
                 self.inputDir = self.inputDirs[1]
 
             # path for input root files   
-            label    = self.year + self.model + mass + self.dataType + "_" + self.channel + "_AsymLimit" 
-            fitInput = self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + label + "." + self.limitType + ".mH" + mass + ".MODEL" + self.model + ".root"
+            label    = self.year + self.model + mass + self.dataType + "_" + self.channel + "_AsymLimit" + asimovStr
+            fitInput = self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + label + ".AsymptoticLimits.mH" + mass + ".MODEL" + self.model + ".root"
             
             extra_inputs = []
-            if combo:
+            if self.doSummary:
                 for ch in ["0l", "1l", "2l"]:
-                    extra_label    = self.year + self.model + mass + self.dataType + "_" + ch + "_AsymLimit" 
-                    extra_inputs.append(self.inputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + extra_label + "." + self.limitType + ".mH" + mass + ".MODEL" + self.model + ".root")
+                    extra_label    = self.year + self.model + mass + self.dataType + "_" + ch + "_AsymLimit" + asimovStr
+                    theInputDir = self.inputDir
+                    extra_inputs.append(theInputDir + "/output-files" + "/" + self.model + "_" + mass + "_" + self.year + "/higgsCombine" + extra_label + ".AsymptoticLimits.mH" + mass + ".MODEL" + self.model + ".root")
 
             try:
                 # load input root files 
                 rootFile = ROOT.TFile.Open(fitInput, "READ")
 
-                if combo:
+                if self.doSummary:
                     extra_rootFiles = []
                     extraTrees = []
                     for i,ext in enumerate(extra_inputs):
@@ -414,7 +451,7 @@ class LimitPlots():
             # ------------------------------------------------------------------
             # Overlay mean for three channels independently for combo limit plot
             # ------------------------------------------------------------------
-            if combo:
+            if self.doSummary:
                 try:
                     extraTrees[0].GetEntry(iEntry)
                 except Exception as e:
@@ -486,15 +523,15 @@ class LimitPlots():
         projectingXmax           = 1200 + 50
         #projectingXmax           = mass_points[-1] + 50
         projectingRLimitYmin     = 0.002
-        projectingRLimitYmax     = 40
-        projectingRLimitXYtitles = ";m_{ #tilde{t}} [GeV]; 95% CL upper limit on #sigma#bf{#it{#Beta}} [pb]"
+        projectingRLimitYmax     = 5000
+        projectingRLimitXYtitles = ";m_{ #tilde{t}} [GeV];#sigma#color[0]{I}#bf{#it{#Beta}}^{#color[0]{.}#bf{2}} [pb]"
         plotLabel                = self.outputDir + "_CLs"
 
         # ----------------------------------
         # store expected and observed limits
         # ----------------------------------
         limits_exp = [0] * num_mass_points
-        if combo:
+        if self.doSummary:
             limits_exp_0l = [0] * num_mass_points
             limits_exp_1l = [0] * num_mass_points
             limits_exp_2l = [0] * num_mass_points
@@ -506,7 +543,7 @@ class LimitPlots():
             limits_95expected_above[n] = limits_95expected_above[n] * sigBr[n]
             limits_mean[n]             = limits_mean[n] * sigBr[n]
 
-            if combo:
+            if self.doSummary:
                 limits_mean_0l[n]             = limits_mean_0l[n] * sigBr[n]
                 limits_mean_1l[n]             = limits_mean_1l[n] * sigBr[n]
                 limits_mean_2l[n]             = limits_mean_2l[n] * sigBr[n]
@@ -547,7 +584,7 @@ class LimitPlots():
         #   -- red solid line - theory cross section for stop pair production
         # -------------------------------------------------------------------
         grMean      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp,dtype="d")) # blue dahed line
-        if combo:
+        if self.doSummary:
             grMean_0l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_0l,dtype="d")) # red dahed line
             grMean_1l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_1l,dtype="d")) # cyan dahed line
             grMean_2l      = ROOT.TGraph(num_mass_points, np.array(mass_points,dtype="d"), np.array(limits_exp_2l,dtype="d")) # magenta dahed line
@@ -563,11 +600,14 @@ class LimitPlots():
             grGreen.SetPoint(n, mass_points[n], limits_68expected_above[n])
             grGreen.SetPoint(num_mass_points + n, mass_points[num_mass_points - n - 1], limits_68expected_below[num_mass_points - n - 1])
 
-        grYellow.SetFillColor(ROOT.kOrange)
-        grYellow.SetLineColor(ROOT.kOrange)
+        kCMSgreen  = ROOT.TColor.GetColor("#85D1FB")
+        kCMSyellow = ROOT.TColor.GetColor("#FFDF7F")
+
+        grYellow.SetFillColor(kCMSyellow)
+        grYellow.SetLineColor(kCMSyellow)
         grYellow.Draw("f")
-        grGreen.SetFillColor(ROOT.kGreen+1)
-        grGreen.SetLineColor(ROOT.kGreen)
+        grGreen.SetFillColor(kCMSgreen)
+        grGreen.SetLineColor(kCMSgreen)
         grGreen.Draw("f, same")
         grMean.SetMarkerSize(0)
         grMean.SetLineWidth(2)
@@ -575,7 +615,7 @@ class LimitPlots():
         grMean.SetLineColor(ROOT.kBlue)
         grMean.Draw("lp")
 
-        if combo:
+        if self.doSummary:
             grMean_0l.SetMarkerSize(0)
             grMean_0l.SetLineWidth(2)
             grMean_0l.SetLineStyle(2)
@@ -598,7 +638,7 @@ class LimitPlots():
         grObs.SetMarkerStyle(20)
         grObs.SetLineColor(ROOT.kBlack)
         grObs.SetMarkerColor(ROOT.kBlack)
-        if not asimov: grObs.Draw("lp")
+        if not self.asimov: grObs.Draw("lp")
         grTheory.SetLineColor(2)
         grTheory.SetLineWidth(2)
         grTheoryErr.SetLineColor(2)
@@ -607,38 +647,56 @@ class LimitPlots():
 
         # add them to legend
         legend = None
+        thLegend = None
         if self.noRatio:
-            if combo:
-                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
+            if self.doSummary:
+                legend = ROOT.TLegend(0.65, 0.65, 0.90, 0.90)
+                thLegend = ROOT.TLegend(0.40, 0.65, 0.65, 0.90)
             else:
-                legend = ROOT.TLegend(0.325, 0.65, 0.90, 0.90)
-            legend.SetNColumns(2)
+                legend = ROOT.TLegend(0.55, 0.48, 0.90, 0.78)
+                thLegend = ROOT.TLegend(0.20, 0.68, 0.45, 0.78)
+                #legend = ROOT.TLegend(0.65, 0.50, 0.90, 0.75)
+                #thLegend = ROOT.TLegend(0.65, 0.80, 0.90, 0.90)
+
+            legend.SetNColumns(1)
             legend.SetFillColor(0)
             legend.SetFillStyle(0)
             legend.SetTextFont(42)
             legend.SetBorderSize(0)
             legend.SetTextAlign(12)
-            legend.SetTextSize(0.035)
+            legend.SetTextSize(0.045)
+
+            thLegend.SetNColumns(1)
+            thLegend.SetFillColor(0)
+            thLegend.SetFillStyle(0)
+            thLegend.SetTextFont(42)
+            thLegend.SetBorderSize(0)
+            thLegend.SetTextAlign(12)
+            thLegend.SetTextSize(0.045)
+
         else: 
-            legend = ROOT.TLegend(0.325, 0.60, 0.975, 0.85)
-            legend.SetNColumns(2)
+            legend = ROOT.TLegend(0.6, 0.6, 0.975, 0.85)
+            legend.SetNColumns(1)
             legend.SetFillColor(0)
             legend.SetFillStyle(0)
             legend.SetTextFont(42)
             legend.SetBorderSize(0)
             legend.SetTextAlign(12)
-            legend.SetTextSize(0.035)
+            legend.SetTextSize(0.055)
+
+        legend.SetHeader("95% CL upper limits")
 
         header = ""
         if (self.model=="RPV"):
-            header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t #tilde{#chi}^{0}_{1},  #tilde{#chi}^{0}_{1} #rightarrow jjj"
-            legend.SetHeader(header)
+            header = "RPV"
+            thLegend.SetHeader(header)
         elif (self.model=="StealthSYY"):
-            header = "pp #rightarrow #tilde{t} #bar{#tilde{t}}, #tilde{t} #rightarrow t#tilde{S}g, #tilde{S} #rightarrow S#tilde{G}, S #rightarrow gg"
-            legend.SetHeader(header)
+            header = "Stealth SY#bar{Y}"
+            thLegend.SetHeader(header)
 
 
         legend.Draw()
+        thLegend.Draw()
 
         grTheoryErr.Draw("3, same")       
         grTheory.Draw("   l, same") 
@@ -647,45 +705,47 @@ class LimitPlots():
         grMean.Draw("lp")
 
         ratio = grMean.Clone()
-        if combo:
+        if self.doSummary:
+
             grMean_0l.Draw("lp")
             grMean_1l.Draw("lp")
             grMean_2l.Draw("lp")
-            legend.AddEntry(grGreen,  "68% expected",   "f" )
+
             legend.AddEntry(grMean_0l,  "Mean expected limit (0l)",   "l" )
-            legend.AddEntry(grYellow, "95% expected",   "f" )
             legend.AddEntry(grMean_1l,  "Mean expected limit (1l)",   "l" )
-            if (self.model=="RPV"):
-                legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
-            elif (self.model=="StealthSYY"):
-                legend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
             legend.AddEntry(grMean_2l,  "Mean expected limit (2l)",   "l" )
-            if "SYY" in self.model:
-                f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
-                old = f.Get("Figure 6b").Get("Graph1D_y3")
-                if not self.noRatio:
-                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                    old.Draw("lp")
-            elif "RPV" in self.model:
-                f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
+            #if "SYY" in self.model:
+            #    f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6b.root", "read")
 
-                old = f.Get("Figure 6a").Get("Graph1D_y3")
+            #    old = f.Get("Figure 6b").Get("Graph1D_y3")
+            #    if not self.noRatio:
+            #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
+            #        old.Draw("lp")
+            #elif "RPV" in self.model:
+            #    f = ROOT.TFile.Open("HEPData-ins1846679-v1-Figure_6a.root", "read")
 
-                if not self.noRatio:
-                    legend.AddEntry(old, "SUS-19-004 Limit", "l")
-                    old.Draw("lp")
-            legend.AddEntry(grMean,  "Mean expected limit (Combo)",   "l" )
-            if not asimov: legend.AddEntry(grObs,    "Observed limit", "lp")
+            #    old = f.Get("Figure 6a").Get("Graph1D_y3")
+
+            #    if not self.noRatio:
+            #        legend.AddEntry(old, "SUS-19-004 Limit", "l")
+            #        old.Draw("lp")
+        if not self.asimov: legend.AddEntry(grObs,    "Observed", "lp")
+        legend.AddEntry(grMean,  "Median expected",   "l" )
 
         #grMean.Draw("lp")
+
+        legend.AddEntry(grGreen,  "68% expected",   "f" )
+        legend.AddEntry(grYellow, "95% expected",   "f" )
+
+        thLegend.AddEntry(grTheoryErr,"#sigma_{#tilde{t} #bar{#tilde{t}}} (NNLO+NNLL)", "lf")
 
         if self.noRatio:
             self.canvas.cd()
         else:
             self.pad1.cd()
         self.draw_LumiCMS()
-        self.draw_SignalInfo()
+        self.draw_SignalInfo(self.channel)
 
         if not self.noRatio:
             self.pad2.cd()
@@ -725,20 +785,40 @@ class LimitPlots():
             RatioHist.SetMarkerColor(ROOT.kBlack)
 
         #grObs.Draw("lp")
+        graftPoint = 625
+        if "SYY" in self.model:
+            graftPoint = 675
+        line = ROOT.TLine(graftPoint, 1.5e-2, graftPoint, 1.5)
+        line.SetLineColor(ROOT.kBlack)
+        line.SetLineWidth(2)
+        line.SetLineStyle(9)
+        line.Draw("SAME")
 
+        #leftArrow = ROOT.TLatex()
+        #leftArrow.SetTextAlign(32)
+        #leftArrow.SetTextSize(0.050)
+        #leftArrow.DrawLatex(graftPoint-5, 1.0, "#leftarrow")
+        #rightArrow = ROOT.TLatex()
+        #rightArrow.SetTextAlign(12)
+        #rightArrow.SetTextSize(0.050)
+        #rightArrow.DrawLatex(graftPoint+5, 1.0, "#rightarrow")
+
+        legend.AddEntry(line, "Optimization boundary", "l")
+        legend.AddEntry(line, "(low- to high-mass)", "")
         # -----------------------
         # draw signal information
         # -----------------------
-        if asimov:
-            self.asimov = "_Asimov"
-        else:
-            self.asimov = ""
         if self.graft == 0:
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".pdf")
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".eps")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + self.inputDir + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".root")
         else:
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".pdf")
-            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + self.asimov + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".pdf")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".eps")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".png")
+            self.canvas.SaveAs(self.outputDir + "/sigBrLim" + "_" + "Grafted" + "_" + self.year + "_" + self.model + "_" + self.channel + "_" + self.dataType + asimovStr + ".root")
+
 
 # -------------
 # Main function
@@ -749,10 +829,10 @@ def main():
     parser.add_argument("--outputDir", dest="outputDir", type=str, required=True,                                      help = "path to write output files"      )
     parser.add_argument("--year",      dest="year",      type=str, default = "Run2UL" ,                                help = "which year to plot"              )
     parser.add_argument("--model",     dest="model",     type=str, default = "RPV" ,                                   help = "which model to plot"             )
-    parser.add_argument("--channel",   dest="channel",   type=str, default = "1l" ,                                    help = "which channel to plot"           )
+    parser.add_argument("--channel",   dest="channel",   type=str, default = "1l" ,                                    help = "which channels to plot"          )
+    parser.add_argument("--doSummary", dest="doSummary",           default = False,              action='store_true',  help = "include expected for all three channels")
     parser.add_argument("--dataType",  dest="dataType",  type=str, default = "pseudoData",                             help = "which dataType to plot"          )
-    parser.add_argument("--limitType", dest="limitType", type=str, default = "AsymptoticLimits",                       help = "which limitType to plot"         )
-    parser.add_argument("--approved",  dest="approved",            default = False,              action="store_true",  help = "is plot approved"                )
+    parser.add_argument("--approved",  dest="approved",            default = True,               action="store_true",  help = "is plot approved"                )
     parser.add_argument("--asimov",    dest="asimov",              default = False,              action="store_true",  help = "use the Asimov data set"         )
     parser.add_argument("--wip",       dest="wip",                 default = False,              action="store_true",  help = "is plot a work in progress"      )
     parser.add_argument("--graft",     dest="graft",     type=int, default = 0,                                        help = "use input dir 1 up to (inclusive) this mass, then use input dir , then use input dir 2")
@@ -761,12 +841,8 @@ def main():
 
     args = parser.parse_args()
 
-    combo = args.channel == "combo"
-
-    limitPlots_Objects = LimitPlots(args.inputDirs, args.outputDir, args.year, args.model, args.channel, args.dataType, args.limitType, args.graft, args.noRatio) 
-    limitPlots_Objects.make_LimitPlots(args.approved, args.wip, args.limitType, args.asimov, combo)
-
-
+    limitPlots_Objects = LimitPlots(args.inputDirs, args.outputDir, args.year, args.model, args.channel, args.dataType, args.graft, args.noRatio, args.doSummary, args.asimov, args.wip, args.approved) 
+    limitPlots_Objects.make_LimitPlots()
 
 if __name__ == '__main__':
     main()
