@@ -224,6 +224,7 @@ def main():
                                 "fitDiagnostics%s.root"                                          % (tagName), 
                                 "impacts_%s.json"                                                % (tagName),
                                 "impacts_%s%s%s_%s_%s.pdf"                                       % (options.year, model, mass, channel, options.dataType),
+                                "impacts_%s%s%s_%s_%s_blind.pdf"                                 % (options.year, model, mass, channel, options.dataType),
                                 "log_%s_Asymp.txt"                                               % (tagName),
                                 "log_%s_FitDiag.txt"                                             % (tagName),
                                 "log_%s_Sign.txt"                                                % (tagName),
@@ -233,15 +234,24 @@ def main():
                                 "higgsCombine%s_AsymLimit.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                                 "higgsCombine%s_AsymLimit_Asimov.AsymptoticLimits.mH%s.MODEL%s.root"    % (tagName, mass, model),
                                 "higgsCombine%s_Asimov.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
+                                "higgsCombine%s_Asimov_1p0.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
+                                "higgsCombine%s_Asimov_0p2.FitDiagnostics.mH%s.MODEL%s.root"         % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
                                 "higgsCombine%s_SignifExp_Asimov_0p2.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
+                                "higgsCombine%s_SignifExp_Asimov_1p0.Significance.mH%s.MODEL%s.root" % (tagName, mass, model),
                                 "fitDiagnostics%s_Asimov.root"                                   % (tagName), 
+                                "fitDiagnostics%s_Asimov_1p0.root"                               % (tagName), 
+                                "fitDiagnostics%s_Asimov_0p2.root"                               % (tagName), 
                                 "impacts_%s_Asimov.json"                                         % (tagName),
                                 "impacts_%s%s%s_%s_%s_Asimov.pdf"                                % (options.year, model, mass, channel, options.dataType),
+                                "impacts_%s%s%s_%s_%s_Asimov_blind.pdf"                          % (options.year, model, mass, channel, options.dataType),
                                 "log_%s_Asymp_Asimov.txt"                                        % (tagName),
                                 "log_%s_FitDiag_Asimov.txt"                                      % (tagName),
+                                "log_%s_FitDiag_Asimov_1p0.txt"                                  % (tagName),
+                                "log_%s_FitDiag_Asimov_0p2.txt"                                  % (tagName),
                                 "log_%s_Sign_Asimov.txt"                                         % (tagName),
-                                "log_%s_Sign_Asimov_0p2.txt"                                         % (tagName),
+                                "log_%s_Sign_Asimov_0p2.txt"                                     % (tagName),
+                                "log_%s_Sign_Asimov_1p0.txt"                                     % (tagName),
                                 "log_%s_step1_Asimov.txt"                                        % (tagName),
                                 "log_%s_step2_Asimov.txt"                                        % (tagName),
                                 "log_%s_step3_Asimov.txt"                                        % (tagName),
@@ -324,9 +334,10 @@ def main():
     else:
         filestoTransfer = [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/produceDataCard.py"] 
         filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_0l_scan.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_1l_scan.py"]
-        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/cardConfig_2l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/dataCardProducer_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_0l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_1l_scan.py"]
+        filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/configs/scan/cardConfig_2l_scan.py"]
         filestoTransfer += [environ["CMSSW_BASE"] + "/src/CombineFits/DataCardProducer/inputsAll"]
 
     makeExeAndFriendsTarball(filestoTransfer, "exestuff", options.outPath)

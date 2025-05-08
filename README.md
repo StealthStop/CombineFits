@@ -43,6 +43,27 @@ cp -r /eos/uscms/store/user/lpcsusyhad/StealthStop/FitInputs_FullRun2/Keras_2018
 cp -r /eos/uscms/store/user/lpcsusyhad/StealthStop/FitInputs_FullRun2/Keras_2018post_v1.2 .
 ```
 
+### Running Unblinded Data Fits
+
+The following steps can be used to make all of the datacards and run the final fits:
+```
+# Make data cards with no A region for first step of unblinding
+for ch in 0l 2l; do for sig in RPV StealthSYY; do for type in MassExclusion MaxSign; do python produceDataCard.py --config configs/v3_5_1_Data_NoAReg/cardConfig_${ch}_${sig}_v3_5_1_${type}_Min3 --inpath DisCo_outputs_0l_1l_2l_${type}_Fix_11_05_23/ --outpath ./cards_${type}_Data_NoAReg/ --year Run2UL --channel ${ch} --model ${sig} --dataType Data; done; done; done
+
+
+# Make data cards for final fits
+for ch in 0l 2l; do for sig in RPV StealthSYY; do for type in MassExclusion MaxSign; do python produceDataCard.py --config configs/v3_5_1_Data/cardConfig_${ch}_${sig}_v3_5_1_${type}_Min3 --inpath DisCo_outputs_0l_1l_2l_${type}_Fix_11_05_23/ --outpath ./cards_${type}_Data/ --year Run2UL --channel ${ch} --model ${sig} --dataType Data; done; done; done
+
+# Run all fits
+cd ../condor/
+./AllFits_Data_NoAReg.sh; ./AllFits_Data.sh 
+
+# Making final fit plots
+./make_FitPvalueLimit_Plots_Data.sh all
+
+```
+
+Note that we are only running the first set of fits (i.e. NoAReg) to satisfy our initial unblinding policy. These fits may be bypassed later and are not necessary to get the full results. 
 ### Running Local Examples
 
 To combine the datacards for 2016 and 2017:

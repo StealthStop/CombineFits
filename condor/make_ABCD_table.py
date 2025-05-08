@@ -33,21 +33,23 @@ class Table:
         return closure_est
 
     def make_table_cols(self):
+        njets = range(7,12) if self.suf == "1l" else range(6,11) if self.suf == "2l" else range(8,13)
         cols = {'name': self.pre_A_bins['name'], 'nA_Act': [], 'nA_Pred':[], 'fitTT':[], 'ccPerf':[], 'ccPre':[], 'ccPost':[]}
-        for i in range(7,12):
+        for i in njets:
             cols["nA_Act"].append(self.get_unc_str("A{}".format(i), self.pre_A_bins))
             cols["nA_Pred"].append(self.get_closure_est(i))
             cols["fitTT"].append(self.get_unc_str("A{}".format(i), self.post_A_bins))
             cols["ccPerf"].append(round(self.pre_A_bins["vals"][("A{}".format(i))]/self.get_closure_est(i), 2))
-            cols["ccPre"].append(self.get_unc_str("np_ClosureNj{}_{}".format(i, self.suf), self.pre_nps))
-            cols["ccPost"].append(self.get_unc_str("np_ClosureNj{}_{}".format(i, self.suf), self.post_nps))
+            cols["ccPre"].append(self.get_unc_str("np_CorrectedDataClosureA{}_{}".format(i, self.suf), self.pre_nps))
+            cols["ccPost"].append(self.get_unc_str("np_CorrectedDataClosureA{}_{}".format(i, self.suf), self.post_nps))
             
         return cols
 
     def make_table2_cols(self):
+        njets = range(7,12) if self.suf == "1l" else range(6,11) if self.suf == "2l" else range(8,13)
         cols = {'name': self.pre_A_bins['name'], 'nA_pre':[], 'nA_post':[], 'nA_data':[], 'nB_pre':[], 'nB_post':[], 'nB_data':[], 'nC_pre':[], 'nC_post':[], 'nC_data':[], 'nD_pre':[], 'nD_post':[], 'nD_data':[]}
         for reg in ['A', 'B', 'C', 'D']:
-            for i in range(7,12):
+            for i in njets:
                 cols["n{}_pre".format(reg)].append(self.get_unc_str("{}{}".format(reg, i), self.prebkg))
                 cols["n{}_post".format(reg)].append(self.get_unc_str("{}{}".format(reg, i), self.postbkg))
                 cols["n{}_data".format(reg)].append(self.get_unc_str("{}{}".format(reg, i), self.data))
@@ -126,8 +128,10 @@ def getPreFitVals(fname, signal, mass, year):
     unc = {}
 
     np_list = []
-    for i in range(7, 12):
-        np_list += ['beta{}_{}'.format(i,suf), 'gamma{}_{}'.format(i,suf), 'delta{}_{}'.format(i,suf), 'np_ClosureNj{}_{}'.format(i,suf)]
+    njets = range(7,12) if suf == "1l" else range(6,11) if suf == "2l" else range(8,13) 
+
+    for i in njets:
+        np_list += ['beta{}_{}'.format(i,suf), 'gamma{}_{}'.format(i,suf), 'delta{}_{}'.format(i,suf), 'np_CorrectedDataClosureA{}_{}'.format(i,suf)]
 
     for par in np_list:
         params[w.var(par).GetName()] = w.var(par).getVal()
@@ -172,9 +176,12 @@ def getPreABin(fname, signal, mass, year, suf, Run2):
     bins = {}
     unc = {}
 
+    nj_max = 11 if suf == "1l" else 10 if suf == "2l" else 12
+    nj_min = 7 if suf == "1l" else 6 if suf == "2l" else 8
+
     for bin in range(1,6):
-        bins['A{}'.format(bin+6)] = sf * f.Get('h_njets_11incl_{}_ABCD'.format(suf)).GetBinContent(bin)
-        unc['A{}'.format(bin+6)] = sqrt(sf) * f.Get('h_njets_11incl_{}_ABCD'.format(suf)).GetBinError(bin)
+        bins['A{}'.format(nj_min-1+bin)] = sf * f.Get('h_njets_{}incl_{}_{}_ABCD'.format(nj_max, signal, suf)).GetBinContent(bin)
+        unc['A{}'.format(nj_min-1+bin)] = sqrt(sf) * f.Get('h_njets_{}incl_{}_{}_ABCD'.format(nj_max, signal, suf)).GetBinError(bin)
 
     f.Close()
 
@@ -189,11 +196,13 @@ def getPostABin(fname, signal, mass, year):
     bins = {}
     unc = {}
 
-    for bin in range(7,12):
-        for l in ['0l', '1l']:
+    njets = range(7,12) if suf == "1l" else range(6,11) if suf == "2l" else range(8,13) 
+
+    for bin in njets:
+        for l in ['0l', '1l', '2l']:
             if fname.find(l) != -1:
-                bins['A{}'.format(bin)] = f.Get('shapes_fit_b/Y{}_A{}_{}/TT'.format(year[-2:], bin, l)).GetBinContent(1)
-                unc['A{}'.format(bin)] = f.Get('shapes_fit_b/Y{}_A{}_{}/TT'.format(year[-2:], bin, l)).GetBinError(1)
+                bins['A{}'.format(bin)] = f.Get('shapes_fit_b/Y{}_SigA{}_{}/TT'.format(year[-2:], bin, l)).GetBinContent(1)
+                unc['A{}'.format(bin)] = f.Get('shapes_fit_b/Y{}_SigA{}_{}/TT'.format(year[-2:], bin, l)).GetBinError(1)
 
     f.Close()
 
@@ -208,12 +217,14 @@ def getAllBkgPre(fname, signal, mass, year):
     bins = {}
     unc = {}
 
-    for reg in ['A', 'B', 'C', 'D']:
-        for bin in range(7,12):
-            for l in ['0l', '1l']:
+    njets = range(7,12) if suf == "1l" else range(6,11) if suf == "2l" else range(8,13) 
+
+    for reg in ['SigA', 'B', 'C', 'D']:
+        for bin in njets:
+            for l in ['0l', '1l', '2l']:
                 if fname.find(l) != -1:
-                    bins['{}{}'.format(reg,bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinContent(1)
-                    unc['{}{}'.format(reg,bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinError(1)
+                    bins['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinContent(1)
+                    unc['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinError(1)
 
     f.Close()
 
@@ -228,12 +239,14 @@ def getAllBkgPost(fname, signal, mass, year):
     bins = {}
     unc = {}
 
-    for reg in ['A', 'B', 'C', 'D']:
-        for bin in range(7,12):
-            for l in ['0l', '1l']:
+    njets = range(7,12) if suf == "1l" else range(6,11) if suf == "2l" else range(8,13) 
+
+    for reg in ['SigA', 'B', 'C', 'D']:
+        for bin in njets:
+            for l in ['0l', '1l', '2l']:
                 if fname.find(l) != -1:
-                    bins['{}{}'.format(reg,bin)] = f.Get('shapes_fit_b/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinContent(1)
-                    unc['{}{}'.format(reg,bin)] = f.Get('shapes_fit_b/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinError(1)
+                    bins['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_fit_b/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinContent(1)
+                    unc['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_fit_b/Y{}_{}{}_{}/total'.format(year[-2:], reg, bin, l)).GetBinError(1)
 
     f.Close()
 
@@ -248,12 +261,14 @@ def getData(fname, signal, mass, year):
     bins = {}
     unc = {}
 
-    for reg in ['A', 'B', 'C', 'D']:
-        for bin in range(7,12):
-            for l in ['0l', '1l']:
+    njets = range(7,12) if suf == "1l" else range(6,11) if suf == "2l" else range(8,13) 
+
+    for reg in ['SigA', 'B', 'C', 'D']:
+        for bin in njets:
+            for l in ['0l', '1l', '2l']:
                 if fname.find(l) != -1:
-                    bins['{}{}'.format(reg,bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/data'.format(year[-2:], reg, bin, l)).Eval(0.5)
-                    unc['{}{}'.format(reg,bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/data'.format(year[-2:], reg, bin, l)).GetHistogram().GetBinError(1)
+                    bins['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/data'.format(year[-2:], reg, bin, l)).Eval(0.5)
+                    unc['{}{}'.format(reg if "Sig" not in reg else "A",bin)] = f.Get('shapes_prefit/Y{}_{}{}_{}/data'.format(year[-2:], reg, bin, l)).GetHistogram().GetBinError(1)
 
     f.Close()
 
@@ -303,9 +318,9 @@ def main():
     
     ROOT.TH1.AddDirectory(False)
 
-    pre_file_names = glob.glob("./{0}/output-files/{1}_{2}_{3}/ws_{3}_{1}_{2}_pseudoData_?l.root".format(basedir, signal, mass, year))
+    pre_file_names = glob.glob("./{0}/output-files/{1}_{2}_{3}/ws_{3}{1}{2}Data_?l.root".format(basedir, signal, mass, year))
 
-    post_file_names = glob.glob("./{0}/output-files/{1}_{2}_{3}/fitDiagnostics{3}{1}{2}pseudoData?l.root".format(basedir, signal, mass, year))
+    post_file_names = glob.glob("./{0}/output-files/{1}_{2}_{3}/fitDiagnostics{3}{1}{2}Data_?l.root".format(basedir, signal, mass, year))
 
     landing_dir = "./{}/output-files/tables".format(basedir)
 
@@ -321,10 +336,10 @@ def main():
     if not os.path.exists(landing_dir):
         os.makedirs(landing_dir)    
 
-    input_files = glob.glob("{}/2016_TT.root".format(input))
+    input_files = glob.glob("{}/Run2UL_TT.root".format(input))
     pre_nps = [getPreFitVals(f, signal, mass, year) for f in pre_file_names]
     post_nps = [getPostFitVals(f, signal, mass, year) for f in post_file_names]
-    pre_A_bins = [getPreABin(input_files[0], signal, mass, year, suf, Run2) for suf in ["0l", "1l"]]
+    pre_A_bins = [getPreABin(input_files[0], signal, mass, year, suf, Run2) for suf in ["0l", "1l", "2l"]]
     post_A_bins = [getPostABin(f, signal, mass, year) for f in post_file_names]
 
     prebkg = [getAllBkgPre(f, signal, mass, year) for f in post_file_names]
